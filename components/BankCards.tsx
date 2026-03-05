@@ -3,11 +3,21 @@
 import { useEffect, useState } from "react";
 import { getBankAccounts, BankAccount } from "@/lib/firestore";
 
-const BANK_COLORS: Record<string, string> = {
-  Azteca: "from-blue-600 to-blue-400",
-  Nu: "from-red-600 to-red-400",
-  BBVA: "from-blue-800 to-blue-600",
+const BANK_STYLES: Record<string, { gradient: string; accent: string }> = {
+  Azteca: { gradient: "from-blue-700 via-blue-500 to-cyan-400",    accent: "bg-cyan-300/20" },
+  Nu:     { gradient: "from-purple-700 via-purple-500 to-pink-400", accent: "bg-pink-300/20" },
+  BBVA:   { gradient: "from-blue-900 via-blue-700 to-blue-500",     accent: "bg-blue-300/20" },
+  Banamex:{ gradient: "from-red-700 via-red-500 to-orange-400",     accent: "bg-orange-300/20" },
+  Banorte:{ gradient: "from-red-900 via-red-700 to-red-500",        accent: "bg-red-300/20" },
+  HSBC:   { gradient: "from-red-700 via-rose-600 to-red-400",       accent: "bg-rose-300/20" },
+  Santander:{ gradient: "from-red-800 via-red-600 to-rose-400",     accent: "bg-rose-300/20" },
 };
+const DEFAULT_STYLE = { gradient: "from-slate-700 via-slate-600 to-slate-400", accent: "bg-slate-300/20" };
+
+/** Formats an 18-digit CLABE as  XXXX XXXX XXXX XXXX XX */
+function formatClabe(clabe: string) {
+  return clabe.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+}
 
 export default function BankCards() {
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -25,46 +35,84 @@ export default function BankCards() {
   }
 
   if (accounts.length === 0)
-    return <p className="text-center text-slate-400">Cargando datos bancarios...</p>;
+    return <p className="text-center text-slate-400 py-4">Cargando datos bancarios...</p>;
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="flex flex-col gap-6 max-w-sm mx-auto">
       {accounts.map((acc) => {
-        const gradient = BANK_COLORS[acc.banco] ?? "from-slate-600 to-slate-400";
+        const style = BANK_STYLES[acc.banco] ?? DEFAULT_STYLE;
+        const clabeKey   = `clabe-${acc.id}`;
+        const cuentaKey  = `cuenta-${acc.id}`;
+
         return (
+          /* Card wrapper — standard credit-card aspect ratio 85.6 × 53.98 mm ≈ 1.586 */
           <div
             key={acc.id}
-            className={`bg-gradient-to-br ${gradient} rounded-2xl p-6 text-white shadow-lg`}
+            className={`relative w-full rounded-2xl overflow-hidden shadow-2xl text-white
+              bg-gradient-to-br ${style.gradient}`}
+            style={{ aspectRatio: "1.75 / 1" }}
           >
-            <p className="text-lg font-bold mb-4">{acc.banco}</p>
-            <p className="text-xs opacity-80 mb-1">Titular</p>
-            <p className="font-semibold mb-3">{acc.titular}</p>
+            {/* Decorative circles */}
+            <div className={`absolute -top-10 -right-10 w-44 h-44 rounded-full ${style.accent}`} />
+            <div className={`absolute -bottom-8 -left-8 w-36 h-36 rounded-full ${style.accent}`} />
 
-            <p className="text-xs opacity-80 mb-1">CLABE</p>
-            <div className="flex items-center justify-between bg-white/20 rounded-lg px-3 py-2 mb-3">
-              <span className="font-mono text-sm tracking-widest">{acc.clabe}</span>
-              <button
-                onClick={() => copy(acc.clabe, `clabe-${acc.id}`)}
-                className="text-xs bg-white/30 hover:bg-white/50 px-2 py-1 rounded transition-colors ml-2"
-              >
-                {copied === `clabe-${acc.id}` ? "Copiado!" : "Copiar"}
-              </button>
-            </div>
+            {/* Content */}
+            <div className="relative h-full flex flex-col justify-between p-6">
 
-            {acc.num_cuenta && (
-              <>
-                <p className="text-xs opacity-80 mb-1">N° Cuenta</p>
-                <div className="flex items-center justify-between bg-white/20 rounded-lg px-3 py-2">
-                  <span className="font-mono text-sm">{acc.num_cuenta}</span>
-                  <button
-                    onClick={() => copy(acc.num_cuenta, `cuenta-${acc.id}`)}
-                    className="text-xs bg-white/30 hover:bg-white/50 px-2 py-1 rounded transition-colors ml-2"
-                  >
-                    {copied === `cuenta-${acc.id}` ? "Copiado!" : "Copiar"}
-                  </button>
+              {/* Top row: bank name + contactless icon */}
+              <div className="flex items-start justify-between">
+                <p className="text-xl font-black tracking-wide drop-shadow">{acc.banco}</p>
+                {/* Contactless waves */}
+                <svg className="w-7 h-7 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path strokeLinecap="round" d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0" />
+                </svg>
+              </div>
+
+              {/* Middle: chip + CLABE */}
+              <div className="space-y-1">
+                {/* EMV chip */}
+                <div className="w-11 h-8 rounded-md bg-yellow-300/90 border border-yellow-200/60 grid grid-cols-3 grid-rows-3 gap-px p-1 mb-3">
+                  {Array.from({ length: 9 }).map((_, i) => (
+                    <div key={i} className={`rounded-sm ${i === 4 ? "bg-yellow-400/50" : "bg-yellow-500/70"}`} />
+                  ))}
                 </div>
-              </>
-            )}
+                <p className="font-mono text-lg tracking-widest font-semibold drop-shadow leading-none">
+                  {formatClabe(acc.clabe)}
+                </p>
+                <p className="text-xs uppercase tracking-widest opacity-60 mt-1">CLABE interbancaria</p>
+              </div>
+
+              {/* Bottom row: titular + copy buttons */}
+              <div className="flex items-end justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs uppercase tracking-widest opacity-60 mb-0.5">Titular</p>
+                  <p className="font-bold text-base uppercase tracking-wide leading-tight truncate">
+                    {acc.titular}
+                  </p>
+                  {acc.num_cuenta && (
+                    <p className="font-mono text-sm opacity-70 mt-0.5">{acc.num_cuenta}</p>
+                  )}
+                </div>
+
+                {/* Copy buttons */}
+                <div className="flex flex-col gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => copy(acc.clabe, clabeKey)}
+                    className="text-xs font-bold bg-white/20 hover:bg-white/35 active:bg-white/50 px-3 py-1.5 rounded-lg backdrop-blur-sm transition-colors whitespace-nowrap"
+                  >
+                    {copied === clabeKey ? "Copiado!" : "Copiar CLABE"}
+                  </button>
+                  {acc.num_cuenta && (
+                    <button
+                      onClick={() => copy(acc.num_cuenta, cuentaKey)}
+                      className="text-xs font-bold bg-white/20 hover:bg-white/35 active:bg-white/50 px-3 py-1.5 rounded-lg backdrop-blur-sm transition-colors whitespace-nowrap"
+                    >
+                      {copied === cuentaKey ? "Copiado!" : "Copiar N° Cuenta"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         );
       })}

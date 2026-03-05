@@ -94,8 +94,8 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
         await incrementDiscountUse(descuento.id);
       }
 
-      // Redirect to tarjetas
-      router.push(`/tarjetas?folio=${folio}`);
+      // Redirect to consulta
+      router.push(`/consulta?f=${folio}&act=1`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Ocurrió un error. Intenta de nuevo.";
       alert(msg);

@@ -37,10 +37,6 @@ export default function RifaPreviaDetailPage() {
   if (!rifa) return null;
 
   const total = rifa.num_fin - rifa.num_inicio + 1;
-  const vendidos = rifa.num_vendidos ?? 0;
-  const apartados = rifa.num_apartados ?? 0;
-  const pctVendidos = total > 0 ? (vendidos / total) * 100 : 0;
-  const pctApartados = total > 0 ? (apartados / total) * 100 : 0;
 
   const vendidosSet = new Set(vendidosArr);
   const apartadosSet = new Set(apartadosArr);
@@ -99,52 +95,6 @@ export default function RifaPreviaDetailPage() {
           <div className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2">
             <p className="text-xs text-slate-400">Números totales</p>
             <p className="font-bold">{total}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats with bars */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow p-6 mb-8">
-        <h2 className="text-lg font-bold mb-4">Resumen de la rifa</h2>
-
-        {/* Stacked bar */}
-        <div className="h-5 rounded-full overflow-hidden flex bg-slate-100 dark:bg-slate-700 mb-4">
-          <div
-            className="h-full bg-slate-500 transition-all duration-700"
-            style={{ width: `${pctVendidos}%` }}
-            title={`Vendidos: ${vendidos}`}
-          />
-          <div
-            className="h-full bg-amber-400 transition-all duration-700"
-            style={{ width: `${pctApartados}%` }}
-            title={`Apartados: ${apartados}`}
-          />
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-2xl font-black text-slate-700 dark:text-slate-200">{vendidos}</p>
-            <div className="flex items-center justify-center gap-1.5 mt-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-500 inline-block" />
-              <p className="text-xs text-slate-500 font-medium">Vendidos</p>
-            </div>
-            <p className="text-xs text-slate-400">{pctVendidos.toFixed(1)}%</p>
-          </div>
-          <div>
-            <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{apartados}</p>
-            <div className="flex items-center justify-center gap-1.5 mt-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" />
-              <p className="text-xs text-slate-500 font-medium">Apartados</p>
-            </div>
-            <p className="text-xs text-slate-400">{pctApartados.toFixed(1)}%</p>
-          </div>
-          <div>
-            <p className="text-2xl font-black">{total}</p>
-            <div className="flex items-center justify-center gap-1.5 mt-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-600 inline-block" />
-              <p className="text-xs text-slate-500 font-medium">Total</p>
-            </div>
-            <p className="text-xs text-slate-400">100%</p>
           </div>
         </div>
       </div>

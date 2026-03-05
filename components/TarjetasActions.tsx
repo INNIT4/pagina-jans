@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { getBoletoByFolio, getRifa } from "@/lib/firestore";
-import { getActiveWhatsApp, buildWhatsAppUrl } from "@/lib/whatsapp";
+import { getRotatedWhatsApp, buildWhatsAppUrl } from "@/lib/whatsapp";
 import { downloadComprobante } from "@/lib/pdf";
 
 export default function TarjetasActions({ folio }: { folio: string }) {
@@ -14,7 +14,7 @@ export default function TarjetasActions({ folio }: { folio: string }) {
     try {
       const [boleto, numero] = await Promise.all([
         getBoletoByFolio(folio),
-        getActiveWhatsApp(),
+        getRotatedWhatsApp(),
       ]);
 
       if (!numero) {

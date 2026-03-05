@@ -62,7 +62,8 @@ export interface DiscountCode {
 }
 
 export interface WhatsAppConfig {
-  numero: string;
+  numeros: string[];
+  indice_actual: number;
 }
 
 export interface BankAccount {
@@ -290,11 +291,39 @@ export async function deleteDiscountCode(id: string): Promise<void> {
 
 export async function getWhatsAppConfig(): Promise<WhatsAppConfig | null> {
   const snap = await getDoc(doc(db, "whatsapp_config", "config"));
-  return snap.exists() ? (snap.data() as WhatsAppConfig) : null;
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  // Migración automática del formato viejo { numero: string }
+  if (typeof data.numero === "string" && !data.numeros) {
+    return { numeros: data.numero ? [data.numero] : [], indice_actual: 0 };
+  }
+  return data as WhatsAppConfig;
 }
 
 export async function setWhatsAppConfig(data: WhatsAppConfig): Promise<void> {
   await setDoc(doc(db, "whatsapp_config", "config"), data);
+}
+
+/**
+ * Lee el número activo actual y rota al siguiente de forma atómica.
+ * Devuelve el número que debe usar el usuario actual (antes de rotar).
+ * Si no hay números configurados devuelve null.
+ */
+export async function getAndRotateWhatsApp(): Promise<string | null> {
+  const ref = doc(db, "whatsapp_config", "config");
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    // Soporte formato viejo en caliente
+    const numeros: string[] =
+      data.numeros ?? (data.numero ? [data.numero] : []);
+    if (!numeros.length) return null;
+    const indice = (data.indice_actual ?? 0) % numeros.length;
+    const numero = numeros[indice];
+    tx.update(ref, { indice_actual: (indice + 1) % numeros.length });
+    return numero;
+  });
 }
 
 // ─── Bank Accounts ────────────────────────────────────────────────────────────

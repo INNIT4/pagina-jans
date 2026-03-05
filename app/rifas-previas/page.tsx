@@ -25,10 +25,6 @@ export default async function RifasPreviasPage() {
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {rifas.map((rifa) => {
-            const total = rifa.num_fin - rifa.num_inicio + 1;
-            const vendidos = rifa.num_vendidos ?? 0;
-            const pct = total > 0 ? Math.round((vendidos / total) * 100) : 0;
-
             return (
               <Link
                 key={rifa.id}
@@ -73,20 +69,6 @@ export default async function RifasPreviasPage() {
                     <div className="bg-slate-50 dark:bg-slate-700 rounded-lg px-3 py-1.5">
                       <span className="text-slate-400">Precio </span>
                       <span className="font-semibold">${rifa.precio_boleto.toLocaleString("es-MX")}</span>
-                    </div>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="mb-1">
-                    <div className="flex justify-between text-xs text-slate-400 mb-1">
-                      <span>{vendidos} de {total} boletos vendidos</span>
-                      <span className="font-semibold">{pct}%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                      <div
-                        className="h-full bg-slate-400 dark:bg-slate-500 rounded-full"
-                        style={{ width: `${pct}%` }}
-                      />
                     </div>
                   </div>
 

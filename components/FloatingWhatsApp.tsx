@@ -1,39 +1,45 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getActiveWhatsApp, buildWhatsAppUrl } from "@/lib/whatsapp";
+import { getActiveWhatsApp, getRotatedWhatsApp, buildWhatsAppUrl } from "@/lib/whatsapp";
 
-const CACHE_KEY = "wa_numero";
+const CACHE_KEY = "wa_tiene_numeros";
 const MSG = "Hola, me interesa participar en un sorteo de Sorteos Jans.";
 
 export default function FloatingWhatsApp() {
-  const [numero, setNumero] = useState(() =>
-    typeof window !== "undefined" ? (localStorage.getItem(CACHE_KEY) ?? "") : ""
+  const [visible, setVisible] = useState(() =>
+    typeof window !== "undefined" ? localStorage.getItem(CACHE_KEY) === "1" : false
   );
 
   useEffect(() => {
     getActiveWhatsApp()
       .then((n) => {
-        if (n) {
-          localStorage.setItem(CACHE_KEY, n);
-          setNumero(n);
-        }
+        const tiene = !!n;
+        if (typeof window !== "undefined")
+          localStorage.setItem(CACHE_KEY, tiene ? "1" : "0");
+        setVisible(tiene);
       })
       .catch(() => {});
   }, []);
 
-  if (!numero) return null;
+  async function handleClick() {
+    try {
+      const numero = await getRotatedWhatsApp();
+      if (!numero) return;
+      window.open(buildWhatsAppUrl(numero, MSG), "_blank");
+    } catch {}
+  }
+
+  if (!visible) return null;
 
   return (
-    <a
-      href={buildWhatsAppUrl(numero, MSG)}
-      target="_blank"
-      rel="noopener noreferrer"
+    <button
+      onClick={handleClick}
       className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110"
       aria-label="Contactar por WhatsApp"
     >
       <WhatsAppIcon />
-    </a>
+    </button>
   );
 }
 

@@ -243,7 +243,7 @@ export default function ServiciosPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">
-                  {b.created_at?.toDate?.()?.toLocaleDateString("es-MX") ?? "—"}
+                  {b.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? "—"}
                 </td>
                 <td className="px-4 py-3">
                   <button

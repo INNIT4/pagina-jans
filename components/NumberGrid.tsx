@@ -19,7 +19,7 @@ const PAGE_SIZE = 200;
 
 const STATUS_CLASSES: Record<NumberStatus, string> = {
   disponible:  "bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800 cursor-pointer",
-  vendido:     "bg-transparent text-transparent cursor-default pointer-events-none select-none",
+  vendido:     "",
   apartado:    "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200 cursor-not-allowed opacity-75",
   seleccionado:"bg-blue-500 text-white dark:bg-blue-600 cursor-pointer ring-2 ring-blue-400",
 };
@@ -42,9 +42,11 @@ export default function NumberGrid({
 
   const numbers = useMemo(() => {
     const all = [];
-    for (let i = numInicio; i <= numFin; i++) all.push(i);
+    for (let i = numInicio; i <= numFin; i++) {
+      if (!vendidosSet.has(i)) all.push(i);
+    }
     return all;
-  }, [numInicio, numFin]);
+  }, [numInicio, numFin, vendidosSet]);
 
   // When searching (visibles != null) show all results; otherwise paginate
   const toShow = visibles ?? numbers;

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { getBoletoByFolio, getRifa } from "@/lib/firestore";
-import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { getActiveWhatsApp, buildWhatsAppUrl } from "@/lib/whatsapp";
 import { downloadComprobante } from "@/lib/pdf";
 
 export default function TarjetasActions({ folio }: { folio: string }) {
@@ -12,13 +12,10 @@ export default function TarjetasActions({ folio }: { folio: string }) {
   async function handleWhatsApp() {
     setWaLoading(true);
     try {
-      const [boleto, waRes] = await Promise.all([
+      const [boleto, numero] = await Promise.all([
         getBoletoByFolio(folio),
-        fetch("/api/whatsapp").catch(() => null),
+        getActiveWhatsApp(),
       ]);
-
-      const waData = (waRes?.ok ? await waRes.json().catch(() => ({})) : {}) as { numero?: string };
-      const numero = waData.numero;
 
       if (!numero) {
         alert("No hay número de WhatsApp configurado. Contacta al equipo directamente.");

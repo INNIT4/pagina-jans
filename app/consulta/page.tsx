@@ -165,113 +165,88 @@ function BoletoCard({ boleto, rifa }: { boleto: Boleto; rifa: Rifa | null }) {
   }
 
   const status = boleto.status;
-  const fecha = boleto.created_at?.toDate?.()?.toLocaleString("es-MX", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }) ?? "—";
 
-  const headerGradient =
-    status === "pagado"    ? "bg-gradient-to-r from-green-600 to-green-500" :
-    status === "cancelado" ? "bg-gradient-to-r from-slate-600 to-slate-500" :
-                             "bg-gradient-to-r from-amber-500 to-amber-400";
+  const statusConfig = {
+    pagado:    { label: "Pago confirmado",  gradient: "from-green-600 to-emerald-500", badge: "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700" },
+    cancelado: { label: "Cancelado",        gradient: "from-slate-500 to-slate-600",   badge: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600" },
+    pendiente: { label: "Pendiente de pago",gradient: "from-amber-500 to-orange-400",  badge: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700" },
+  }[status];
 
-  const statusLabel =
-    status === "pagado"    ? "Pago confirmado" :
-    status === "cancelado" ? "Boleto cancelado" :
-                             "Pendiente de pago";
-
-  const statusIcon =
-    status === "pagado" ? (
-      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-      </svg>
-    ) : status === "cancelado" ? (
-      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    ) : (
-      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    );
+  const fechaApartado = boleto.created_at?.toDate?.()?.toLocaleDateString("es-MX", { dateStyle: "medium" }) ?? "—";
+  const horaApartado  = boleto.created_at?.toDate?.()?.toLocaleTimeString("es-MX", { timeStyle: "short" }) ?? "";
+  const fechaPago     = boleto.fecha_pago?.toDate?.()?.toLocaleDateString("es-MX", { dateStyle: "medium" }) ?? null;
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden mb-6">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden mb-6">
 
-      {/* Status header bar */}
-      <div className={`px-6 py-4 flex items-center justify-between ${headerGradient}`}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-            {statusIcon}
-          </div>
-          <div>
-            <p className="text-white/70 text-xs font-medium">Estado del boleto</p>
-            <p className="text-white font-black text-lg leading-none">{statusLabel}</p>
-          </div>
+      {/* ── Header ── */}
+      <div className={`bg-gradient-to-r ${statusConfig.gradient} px-5 py-4 flex items-center justify-between`}>
+        <div>
+          <p className="text-white/70 text-xs font-medium uppercase tracking-wide">Folio</p>
+          <p className="text-white font-black text-2xl tracking-wider leading-none">{boleto.folio}</p>
         </div>
-        <div className="text-right">
-          <p className="text-white/70 text-xs">Folio</p>
-          <p className="text-white font-black text-xl tracking-wider">{boleto.folio}</p>
-        </div>
+        <span className={`text-xs font-bold px-3 py-1.5 rounded-full border ${statusConfig.badge}`}>
+          {statusConfig.label}
+        </span>
       </div>
 
-      {/* Pending notice */}
-      {status === "pendiente" && (
-        <div className="mx-6 mt-4 flex gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3">
-          <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-          <p className="text-amber-800 dark:text-amber-300 text-xs leading-relaxed">
-            Tu boleto está apartado. Una vez que realices tu pago por transferencia, nuestro equipo lo confirmará y el estado cambiará a <strong>Pago confirmado</strong>.
-          </p>
-        </div>
-      )}
+      {/* ── Sorteo ── */}
+      <div className="px-5 py-3 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
+        <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold">Sorteo</p>
+        <p className="font-bold text-base text-slate-800 dark:text-slate-100">{rifa?.nombre ?? boleto.rifa_id}</p>
+      </div>
 
-      {/* Cancelled notice */}
-      {status === "cancelado" && (
-        <div className="mx-6 mt-4 flex gap-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3">
-          <svg className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-          </svg>
-          <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed">
-            Este boleto fue cancelado y sus números ya están disponibles nuevamente. Si tienes dudas, contacta a nuestro equipo.
-          </p>
-        </div>
-      )}
+      <div className="p-5 space-y-5">
 
-      {/* Details */}
-      <div className="p-6">
-        <div className="grid grid-cols-2 gap-4 mb-5">
-          <div className="col-span-2 sm:col-span-1">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Sorteo</p>
-            <p className="font-bold text-base">{rifa?.nombre ?? boleto.rifa_id}</p>
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Titular</p>
-            <p className="font-bold text-base">{boleto.nombre} {boleto.apellidos}</p>
+        {/* ── Info grid ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div>
+            <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-0.5">Nombre</p>
+            <p className="font-bold text-slate-800 dark:text-slate-100">{boleto.nombre}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Total</p>
-            <p className="font-black text-lg text-red-600 dark:text-red-400">
-              ${boleto.precio_total.toLocaleString("es-MX")} MXN
+            <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-0.5">Apellidos</p>
+            <p className="font-bold text-slate-800 dark:text-slate-100">{boleto.apellidos}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-0.5">Estado</p>
+            <p className="font-bold text-slate-800 dark:text-slate-100">{boleto.estado}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-0.5">Fecha apartado</p>
+            <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">{fechaApartado}</p>
+            {horaApartado && <p className="text-xs text-slate-400">{horaApartado}</p>}
+          </div>
+          <div>
+            <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-0.5">Fecha de pago</p>
+            <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">{fechaPago ?? "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-0.5">Total</p>
+            <p className="font-black text-red-600 dark:text-red-400">${boleto.precio_total.toLocaleString("es-MX")} MXN</p>
+          </div>
+        </div>
+
+        {/* ── Números + Oportunidades ── */}
+        <div className="bg-slate-50 dark:bg-slate-700/40 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold">
+              Números ({boleto.numeros.length})
             </p>
+            {boleto.oportunidades != null && (
+              <span className="inline-flex items-center gap-1 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700 text-xs font-bold px-2.5 py-1 rounded-full">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                {boleto.oportunidades} oportunidades
+              </span>
+            )}
           </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Apartado el</p>
-            <p className="font-semibold text-sm">{fecha}</p>
-          </div>
-        </div>
-
-        {/* Numbers */}
-        <div className="mb-5">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
-            Números seleccionados ({boleto.numeros.length})
-          </p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {boleto.numeros.map((n) => (
               <span
                 key={n}
-                className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-bold text-sm border border-red-100 dark:border-red-800"
+                className="inline-flex items-center justify-center min-w-[2.5rem] h-10 px-2 rounded-xl bg-white dark:bg-slate-800 text-red-700 dark:text-red-300 font-black text-sm border-2 border-red-200 dark:border-red-800 shadow-sm"
               >
                 {n}
               </span>
@@ -279,7 +254,29 @@ function BoletoCard({ boleto, rifa }: { boleto: Boleto; rifa: Rifa | null }) {
           </div>
         </div>
 
-        {/* Download button — hidden for cancelled boletos */}
+        {/* ── Notices ── */}
+        {status === "pendiente" && (
+          <div className="flex gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3">
+            <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <p className="text-amber-800 dark:text-amber-300 text-xs leading-relaxed">
+              Tu boleto está apartado. Una vez que realices tu pago, nuestro equipo lo confirmará y el estado cambiará a <strong>Pago confirmado</strong>.
+            </p>
+          </div>
+        )}
+        {status === "cancelado" && (
+          <div className="flex gap-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3">
+            <svg className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed">
+              Este boleto fue cancelado y sus números ya están disponibles nuevamente. Si tienes dudas, contacta a nuestro equipo.
+            </p>
+          </div>
+        )}
+
+        {/* ── Download ── */}
         {status !== "cancelado" && (
           <button
             onClick={handleDownload}

@@ -50,6 +50,8 @@ export interface Boleto {
   precio_total: number;
   status: "pendiente" | "pagado" | "cancelado";
   created_at: Timestamp;
+  oportunidades?: number;
+  fecha_pago?: Timestamp;
 }
 
 export interface DiscountCode {

@@ -23,7 +23,7 @@ export default function ReportesPage() {
   const [rifaMap, setRifaMap] = useState<Map<string, Rifa>>(new Map());
   const [activeTab, setActiveTab] = useState<ReportType>("folios");
   const [filterRifa, setFilterRifa] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"todos" | "pendiente" | "pagado">("todos");
+  const [filterStatus, setFilterStatus] = useState<"todos" | "pendiente" | "pagado" | "cancelado">("todos");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -190,6 +190,7 @@ export default function ReportesPage() {
             <option value="todos">Todos los estados</option>
             <option value="pendiente">Pendientes</option>
             <option value="pagado">Pagados</option>
+            <option value="cancelado">Cancelados</option>
           </select>
           <span className="px-3 py-2 text-sm text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg">
             {filtered.length} registros

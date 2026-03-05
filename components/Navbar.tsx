@@ -8,12 +8,9 @@ import Logo from "@/components/Logo";
 
 const navLinks = [
   { href: "/", label: "Inicio" },
-  { href: "/faq", label: "Preguntas Frecuentes" },
-  { href: "/sobre-nosotros", label: "Contacto" },
-  { href: "/tarjetas", label: "Métodos de Pago" },
-  { href: "/rifas", label: "Comprar Boletos" },
   { href: "/rifas-previas", label: "Rifas Previas" },
   { href: "/consulta", label: "Consultar Boleto" },
+  { href: "/faq", label: "FAQ" },
 ];
 
 export default function Navbar() {
@@ -49,6 +46,12 @@ export default function Navbar() {
               {l.label}
             </Link>
           ))}
+          <Link
+            href="/rifas"
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-full transition-colors"
+          >
+            Comprar Boletos
+          </Link>
         </div>
 
         {/* Theme toggle + hamburger */}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getRifas } from "@/lib/firestore";
 import BankCards from "@/components/BankCards";
 
@@ -108,8 +109,9 @@ export default async function HomePage() {
                   className="group bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow hover:shadow-xl transition-shadow border border-slate-100 dark:border-slate-700"
                 >
                   {rifa.imagen_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={rifa.imagen_url} alt={rifa.nombre} className="w-full h-48 object-cover" />
+                    <div className="relative w-full h-48">
+                      <Image src={rifa.imagen_url} alt={rifa.nombre} fill className="object-cover" />
+                    </div>
                   ) : (
                     <div className="w-full h-48 bg-gradient-to-br from-red-400 to-black flex items-center justify-center">
                       <span className="text-5xl">🎟️</span>

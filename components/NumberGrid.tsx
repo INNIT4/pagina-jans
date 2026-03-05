@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 type NumberStatus = "disponible" | "vendido" | "apartado" | "seleccionado";
 
@@ -13,6 +13,8 @@ interface NumberGridProps {
   visibles?: number[] | null; // null = show all
   onToggle: (n: number) => void;
 }
+
+const PAGE_SIZE = 200;
 
 const STATUS_CLASSES: Record<NumberStatus, string> = {
   disponible: "bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800 cursor-pointer",
@@ -30,6 +32,8 @@ export default function NumberGrid({
   visibles,
   onToggle,
 }: NumberGridProps) {
+  const [page, setPage] = useState(1);
+
   const vendidosSet = useMemo(() => new Set(vendidos), [vendidos]);
   const apartadosSet = useMemo(() => new Set(apartados), [apartados]);
   const seleccionadosSet = useMemo(() => new Set(seleccionados), [seleccionados]);
@@ -40,7 +44,14 @@ export default function NumberGrid({
     return all;
   }, [numInicio, numFin]);
 
-  const toShow = visibles ? visibles : numbers;
+  // When searching (visibles != null) show all results; otherwise paginate
+  const toShow = visibles ?? numbers;
+  const usePagination = visibles === null && toShow.length > PAGE_SIZE;
+  const totalPages = usePagination ? Math.ceil(toShow.length / PAGE_SIZE) : 1;
+  const pageNumbers = usePagination ? toShow.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) : toShow;
+
+  // Reset page when visibles changes
+  useEffect(() => { setPage(1); }, [visibles]);
 
   function getStatus(n: number): NumberStatus {
     if (seleccionadosSet.has(n)) return "seleccionado";
@@ -69,7 +80,7 @@ export default function NumberGrid({
 
       {/* Grid */}
       <div className="number-grid">
-        {toShow.map((n) => {
+        {pageNumbers.map((n) => {
           const status = getStatus(n);
           return (
             <button
@@ -85,6 +96,34 @@ export default function NumberGrid({
           );
         })}
       </div>
+
+      {/* Pagination controls */}
+      {usePagination && totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-xs text-slate-500">
+            Mostrando {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, toShow.length)} de {toShow.length} números
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-600 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700"
+            >
+              Anterior
+            </button>
+            <span className="px-3 py-1 text-xs text-slate-500">
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-600 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

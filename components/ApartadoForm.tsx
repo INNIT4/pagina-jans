@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Rifa, createBoleto, reservarNumeros, validateDiscountCode, incrementDiscountUse } from "@/lib/firestore";
+import { Rifa, createBoleto, reservarNumeros, validateDiscountCode, incrementDiscountUse, getBoletoByFolio } from "@/lib/firestore";
 import { generateFolio } from "@/lib/folio";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { Timestamp } from "firebase/firestore";
@@ -65,11 +65,14 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
 
     setLoading(true);
     try {
-      const folio = generateFolio();
+      // Generate unique folio (retry once on collision — extremely rare)
+      let folio = generateFolio();
+      const folioExiste = await getBoletoByFolio(folio);
+      if (folioExiste) folio = generateFolio();
 
       // Get WhatsApp number
-      const waRes = await fetch("/api/whatsapp");
-      const { numero } = await waRes.json();
+      const waRes = await fetch("/api/whatsapp").catch(() => null);
+      const { numero } = waRes ? await waRes.json().catch(() => ({})) : {};
 
       // Save boleto
       await createBoleto({
@@ -100,9 +103,11 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
       const fecha = new Date().toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
       const message = `👋 Hola, soy ${form.nombre} ${form.apellidos}\nSeleccioné: ${numeros.length} números\n──────────────\n🎫 Números: ${numeros.join(", ")}\n🎯 Sorteo: ${rifa.nombre}\n🏷️ Folio: ${folio}\n📅 Fecha: ${fecha}\n💰 Total: $${total.toLocaleString("es-MX")}\n──────────────\n💳 Métodos de pago: ${siteUrl}/cuentas\n🏷️ Consulta: ${siteUrl}/consulta?f=${folio}&act=1`;
 
-      // Open WhatsApp
+      // Open WhatsApp (if configured)
       if (numero) {
         window.open(buildWhatsAppUrl(numero, message), "_blank");
+      } else {
+        alert("Tu boleto fue apartado correctamente.\n\nNota: en este momento no hay un número de WhatsApp configurado. Guarda tu folio: " + folio);
       }
 
       // Redirect to tarjetas

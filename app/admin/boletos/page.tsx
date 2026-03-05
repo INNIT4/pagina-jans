@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getBoletos, markBoletoPagado, getRifas, updateRifa, Boleto, Rifa } from "@/lib/firestore";
+import { getBoletos, markBoletoPagado, getRifas, updateRifa, cancelApartado, cancelPagado, Boleto, Rifa } from "@/lib/firestore";
+
+const PAGE_SIZE = 20;
 
 export default function AdminBoletosPage() {
   const [boletos, setBoletos] = useState<Boleto[]>([]);
   const [rifas, setRifas] = useState<Map<string, Rifa>>(new Map());
-  const [filterStatus, setFilterStatus] = useState<"todos" | "pendiente" | "pagado">("todos");
+  const [filterStatus, setFilterStatus] = useState<"todos" | "pendiente" | "pagado" | "cancelado">("todos");
   const [filterRifa, setFilterRifa] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [marking, setMarking] = useState<string | null>(null);
 
   async function load() {
@@ -18,32 +22,49 @@ export default function AdminBoletosPage() {
 
   useEffect(() => { load(); }, []);
 
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [filterStatus, filterRifa, search]);
+
   async function handleMarkPagado(boleto: Boleto) {
     if (!confirm(`¿Marcar boleto ${boleto.folio} como pagado?`)) return;
     setMarking(boleto.id!);
     await markBoletoPagado(boleto.id!);
-
-    // Move numbers from apartados to vendidos in the rifa
     const rifa = rifas.get(boleto.rifa_id);
     if (rifa) {
       const nuevosApartados = (rifa.numeros_apartados ?? []).filter((n) => !boleto.numeros.includes(n));
       const nuevosVendidos = [...(rifa.numeros_vendidos ?? []), ...boleto.numeros];
-      await updateRifa(boleto.rifa_id, {
-        numeros_apartados: nuevosApartados,
-        numeros_vendidos: nuevosVendidos,
-      });
+      await updateRifa(boleto.rifa_id, { numeros_apartados: nuevosApartados, numeros_vendidos: nuevosVendidos });
     }
-
     setMarking(null);
     await load();
   }
 
+  async function handleCancel(boleto: Boleto) {
+    if (!confirm(`¿Cancelar boleto ${boleto.folio}?`)) return;
+    setMarking(boleto.id!);
+    const rifa = rifas.get(boleto.rifa_id);
+    if (boleto.status === "pendiente" && rifa) {
+      await cancelApartado(boleto as Parameters<typeof cancelApartado>[0], rifa);
+    } else if (boleto.status === "pagado" && rifa) {
+      await cancelPagado(boleto as Parameters<typeof cancelPagado>[0], rifa);
+    }
+    setMarking(null);
+    await load();
+  }
+
+  const q = search.trim().toUpperCase();
   const filtered = boletos.filter((b) => {
     if (filterStatus !== "todos" && b.status !== filterStatus) return false;
     if (filterRifa && b.rifa_id !== filterRifa) return false;
+    if (q) {
+      const nombre = `${b.nombre} ${b.apellidos}`.toUpperCase();
+      if (!b.folio.includes(q) && !nombre.includes(q) && !b.celular.includes(q)) return false;
+    }
     return true;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const rifaOptions = Array.from(rifas.values());
 
   return (
@@ -52,6 +73,12 @@ export default function AdminBoletosPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar folio, nombre, celular..."
+          className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm w-60"
+        />
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
@@ -60,6 +87,7 @@ export default function AdminBoletosPage() {
           <option value="todos">Todos los estados</option>
           <option value="pendiente">Pendientes</option>
           <option value="pagado">Pagados</option>
+          <option value="cancelado">Cancelados</option>
         </select>
         <select
           value={filterRifa}
@@ -90,7 +118,7 @@ export default function AdminBoletosPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-            {filtered.map((b) => (
+            {paginated.map((b) => (
               <tr key={b.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                 <td className="px-4 py-3 font-mono font-bold text-red-600 dark:text-red-400">{b.folio}</td>
                 <td className="px-4 py-3">{rifas.get(b.rifa_id)?.nombre ?? b.rifa_id}</td>
@@ -115,15 +143,26 @@ export default function AdminBoletosPage() {
                   {b.created_at?.toDate?.()?.toLocaleDateString("es-MX") ?? "—"}
                 </td>
                 <td className="px-4 py-3">
-                  {b.status === "pendiente" && (
-                    <button
-                      onClick={() => handleMarkPagado(b)}
-                      disabled={marking === b.id}
-                      className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors"
-                    >
-                      {marking === b.id ? "..." : "Marcar pagado"}
-                    </button>
-                  )}
+                  <div className="flex gap-1.5">
+                    {b.status === "pendiente" && (
+                      <button
+                        onClick={() => handleMarkPagado(b)}
+                        disabled={marking === b.id}
+                        className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors"
+                      >
+                        {marking === b.id ? "..." : "Marcar pagado"}
+                      </button>
+                    )}
+                    {(b.status === "pendiente" || b.status === "pagado") && (
+                      <button
+                        onClick={() => handleCancel(b)}
+                        disabled={marking === b.id}
+                        className="text-xs px-2 py-1.5 bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-700 dark:bg-slate-700 dark:hover:bg-red-900/30 dark:text-slate-300 font-bold rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -133,6 +172,31 @@ export default function AdminBoletosPage() {
           <p className="text-center py-8 text-slate-400">Sin boletos.</p>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-sm text-slate-500">
+            Página {page} de {totalPages} · {filtered.length} resultados
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-600 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-600 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

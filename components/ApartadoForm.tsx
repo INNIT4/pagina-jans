@@ -93,7 +93,7 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
 
       // Increment discount code if used
       if (descuento) {
-        await incrementDiscountUse(descuento.id, 0);
+        await incrementDiscountUse(descuento.id);
       }
 
       // Build WhatsApp message

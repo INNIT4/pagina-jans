@@ -21,7 +21,7 @@ export default function AdminLoginPage() {
       // Set a session cookie via API
       const token = await auth.currentUser?.getIdToken();
       if (token) {
-        document.cookie = `admin_token=${token}; path=/; max-age=3600`;
+        document.cookie = `admin_token=${token}; path=/; max-age=3600; SameSite=Strict`;
       }
       router.push("/admin");
     } catch {

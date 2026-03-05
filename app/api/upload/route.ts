@@ -5,8 +5,15 @@ import path from "path";
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
 
 export async function POST(req: NextRequest) {
+  // Only authenticated admins may upload
+  const token = req.cookies.get("admin_token");
+  if (!token?.value) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  }
+
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
 
@@ -22,8 +29,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "El archivo supera el límite de 5 MB." }, { status: 400 });
   }
 
-  // Sanitize filename: keep only alphanumeric, dots, dashes
+  // Sanitize and validate filename
   const ext = path.extname(file.name).toLowerCase().replace(/[^.a-z0-9]/g, "");
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    return NextResponse.json({ error: "Extensión no permitida." }, { status: 400 });
+  }
   const baseName = path.basename(file.name, path.extname(file.name))
     .replace(/[^a-zA-Z0-9-_]/g, "_")
     .slice(0, 60);

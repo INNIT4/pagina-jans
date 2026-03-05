@@ -11,6 +11,7 @@ import {
   orderBy,
   Timestamp,
   setDoc,
+  increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -179,8 +180,8 @@ export async function validateDiscountCode(codigo: string): Promise<DiscountCode
   return data;
 }
 
-export async function incrementDiscountUse(id: string, currentUsos: number): Promise<void> {
-  await updateDoc(doc(db, "discount_codes", id), { usos: currentUsos + 1 });
+export async function incrementDiscountUse(id: string): Promise<void> {
+  await updateDoc(doc(db, "discount_codes", id), { usos: increment(1) });
 }
 
 export async function createDiscountCode(data: Omit<DiscountCode, "id">): Promise<string> {

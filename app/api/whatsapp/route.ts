@@ -23,17 +23,18 @@ export async function GET(req: NextRequest) {
 
     const now = Date.now();
     const lastRotation = config.ultima_rotacion?.toMillis?.() ?? 0;
-    const intervalMs = config.intervalo_horas * 60 * 60 * 1000;
+    const intervalMs = (config.intervalo_horas ?? 0) * 60 * 60 * 1000;
 
-    let indice = config.indice_actual;
+    let indice = config.indice_actual ?? 0;
 
-    if (now - lastRotation >= intervalMs) {
-      indice = (config.indice_actual + 1) % config.numeros.length;
-      await setWhatsAppConfig({
+    if (intervalMs > 0 && now - lastRotation >= intervalMs) {
+      indice = (indice + 1) % config.numeros.length;
+      // Fire-and-forget — don't let a write failure block the response
+      setWhatsAppConfig({
         ...config,
         indice_actual: indice,
         ultima_rotacion: Timestamp.now(),
-      });
+      }).catch(() => {});
     }
 
     return NextResponse.json({ numero: config.numeros[indice] ?? "" });

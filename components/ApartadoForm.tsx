@@ -72,7 +72,8 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
 
       // Get WhatsApp number
       const waRes = await fetch("/api/whatsapp").catch(() => null);
-      const { numero } = waRes ? await waRes.json().catch(() => ({})) : {};
+      const waData = (waRes?.ok ? await waRes.json().catch(() => ({})) : {}) as { numero?: string };
+      const numero = waData.numero;
 
       // Save boleto
       await createBoleto({
@@ -106,8 +107,6 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
       // Open WhatsApp (if configured)
       if (numero) {
         window.open(buildWhatsAppUrl(numero, message), "_blank");
-      } else {
-        alert("Tu boleto fue apartado correctamente.\n\nNota: en este momento no hay un número de WhatsApp configurado. Guarda tu folio: " + folio);
       }
 
       // Redirect to tarjetas

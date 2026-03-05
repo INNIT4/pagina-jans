@@ -7,9 +7,7 @@ const CACHE_KEY = "wa_tiene_numeros";
 const MSG = "Hola, me interesa participar en un sorteo de Sorteos Jans.";
 
 export default function FloatingWhatsApp() {
-  const [visible, setVisible] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem(CACHE_KEY) === "1" : false
-  );
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     getActiveWhatsApp()

@@ -17,7 +17,7 @@ export default function AdminDashboard() {
   const [togglingApartados, setTogglingApartados] = useState(false);
 
   useEffect(() => {
-    Promise.all([getRifas(), getBoletos(), getAppSettings()]).then(([rs, boletos, settings]) => {
+    Promise.all([getRifas(), getBoletos(), getAppSettings().catch(() => ({ mostrar_apartados: true }))]).then(([rs, boletos, settings]) => {
       const pagados = boletos.filter((b) => b.status === "pagado");
       setStats({
         rifasActivas: rs.filter((r) => r.activa).length,

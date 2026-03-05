@@ -22,6 +22,6 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function RifaDetailPage({ params }: { params: { id: string } }) {
   const rifa = await getRifa(params.id).catch(() => null);
   if (!rifa || !rifa.activa) notFound();
-  const { vendidos, apartados } = await getNumerosOcupados(params.id);
+  const { vendidos, apartados } = await getNumerosOcupados(params.id).catch(() => ({ vendidos: [], apartados: [] }));
   return <RifaInteractive rifa={rifa} vendidos={vendidos} apartados={apartados} />;
 }

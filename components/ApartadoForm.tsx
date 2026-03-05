@@ -64,6 +64,10 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
     if (!form.nombre || !form.apellidos || !form.celular || !form.estado) return;
 
     setLoading(true);
+    // Open blank window NOW (synchronous, inside the click handler)
+    // so the browser doesn't block it as an unsolicited popup.
+    const waWindow = window.open("about:blank", "_blank");
+
     try {
       // Generate unique folio (retry once on collision — extremely rare)
       let folio = generateFolio();
@@ -104,14 +108,17 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
       const fecha = new Date().toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
       const message = `👋 Hola, soy ${form.nombre} ${form.apellidos}\nSeleccioné: ${numeros.length} números\n──────────────\n🎫 Números: ${numeros.join(", ")}\n🎯 Sorteo: ${rifa.nombre}\n🏷️ Folio: ${folio}\n📅 Fecha: ${fecha}\n💰 Total: $${total.toLocaleString("es-MX")}\n──────────────\n💳 Métodos de pago: ${siteUrl}/cuentas\n🏷️ Consulta: ${siteUrl}/consulta?f=${folio}&act=1`;
 
-      // Open WhatsApp (if configured)
-      if (numero) {
-        window.open(buildWhatsAppUrl(numero, message), "_blank");
+      // Navigate the pre-opened window to WhatsApp (bypasses popup blocker)
+      if (numero && waWindow) {
+        waWindow.location.href = buildWhatsAppUrl(numero, message);
+      } else {
+        waWindow?.close();
       }
 
       // Redirect to tarjetas
       router.push(`/tarjetas?folio=${folio}`);
     } catch (err) {
+      waWindow?.close();
       const msg = err instanceof Error ? err.message : "Ocurrió un error. Intenta de nuevo.";
       alert(msg);
     }

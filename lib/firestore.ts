@@ -351,3 +351,7 @@ export async function getBankAccounts(): Promise<BankAccount[]> {
 export async function upsertBankAccount(id: string, data: Omit<BankAccount, "id">): Promise<void> {
   await setDoc(doc(db, "bank_accounts", id), data);
 }
+
+export async function deleteBankAccount(id: string): Promise<void> {
+  await deleteDoc(doc(db, "bank_accounts", id));
+}

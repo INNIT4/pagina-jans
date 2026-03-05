@@ -1,7 +1,8 @@
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
 
-function getAdminAuth() {
+function initAdmin() {
   if (!process.env.FIREBASE_ADMIN_PROJECT_ID || !process.env.FIREBASE_ADMIN_CLIENT_EMAIL || !process.env.FIREBASE_ADMIN_PRIVATE_KEY) {
     throw new Error("Firebase Admin env vars not configured.");
   }
@@ -14,7 +15,16 @@ function getAdminAuth() {
       }),
     });
   }
-  return getAuth();
 }
 
-export const adminAuth = { verifyIdToken: (token: string) => getAdminAuth().verifyIdToken(token) };
+export const adminAuth = {
+  verifyIdToken: (token: string) => {
+    initAdmin();
+    return getAuth().verifyIdToken(token);
+  },
+};
+
+export function adminDb() {
+  initAdmin();
+  return getFirestore();
+}

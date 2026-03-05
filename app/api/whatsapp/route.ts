@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWhatsAppConfig, setWhatsAppConfig } from "@/lib/firestore";
-import { Timestamp } from "firebase/firestore";
+import { adminDb } from "@/lib/firebase-admin";
 import { getRatelimit } from "@/lib/ratelimit";
+import { FieldValue } from "firebase-admin/firestore";
 
 export const dynamic = "force-dynamic";
 
@@ -16,13 +16,26 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const config = await getWhatsAppConfig();
-    if (!config || config.numeros.length === 0) {
+    const db = adminDb();
+    const snap = await db.collection("whatsapp_config").doc("config").get();
+
+    if (!snap.exists) {
+      return NextResponse.json({ numero: "" });
+    }
+
+    const config = snap.data() as {
+      numeros: string[];
+      intervalo_horas: number;
+      indice_actual: number;
+      ultima_rotacion?: FirebaseFirestore.Timestamp;
+    };
+
+    if (!config.numeros || config.numeros.length === 0) {
       return NextResponse.json({ numero: "" });
     }
 
     const now = Date.now();
-    const lastRotation = config.ultima_rotacion?.toMillis?.() ?? 0;
+    const lastRotation = config.ultima_rotacion?.toMillis() ?? 0;
     const intervalMs = (config.intervalo_horas ?? 0) * 60 * 60 * 1000;
 
     let indice = config.indice_actual ?? 0;
@@ -30,15 +43,15 @@ export async function GET(req: NextRequest) {
     if (intervalMs > 0 && now - lastRotation >= intervalMs) {
       indice = (indice + 1) % config.numeros.length;
       // Fire-and-forget — don't let a write failure block the response
-      setWhatsAppConfig({
-        ...config,
+      db.collection("whatsapp_config").doc("config").update({
         indice_actual: indice,
-        ultima_rotacion: Timestamp.now(),
+        ultima_rotacion: FieldValue.serverTimestamp(),
       }).catch(() => {});
     }
 
     return NextResponse.json({ numero: config.numeros[indice] ?? "" });
-  } catch {
+  } catch (e) {
+    console.error("[/api/whatsapp]", e);
     return NextResponse.json({ numero: "" }, { status: 500 });
   }
 }

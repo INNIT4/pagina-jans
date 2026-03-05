@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Rifa, createBoleto, reservarNumeros, validateDiscountCode, incrementDiscountUse, getBoletoByFolio } from "@/lib/firestore";
 import { generateFolio } from "@/lib/folio";
-import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { Timestamp } from "firebase/firestore";
 
 const ESTADOS_MX = [
@@ -64,20 +63,12 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
     if (!form.nombre || !form.apellidos || !form.celular || !form.estado) return;
 
     setLoading(true);
-    // Open blank window NOW (synchronous, inside the click handler)
-    // so the browser doesn't block it as an unsolicited popup.
-    const waWindow = window.open("about:blank", "_blank");
 
     try {
       // Generate unique folio (retry once on collision — extremely rare)
       let folio = generateFolio();
       const folioExiste = await getBoletoByFolio(folio);
       if (folioExiste) folio = generateFolio();
-
-      // Get WhatsApp number
-      const waRes = await fetch("/api/whatsapp").catch(() => null);
-      const waData = (waRes?.ok ? await waRes.json().catch(() => ({})) : {}) as { numero?: string };
-      const numero = waData.numero;
 
       // Save boleto
       await createBoleto({
@@ -103,22 +94,9 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
         await incrementDiscountUse(descuento.id);
       }
 
-      // Build WhatsApp message
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://srtsjans.com";
-      const fecha = new Date().toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
-      const message = `👋 Hola, soy ${form.nombre} ${form.apellidos}\nSeleccioné: ${numeros.length} números\n──────────────\n🎫 Números: ${numeros.join(", ")}\n🎯 Sorteo: ${rifa.nombre}\n🏷️ Folio: ${folio}\n📅 Fecha: ${fecha}\n💰 Total: $${total.toLocaleString("es-MX")}\n──────────────\n💳 Métodos de pago: ${siteUrl}/cuentas\n🏷️ Consulta: ${siteUrl}/consulta?f=${folio}&act=1`;
-
-      // Navigate the pre-opened window to WhatsApp (bypasses popup blocker)
-      if (numero && waWindow) {
-        waWindow.location.href = buildWhatsAppUrl(numero, message);
-      } else {
-        waWindow?.close();
-      }
-
       // Redirect to tarjetas
       router.push(`/tarjetas?folio=${folio}`);
     } catch (err) {
-      waWindow?.close();
       const msg = err instanceof Error ? err.message : "Ocurrió un error. Intenta de nuevo.";
       alert(msg);
     }

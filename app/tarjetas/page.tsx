@@ -1,4 +1,5 @@
 import BankCards from "@/components/BankCards";
+import TarjetasActions from "@/components/TarjetasActions";
 
 export default function TarjetasPage({
   searchParams,
@@ -24,6 +25,7 @@ export default function TarjetasPage({
           <p className="text-sm text-green-600 dark:text-green-400 mt-3">
             Guarda este folio para consultar el estado de tu boleto en cualquier momento.
           </p>
+          <TarjetasActions folio={folio} />
         </div>
       )}
 

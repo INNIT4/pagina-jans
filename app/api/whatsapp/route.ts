@@ -3,6 +3,8 @@ import { getWhatsAppConfig, setWhatsAppConfig } from "@/lib/firestore";
 import { Timestamp } from "firebase/firestore";
 import { getRatelimit } from "@/lib/ratelimit";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   const rl = getRatelimit();
   if (rl) {

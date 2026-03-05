@@ -41,5 +41,11 @@ npx tsc --noEmit # type-check only
 All Firebase credentials in `.env.local` — prefix `NEXT_PUBLIC_FIREBASE_*`.
 See `.env.local` for required keys.
 
+## Git Workflow
+- **Siempre crear una rama** antes de cualquier bug fix o nuevo feature
+- Nomenclatura: `fix/descripcion-corta` para bugs, `feat/descripcion-corta` para features
+- Hacer push de la rama y merge a `main` solo cuando esté listo
+- Nunca commitear directo a `main`
+
 ## Additional Documentation
 - `.claude/docs/architectural_patterns.md` — rendering strategy, data flow, auth guard pattern, admin CRUD pattern, number state machine

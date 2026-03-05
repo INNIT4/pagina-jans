@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { getBoletoByFolio, getBoletosByCelular, getRifa, Boleto, Rifa } from "@/lib/firestore";
 import { downloadComprobante } from "@/lib/pdf";
@@ -11,6 +11,14 @@ interface Result {
 }
 
 export default function ConsultaPage() {
+  return (
+    <Suspense>
+      <ConsultaInner />
+    </Suspense>
+  );
+}
+
+function ConsultaInner() {
   const searchParams = useSearchParams();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);

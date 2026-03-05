@@ -27,12 +27,6 @@ export default async function RifasPage() {
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {rifas.map((rifa) => {
-            const total = rifa.num_fin - rifa.num_inicio + 1;
-            const vendidos = rifa.num_vendidos ?? 0;
-            const apartados = rifa.num_apartados ?? 0;
-            const disponibles = total - vendidos - apartados;
-            const pct = Math.round(((vendidos + apartados) / total) * 100);
-
             return (
               <Link
                 key={rifa.id}
@@ -51,17 +45,6 @@ export default async function RifasPage() {
                 <div className="p-6">
                   <h2 className="font-black text-xl mb-1 group-hover:text-red-600 transition-colors">{rifa.nombre}</h2>
                   <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 line-clamp-2">{rifa.descripcion}</p>
-
-                  {/* Progress */}
-                  <div className="mb-4">
-                    <div className="flex justify-between text-xs text-slate-500 mb-1">
-                      <span>{vendidos + apartados} apartados</span>
-                      <span>{disponibles} disponibles</span>
-                    </div>
-                    <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-red-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
 
                   <div className="flex items-center justify-between">
                     <div>

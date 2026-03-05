@@ -18,6 +18,7 @@ const NAV_ITEMS = [
   { href: "/admin/reportes", label: "Reportes" },
   { href: "/admin/servicios", label: "Servicios" },
   { href: "/admin/regalos", label: "Regalos" },
+  { href: "/admin/metricas", label: "Métricas" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -1,27 +1,32 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { getActiveWhatsApp, buildWhatsAppUrl } from "@/lib/whatsapp";
+
+const CACHE_KEY = "wa_numero";
+const MSG = "Hola, me interesa participar en un sorteo de Sorteos Jans.";
 
 export default function FloatingWhatsApp() {
-  const [url, setUrl] = useState("");
+  const [numero, setNumero] = useState(() =>
+    typeof window !== "undefined" ? (localStorage.getItem(CACHE_KEY) ?? "") : ""
+  );
 
   useEffect(() => {
-    fetch("/api/whatsapp")
-      .then((r) => r.json())
-      .then(({ numero }) => {
-        if (numero) {
-          setUrl(buildWhatsAppUrl(numero, "Hola, me interesa participar en un sorteo de Sorteos Jans."));
+    getActiveWhatsApp()
+      .then((n) => {
+        if (n) {
+          localStorage.setItem(CACHE_KEY, n);
+          setNumero(n);
         }
       })
       .catch(() => {});
   }, []);
 
-  if (!url) return null;
+  if (!numero) return null;
 
   return (
     <a
-      href={url}
+      href={buildWhatsAppUrl(numero, MSG)}
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110"

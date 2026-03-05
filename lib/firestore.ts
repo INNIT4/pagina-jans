@@ -62,10 +62,7 @@ export interface DiscountCode {
 }
 
 export interface WhatsAppConfig {
-  numeros: string[];
-  intervalo_horas: number;
-  indice_actual: number;
-  ultima_rotacion: Timestamp;
+  numero: string;
 }
 
 export interface BankAccount {

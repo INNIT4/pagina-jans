@@ -8,10 +8,14 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const rl = getRatelimit();
   if (rl) {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
-    const { success } = await rl.limit(ip);
-    if (!success) {
-      return NextResponse.json({ error: "Demasiadas solicitudes." }, { status: 429 });
+    try {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+      const { success } = await rl.limit(ip);
+      if (!success) {
+        return NextResponse.json({ error: "Demasiadas solicitudes." }, { status: 429 });
+      }
+    } catch {
+      // Upstash unreachable — skip rate limiting and continue
     }
   }
 

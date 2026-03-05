@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Rifa, createBoleto, validateDiscountCode, incrementDiscountUse } from "@/lib/firestore";
+import { Rifa, createBoleto, updateRifa, validateDiscountCode, incrementDiscountUse } from "@/lib/firestore";
 import { generateFolio } from "@/lib/folio";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { Timestamp } from "firebase/firestore";
-import { updateRifa } from "@/lib/firestore";
 
 const ESTADOS_MX = [
   "Aguascalientes","Baja California","Baja California Sur","Campeche","Chiapas","Chihuahua",

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getBoletos, markBoletoPagado, getRifas, Boleto, Rifa } from "@/lib/firestore";
-import { updateRifa } from "@/lib/firestore";
+import { getBoletos, markBoletoPagado, getRifas, updateRifa, Boleto, Rifa } from "@/lib/firestore";
 
 export default function AdminBoletosPage() {
   const [boletos, setBoletos] = useState<Boleto[]>([]);
@@ -105,6 +104,8 @@ export default function AdminBoletosPage() {
                   <span className={`text-xs font-bold px-2 py-1 rounded-full ${
                     b.status === "pagado"
                       ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                      : b.status === "cancelado"
+                      ? "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
                       : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
                   }`}>
                     {b.status}

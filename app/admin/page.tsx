@@ -9,7 +9,7 @@ export default function AdminDashboard() {
     rifasActivas: 0,
     totalBoletos: 0,
     boletosPendientes: 0,
-    bolotosPagados: 0,
+    boletosPagados: 0,
     ingresos: 0,
   });
   const [rifas, setRifas] = useState<Rifa[]>([]);
@@ -21,7 +21,7 @@ export default function AdminDashboard() {
         rifasActivas: rs.filter((r) => r.activa).length,
         totalBoletos: boletos.length,
         boletosPendientes: boletos.filter((b) => b.status === "pendiente").length,
-        bolotosPagados: pagados.length,
+        boletosPagados: pagados.length,
         ingresos: pagados.reduce((sum, b) => sum + b.precio_total, 0),
       });
       setRifas(rs);
@@ -32,7 +32,7 @@ export default function AdminDashboard() {
     { label: "Rifas activas", value: stats.rifasActivas, href: "/admin/rifas", color: "bg-red-500" },
     { label: "Total boletos", value: stats.totalBoletos, href: "/admin/boletos", color: "bg-blue-500" },
     { label: "Pendientes", value: stats.boletosPendientes, href: "/admin/boletos", color: "bg-yellow-500" },
-    { label: "Pagados", value: stats.bolotosPagados, href: "/admin/boletos", color: "bg-green-500" },
+    { label: "Pagados", value: stats.boletosPagados, href: "/admin/boletos", color: "bg-green-500" },
     { label: "Ingresos MXN", value: `$${stats.ingresos.toLocaleString("es-MX")}`, href: "/admin/boletos", color: "bg-red-900" },
   ];
 

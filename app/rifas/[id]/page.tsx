@@ -48,6 +48,14 @@ export default function RifaDetailPage() {
   const apartados = rifa.numeros_apartados?.length ?? 0;
   const disponibles = total - vendidos - apartados;
 
+  const vendidosSet = new Set(rifa.numeros_vendidos ?? []);
+  const apartadosSet = new Set(rifa.numeros_apartados ?? []);
+  const selSet = new Set(seleccionados);
+  const numerosDisponibles: number[] = [];
+  for (let i = rifa.num_inicio; i <= rifa.num_fin; i++) {
+    if (!vendidosSet.has(i) && !apartadosSet.has(i) && !selSet.has(i)) numerosDisponibles.push(i);
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
@@ -98,16 +106,7 @@ export default function RifaDetailPage() {
       {/* Random picker */}
       <div className="mb-6">
         <RandomPicker
-          disponibles={(() => {
-            const vendidosSet = new Set(rifa.numeros_vendidos ?? []);
-            const apartadosSet = new Set(rifa.numeros_apartados ?? []);
-            const selSet = new Set(seleccionados);
-            const nums = [];
-            for (let i = rifa.num_inicio; i <= rifa.num_fin; i++) {
-              if (!vendidosSet.has(i) && !apartadosSet.has(i) && !selSet.has(i)) nums.push(i);
-            }
-            return nums;
-          })()}
+          disponibles={numerosDisponibles}
           onPick={(nums) => setSeleccionados((prev) => Array.from(new Set([...prev, ...nums])))}
         />
       </div>

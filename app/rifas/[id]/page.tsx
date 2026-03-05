@@ -1,4 +1,4 @@
-import { getRifa, getNumerosOcupados } from "@/lib/firestore";
+import { getRifa, getNumerosOcupados, getAppSettings } from "@/lib/firestore";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import RifaInteractive from "./RifaInteractive";
@@ -22,6 +22,9 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function RifaDetailPage({ params }: { params: { id: string } }) {
   const rifa = await getRifa(params.id).catch(() => null);
   if (!rifa || !rifa.activa) notFound();
-  const { vendidos, apartados } = await getNumerosOcupados(params.id).catch(() => ({ vendidos: [], apartados: [] }));
-  return <RifaInteractive rifa={rifa} vendidos={vendidos} apartados={apartados} />;
+  const [{ vendidos, apartados }, settings] = await Promise.all([
+    getNumerosOcupados(params.id).catch(() => ({ vendidos: [], apartados: [] })),
+    getAppSettings().catch(() => ({ mostrar_apartados: true })),
+  ]);
+  return <RifaInteractive rifa={rifa} vendidos={vendidos} apartados={apartados} mostrarApartados={settings.mostrar_apartados} />;
 }

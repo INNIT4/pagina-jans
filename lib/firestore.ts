@@ -287,6 +287,21 @@ export async function deleteDiscountCode(id: string): Promise<void> {
   await deleteDoc(doc(db, "discount_codes", id));
 }
 
+// ─── App Settings ─────────────────────────────────────────────────────────────
+
+export interface AppSettings {
+  mostrar_apartados: boolean;
+}
+
+export async function getAppSettings(): Promise<AppSettings> {
+  const snap = await getDoc(doc(db, "settings", "config"));
+  return snap.exists() ? (snap.data() as AppSettings) : { mostrar_apartados: true };
+}
+
+export async function setAppSettings(data: Partial<AppSettings>): Promise<void> {
+  await setDoc(doc(db, "settings", "config"), data, { merge: true });
+}
+
 // ─── WhatsApp Config ──────────────────────────────────────────────────────────
 
 export async function getWhatsAppConfig(): Promise<WhatsAppConfig | null> {

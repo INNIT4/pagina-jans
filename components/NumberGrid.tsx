@@ -11,16 +11,17 @@ interface NumberGridProps {
   apartados: number[];
   seleccionados: number[];
   visibles?: number[] | null; // null = show all
+  mostrarApartados?: boolean; // default true
   onToggle: (n: number) => void;
 }
 
 const PAGE_SIZE = 200;
 
 const STATUS_CLASSES: Record<NumberStatus, string> = {
-  disponible: "bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800 cursor-pointer",
-  vendido: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 cursor-not-allowed opacity-75",
-  apartado: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200 cursor-not-allowed opacity-75",
-  seleccionado: "bg-blue-500 text-white dark:bg-blue-600 cursor-pointer ring-2 ring-blue-400",
+  disponible:  "bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800 cursor-pointer",
+  vendido:     "bg-transparent text-transparent cursor-default pointer-events-none select-none",
+  apartado:    "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200 cursor-not-allowed opacity-75",
+  seleccionado:"bg-blue-500 text-white dark:bg-blue-600 cursor-pointer ring-2 ring-blue-400",
 };
 
 export default function NumberGrid({
@@ -30,6 +31,7 @@ export default function NumberGrid({
   apartados,
   seleccionados,
   visibles,
+  mostrarApartados = true,
   onToggle,
 }: NumberGridProps) {
   const [page, setPage] = useState(1);
@@ -56,7 +58,7 @@ export default function NumberGrid({
   function getStatus(n: number): NumberStatus {
     if (seleccionadosSet.has(n)) return "seleccionado";
     if (vendidosSet.has(n)) return "vendido";
-    if (apartadosSet.has(n)) return "apartado";
+    if (mostrarApartados && apartadosSet.has(n)) return "apartado";
     return "disponible";
   }
 
@@ -70,12 +72,11 @@ export default function NumberGrid({
         <span className="flex items-center gap-1.5">
           <span className="w-4 h-4 rounded bg-blue-500 inline-block" /> Seleccionado
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded bg-yellow-200 dark:bg-yellow-900 inline-block" /> Apartado
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded bg-red-200 dark:bg-red-900 inline-block" /> Vendido
-        </span>
+        {mostrarApartados && (
+          <span className="flex items-center gap-1.5">
+            <span className="w-4 h-4 rounded bg-yellow-200 dark:bg-yellow-900 inline-block" /> Apartado
+          </span>
+        )}
       </div>
 
       {/* Grid */}

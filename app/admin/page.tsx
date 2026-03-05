@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getRifas, getBoletos, Rifa } from "@/lib/firestore";
+import { getRifas, getBoletos, getAppSettings, setAppSettings, Rifa } from "@/lib/firestore";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -13,9 +13,11 @@ export default function AdminDashboard() {
     ingresos: 0,
   });
   const [rifas, setRifas] = useState<Rifa[]>([]);
+  const [mostrarApartados, setMostrarApartados] = useState(true);
+  const [togglingApartados, setTogglingApartados] = useState(false);
 
   useEffect(() => {
-    Promise.all([getRifas(), getBoletos()]).then(([rs, boletos]) => {
+    Promise.all([getRifas(), getBoletos(), getAppSettings()]).then(([rs, boletos, settings]) => {
       const pagados = boletos.filter((b) => b.status === "pagado");
       setStats({
         rifasActivas: rs.filter((r) => r.activa).length,
@@ -25,8 +27,17 @@ export default function AdminDashboard() {
         ingresos: pagados.reduce((sum, b) => sum + b.precio_total, 0),
       });
       setRifas(rs);
+      setMostrarApartados(settings.mostrar_apartados);
     });
   }, []);
+
+  async function toggleApartados() {
+    setTogglingApartados(true);
+    const next = !mostrarApartados;
+    await setAppSettings({ mostrar_apartados: next });
+    setMostrarApartados(next);
+    setTogglingApartados(false);
+  }
 
   const cards = [
     { label: "Rifas activas", value: stats.rifasActivas, href: "/admin/rifas", color: "bg-red-500" },
@@ -53,6 +64,31 @@ export default function AdminDashboard() {
             <p className="text-xs text-slate-500">{c.label}</p>
           </Link>
         ))}
+      </div>
+
+      {/* Apartados visibility toggle */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-5 mb-8 flex items-center justify-between gap-4">
+        <div>
+          <p className="font-bold text-sm">Mostrar apartados en la grid pública</p>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {mostrarApartados
+              ? "Los compradores ven los números apartados (amarillo) en la rifa."
+              : "Los apartados se muestran como disponibles para los compradores."}
+          </p>
+        </div>
+        <button
+          onClick={toggleApartados}
+          disabled={togglingApartados}
+          className={`relative inline-flex h-7 w-12 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+            mostrarApartados ? "bg-green-500" : "bg-slate-300 dark:bg-slate-600"
+          }`}
+        >
+          <span
+            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+              mostrarApartados ? "translate-x-5" : "translate-x-0"
+            }`}
+          />
+        </button>
       </div>
 
       {/* Numbers breakdown per rifa */}

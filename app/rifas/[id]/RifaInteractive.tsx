@@ -12,9 +12,10 @@ interface RifaInteractiveProps {
   rifa: Rifa;
   vendidos: number[];
   apartados: number[];
+  mostrarApartados: boolean;
 }
 
-export default function RifaInteractive({ rifa, vendidos, apartados }: RifaInteractiveProps) {
+export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApartados }: RifaInteractiveProps) {
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
   const [visibles, setVisibles] = useState<number[] | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -26,7 +27,7 @@ export default function RifaInteractive({ rifa, vendidos, apartados }: RifaInter
   }
 
   const total = rifa.num_fin - rifa.num_inicio + 1;
-  const disponibles = total - vendidos.length - apartados.length;
+  const disponibles = total - vendidos.length - (mostrarApartados ? apartados.length : 0);
 
   const vendidosSet = new Set(vendidos);
   const apartadosSet = new Set(apartados);
@@ -115,6 +116,7 @@ export default function RifaInteractive({ rifa, vendidos, apartados }: RifaInter
           apartados={apartados}
           seleccionados={seleccionados}
           visibles={visibles}
+          mostrarApartados={mostrarApartados}
           onToggle={toggleNumber}
         />
       </div>

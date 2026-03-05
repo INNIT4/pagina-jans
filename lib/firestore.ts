@@ -245,6 +245,11 @@ export async function getBoletosByCelular(celular: string): Promise<Boleto[]> {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Boleto));
 }
 
+export async function getBoletosByNumero(numero: number): Promise<Boleto[]> {
+  const snap = await getDocs(query(collection(db, "boletos"), where("numeros", "array-contains", numero)));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Boleto));
+}
+
 export async function getBoletosByRifa(rifaId: string): Promise<Boleto[]> {
   const snap = await getDocs(query(collection(db, "boletos"), where("rifa_id", "==", rifaId)));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Boleto));

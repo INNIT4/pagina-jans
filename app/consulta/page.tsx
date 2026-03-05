@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { getBoletoByFolio, getBoletosByCelular, getRifa, Boleto, Rifa } from "@/lib/firestore";
+import { getBoletoByFolio, getBoletosByCelular, getBoletosByNumero, getRifa, Boleto, Rifa } from "@/lib/firestore";
 import { downloadComprobante } from "@/lib/pdf";
 
 interface Result {
@@ -33,15 +33,21 @@ function ConsultaInner() {
     try {
       let boletos: Boleto[] = [];
 
-      if (val.startsWith("JNS-") || !val.match(/^\d+$/)) {
+      const soloDigitos = /^\d+$/.test(val);
+      if (!soloDigitos || val.startsWith("JNS-")) {
+        // Folio
         const b = await getBoletoByFolio(val);
         if (b) boletos = [b];
-      } else {
+      } else if (val.length === 10) {
+        // Celular
         boletos = await getBoletosByCelular(val);
+      } else {
+        // Número de boleto
+        boletos = await getBoletosByNumero(Number(val));
       }
 
       if (boletos.length === 0) {
-        setError("No encontramos ningún boleto con ese dato. Verifica el folio o celular.");
+        setError("No encontramos ningún boleto con ese dato. Verifica el folio, celular o número de boleto.");
       } else {
         const res: Result[] = await Promise.all(
           boletos.map(async (b) => {
@@ -81,7 +87,7 @@ function ConsultaInner() {
       <div className="mb-8">
         <h1 className="text-4xl font-black mb-2">Consultar Boleto</h1>
         <p className="text-slate-500 dark:text-slate-400">
-          Ingresa tu folio o número de celular para ver el estado de tus boletos.
+          Ingresa tu folio, número de celular o número de boleto para ver el estado de tus boletos.
         </p>
       </div>
 
@@ -105,13 +111,13 @@ function ConsultaInner() {
       {/* Search form */}
       <form onSubmit={buscar} className="mb-8">
         <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">
-          Folio o número de celular
+          Folio, celular o número de boleto
         </label>
         <div className="flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="JNS-XXXXXX o 5512345678"
+            placeholder="JNS-XXXXXX, 5512345678 o 042"
             className="flex-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
           />
           <button

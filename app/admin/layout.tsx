@@ -52,7 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   async function logout() {
     await signOut(auth);
-    document.cookie = "admin_token=; path=/; max-age=0";
+    await fetch("/api/admin/session", { method: "DELETE" });
     router.push("/admin/login");
   }
 

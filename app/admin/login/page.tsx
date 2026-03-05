@@ -18,10 +18,14 @@ export default function AdminLoginPage() {
     setError("");
     try {
       await signInWithEmailAndPassword(auth, form.email, form.password);
-      // Set a session cookie via API
       const token = await auth.currentUser?.getIdToken();
       if (token) {
-        document.cookie = `admin_token=${token}; path=/; max-age=3600; SameSite=Strict`;
+        const res = await fetch("/api/admin/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken: token }),
+        });
+        if (!res.ok) throw new Error("session");
       }
       router.push("/admin");
     } catch {

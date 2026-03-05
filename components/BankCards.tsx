@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react";
 import { getBankAccounts, BankAccount } from "@/lib/firestore";
 
-const BANK_STYLES: Record<string, { gradient: string; accent: string }> = {
-  Azteca: { gradient: "from-blue-700 via-blue-500 to-cyan-400",    accent: "bg-cyan-300/20" },
-  Nu:     { gradient: "from-purple-700 via-purple-500 to-pink-400", accent: "bg-pink-300/20" },
-  BBVA:   { gradient: "from-blue-900 via-blue-700 to-blue-500",     accent: "bg-blue-300/20" },
-  Banamex:{ gradient: "from-red-700 via-red-500 to-orange-400",     accent: "bg-orange-300/20" },
-  Banorte:{ gradient: "from-red-900 via-red-700 to-red-500",        accent: "bg-red-300/20" },
-  HSBC:   { gradient: "from-red-700 via-rose-600 to-red-400",       accent: "bg-rose-300/20" },
-  Santander:{ gradient: "from-red-800 via-red-600 to-rose-400",     accent: "bg-rose-300/20" },
+export const CARD_COLORS: Record<string, { label: string; gradient: string; accent: string; preview: string }> = {
+  slate:   { label: "Gris",        gradient: "from-slate-700 via-slate-600 to-slate-400",    accent: "bg-slate-300/20",  preview: "bg-slate-600" },
+  blue:    { label: "Azul",        gradient: "from-blue-700 via-blue-500 to-cyan-400",        accent: "bg-cyan-300/20",   preview: "bg-blue-600" },
+  darkblue:{ label: "Azul oscuro", gradient: "from-blue-900 via-blue-700 to-blue-500",        accent: "bg-blue-300/20",   preview: "bg-blue-900" },
+  purple:  { label: "Morado",      gradient: "from-purple-700 via-purple-500 to-pink-400",    accent: "bg-pink-300/20",   preview: "bg-purple-600" },
+  red:     { label: "Rojo",        gradient: "from-red-700 via-red-500 to-orange-400",        accent: "bg-orange-300/20", preview: "bg-red-600" },
+  darkred: { label: "Rojo oscuro", gradient: "from-red-900 via-red-700 to-red-500",           accent: "bg-red-300/20",    preview: "bg-red-900" },
+  green:   { label: "Verde",       gradient: "from-green-700 via-green-500 to-emerald-400",   accent: "bg-emerald-300/20",preview: "bg-green-600" },
+  gold:    { label: "Dorado",      gradient: "from-yellow-700 via-yellow-500 to-amber-400",   accent: "bg-amber-300/20",  preview: "bg-yellow-600" },
+  black:   { label: "Negro",       gradient: "from-gray-900 via-gray-800 to-gray-600",        accent: "bg-gray-400/20",   preview: "bg-gray-900" },
 };
-const DEFAULT_STYLE = { gradient: "from-slate-700 via-slate-600 to-slate-400", accent: "bg-slate-300/20" };
+const DEFAULT_COLOR = CARD_COLORS.slate;
 
 /** Formats an 18-digit CLABE as  XXXX XXXX XXXX XXXX XX */
 function formatClabe(clabe: string) {
@@ -40,7 +42,7 @@ export default function BankCards() {
   return (
     <div className="flex flex-col gap-6 max-w-sm mx-auto">
       {accounts.map((acc) => {
-        const style = BANK_STYLES[acc.banco] ?? DEFAULT_STYLE;
+        const style = (acc.color && CARD_COLORS[acc.color]) ? CARD_COLORS[acc.color] : DEFAULT_COLOR;
         const clabeKey   = `clabe-${acc.id}`;
         const cuentaKey  = `cuenta-${acc.id}`;
 

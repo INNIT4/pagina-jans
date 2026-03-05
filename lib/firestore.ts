@@ -73,6 +73,7 @@ export interface BankAccount {
   clabe: string;
   num_cuenta: string;
   activo: boolean;
+  color?: string; // gradient key from CARD_COLORS
 }
 
 // ─── Rifas ────────────────────────────────────────────────────────────────────

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { getBankAccounts, upsertBankAccount, deleteBankAccount, BankAccount } from "@/lib/firestore";
+import { CARD_COLORS } from "@/components/BankCards";
 
-const EMPTY_FORM = { banco: "", titular: "", clabe: "", num_cuenta: "", activo: true };
+const EMPTY_FORM = { banco: "", titular: "", clabe: "", num_cuenta: "", activo: true, color: "slate" };
 
 export default function AdminTarjetasPage() {
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -26,7 +27,7 @@ export default function AdminTarjetasPage() {
 
   function startEdit(acc: BankAccount) {
     setEditingId(acc.id!);
-    setEditForm({ banco: acc.banco, titular: acc.titular, clabe: acc.clabe, num_cuenta: acc.num_cuenta, activo: acc.activo });
+    setEditForm({ banco: acc.banco, titular: acc.titular, clabe: acc.clabe, num_cuenta: acc.num_cuenta, activo: acc.activo, color: acc.color ?? "slate" });
   }
 
   async function saveEdit() {
@@ -204,6 +205,27 @@ function AccountForm({
         <input value={form.num_cuenta} onChange={(e) => set("num_cuenta", e.target.value)}
           className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm font-mono"
           placeholder="00000000" />
+      </div>
+      <div>
+        <label className="block text-xs font-semibold mb-2">Color de la tarjeta</label>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(CARD_COLORS).map(([key, c]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => set("color", key)}
+              title={c.label}
+              className={`w-8 h-8 rounded-full ${c.preview} transition-all ${
+                form.color === key
+                  ? "ring-2 ring-offset-2 ring-red-500 scale-110"
+                  : "opacity-70 hover:opacity-100"
+              }`}
+            />
+          ))}
+        </div>
+        {form.color && CARD_COLORS[form.color] && (
+          <p className="text-xs text-slate-400 mt-1">{CARD_COLORS[form.color].label}</p>
+        )}
       </div>
       <label className="flex items-center gap-2 text-sm cursor-pointer">
         <input type="checkbox" checked={form.activo} onChange={(e) => set("activo", e.target.checked)}

@@ -15,11 +15,10 @@ export default function Logo({ size = "md", showText = true }: LogoProps) {
 
   return (
     <div className="flex items-center gap-3">
-      {/* Circular logo placeholder */}
-      <div
-        className={`${s.circle} rounded-full bg-gradient-to-br from-red-600 to-red-900 flex items-center justify-center shadow-lg ring-2 ring-red-400/30 flex-shrink-0`}
-      >
-        <span className="font-black text-white tracking-tight leading-none">SJ</span>
+      {/* Circular logo */}
+      <div className={`${s.circle} rounded-full overflow-hidden shadow-lg ring-2 ring-red-400/30 flex-shrink-0`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/3.jpeg" alt="Sorteos Jans" className="w-full h-full object-cover" />
       </div>
 
       {showText && (

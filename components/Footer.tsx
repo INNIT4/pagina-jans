@@ -6,7 +6,8 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 mb-8">
           <div>
-            <p className="text-white font-black text-lg mb-2">Sorteos Jans</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/4.jpeg" alt="Sorteos Jans" className="h-14 w-auto mb-3 rounded-lg" />
             <p className="text-sm leading-relaxed">
               Plataforma de rifas en línea. Participa de forma segura, sencilla y transparente.
             </p>

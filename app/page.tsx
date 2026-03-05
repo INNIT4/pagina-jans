@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getRifas } from "@/lib/firestore";
-import Logo from "@/components/Logo";
 import BankCards from "@/components/BankCards";
 
 export const revalidate = 60;

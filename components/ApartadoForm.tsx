@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Rifa, createBoleto, updateRifa, validateDiscountCode, incrementDiscountUse } from "@/lib/firestore";
+import { Rifa, createBoleto, reservarNumeros, validateDiscountCode, incrementDiscountUse } from "@/lib/firestore";
 import { generateFolio } from "@/lib/folio";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { Timestamp } from "firebase/firestore";
@@ -87,9 +87,8 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
         created_at: Timestamp.now(),
       });
 
-      // Update rifa apartados
-      const nuevosApartados = [...(rifa.numeros_apartados ?? []), ...numeros];
-      await updateRifa(rifa.id!, { numeros_apartados: nuevosApartados });
+      // Reserve numbers atomically (transaction checks availability)
+      await reservarNumeros(rifa.id!, numeros);
 
       // Increment discount code if used
       if (descuento) {
@@ -109,8 +108,8 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
       // Redirect to tarjetas
       router.push(`/tarjetas?folio=${folio}`);
     } catch (err) {
-      console.error(err);
-      alert("Ocurrió un error. Intenta de nuevo.");
+      const msg = err instanceof Error ? err.message : "Ocurrió un error. Intenta de nuevo.";
+      alert(msg);
     }
     setLoading(false);
   }

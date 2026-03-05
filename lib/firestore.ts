@@ -12,6 +12,8 @@ import {
   Timestamp,
   setDoc,
   increment,
+  runTransaction,
+  arrayUnion,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -97,6 +99,29 @@ export async function updateRifa(id: string, data: Partial<Rifa>): Promise<void>
 
 export async function deleteRifa(id: string): Promise<void> {
   await deleteDoc(doc(db, "rifas", id));
+}
+
+/**
+ * Atomically checks that all `numeros` are still available and appends them
+ * to `numeros_apartados`. Throws if any number is already vendido or apartado.
+ */
+export async function reservarNumeros(rifaId: string, numeros: number[]): Promise<void> {
+  await runTransaction(db, async (transaction) => {
+    const rifaRef = doc(db, "rifas", rifaId);
+    const rifaSnap = await transaction.get(rifaRef);
+    if (!rifaSnap.exists()) throw new Error("Rifa no encontrada.");
+
+    const data = rifaSnap.data() as Rifa;
+    const vendidosSet = new Set(data.numeros_vendidos ?? []);
+    const apartadosSet = new Set(data.numeros_apartados ?? []);
+
+    const conflicto = numeros.find((n) => vendidosSet.has(n) || apartadosSet.has(n));
+    if (conflicto !== undefined) {
+      throw new Error(`El número ${conflicto} ya no está disponible. Elige otro.`);
+    }
+
+    transaction.update(rifaRef, { numeros_apartados: arrayUnion(...numeros) });
+  });
 }
 
 // ─── Boletos ──────────────────────────────────────────────────────────────────

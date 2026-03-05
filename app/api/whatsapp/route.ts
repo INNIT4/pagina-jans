@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWhatsAppConfig, setWhatsAppConfig } from "@/lib/firestore";
 import { Timestamp } from "firebase/firestore";
-import { ratelimit } from "@/lib/ratelimit";
+import { getRatelimit } from "@/lib/ratelimit";
 
 export async function GET(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
-  const { success } = await ratelimit.limit(ip);
-  if (!success) {
-    return NextResponse.json({ error: "Demasiadas solicitudes." }, { status: 429 });
+  const rl = getRatelimit();
+  if (rl) {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+    const { success } = await rl.limit(ip);
+    if (!success) {
+      return NextResponse.json({ error: "Demasiadas solicitudes." }, { status: 429 });
+    }
   }
 
   try {

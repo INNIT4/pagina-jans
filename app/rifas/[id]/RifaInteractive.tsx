@@ -10,9 +10,11 @@ import ImageCarousel from "@/components/ImageCarousel";
 
 interface RifaInteractiveProps {
   rifa: Rifa;
+  vendidos: number[];
+  apartados: number[];
 }
 
-export default function RifaInteractive({ rifa }: RifaInteractiveProps) {
+export default function RifaInteractive({ rifa, vendidos, apartados }: RifaInteractiveProps) {
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
   const [visibles, setVisibles] = useState<number[] | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -24,12 +26,10 @@ export default function RifaInteractive({ rifa }: RifaInteractiveProps) {
   }
 
   const total = rifa.num_fin - rifa.num_inicio + 1;
-  const vendidos = rifa.numeros_vendidos?.length ?? 0;
-  const apartados = rifa.numeros_apartados?.length ?? 0;
-  const disponibles = total - vendidos - apartados;
+  const disponibles = total - vendidos.length - apartados.length;
 
-  const vendidosSet = new Set(rifa.numeros_vendidos ?? []);
-  const apartadosSet = new Set(rifa.numeros_apartados ?? []);
+  const vendidosSet = new Set(vendidos);
+  const apartadosSet = new Set(apartados);
   const selSet = new Set(seleccionados);
   const numerosDisponibles: number[] = [];
   for (let i = rifa.num_inicio; i <= rifa.num_fin; i++) {
@@ -111,8 +111,8 @@ export default function RifaInteractive({ rifa }: RifaInteractiveProps) {
         <NumberGrid
           numInicio={rifa.num_inicio}
           numFin={rifa.num_fin}
-          vendidos={rifa.numeros_vendidos ?? []}
-          apartados={rifa.numeros_apartados ?? []}
+          vendidos={vendidos}
+          apartados={apartados}
           seleccionados={seleccionados}
           visibles={visibles}
           onToggle={toggleNumber}

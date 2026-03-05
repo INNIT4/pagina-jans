@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createRifa, updateRifa, Rifa } from "@/lib/firestore";
 import ImageUploader from "./ImageUploader";
 
-type RifaForm = Omit<Rifa, "id" | "numeros_vendidos" | "numeros_apartados">;
+type RifaForm = Omit<Rifa, "id" | "num_vendidos" | "num_apartados">;
 
 const EMPTY_FORM: RifaForm = {
   nombre: "",
@@ -55,7 +55,7 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
       if (editRifa?.id) {
         await updateRifa(editRifa.id, savedForm);
       } else {
-        await createRifa({ ...savedForm, numeros_vendidos: [], numeros_apartados: [] });
+        await createRifa({ ...savedForm, num_vendidos: 0, num_apartados: 0 });
       }
       onSaved();
     } catch {

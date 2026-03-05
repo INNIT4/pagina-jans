@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getRifas, createBoleto, updateRifa, Rifa } from "@/lib/firestore";
+import { getRifas, createBoleto, getNumerosOcupados, registrarNumerosVendidos, Rifa } from "@/lib/firestore";
 import { generateFolio } from "@/lib/folio";
 import { Timestamp } from "firebase/firestore";
 import NumberGrid from "@/components/NumberGrid";
@@ -10,6 +10,8 @@ export default function RegalosPage() {
   const [rifas, setRifas] = useState<Rifa[]>([]);
   const [rifaId, setRifaId] = useState("");
   const [rifa, setRifa] = useState<Rifa | null>(null);
+  const [vendidosArr, setVendidosArr] = useState<number[]>([]);
+  const [apartadosArr, setApartadosArr] = useState<number[]>([]);
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
   const [form, setForm] = useState({ nombre: "", apellidos: "", celular: "" });
   const [saving, setSaving] = useState(false);
@@ -20,10 +22,16 @@ export default function RegalosPage() {
   }, []);
 
   useEffect(() => {
-    if (!rifaId) { setRifa(null); setSeleccionados([]); return; }
+    if (!rifaId) { setRifa(null); setVendidosArr([]); setApartadosArr([]); setSeleccionados([]); return; }
     const found = rifas.find((r) => r.id === rifaId) ?? null;
     setRifa(found);
     setSeleccionados([]);
+    if (found) {
+      getNumerosOcupados(rifaId).then(({ vendidos, apartados }) => {
+        setVendidosArr(vendidos);
+        setApartadosArr(apartados);
+      });
+    }
   }, [rifaId, rifas]);
 
   function toggleNumber(n: number) {
@@ -57,16 +65,13 @@ export default function RegalosPage() {
         created_at: Timestamp.now(),
       });
 
-      // Add directly to numeros_vendidos (skip apartados)
-      const nuevosVendidos = [...(rifa.numeros_vendidos ?? []), ...seleccionados];
-      await updateRifa(rifa.id!, { numeros_vendidos: nuevosVendidos });
+      // Mark numbers directly as vendido in subcollection
+      await registrarNumerosVendidos(rifa.id!, seleccionados);
 
-      // Refresh rifa data
-      const updated = rifas.map((r) =>
-        r.id === rifa.id ? { ...r, numeros_vendidos: nuevosVendidos } : r
-      );
-      setRifas(updated);
-      setRifa({ ...rifa, numeros_vendidos: nuevosVendidos });
+      // Refresh grid
+      const { vendidos, apartados } = await getNumerosOcupados(rifa.id!);
+      setVendidosArr(vendidos);
+      setApartadosArr(apartados);
 
       setSuccess({ folio, count: seleccionados.length });
       setSeleccionados([]);
@@ -126,7 +131,7 @@ export default function RegalosPage() {
             {rifa && (
               <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 space-y-1 text-xs text-slate-500">
                 <p>Rango: {rifa.num_inicio}–{rifa.num_fin}</p>
-                <p>Disponibles: {(rifa.num_fin - rifa.num_inicio + 1) - (rifa.numeros_vendidos?.length ?? 0) - (rifa.numeros_apartados?.length ?? 0)}</p>
+                <p>Disponibles: {(rifa.num_fin - rifa.num_inicio + 1) - (rifa.num_vendidos ?? 0) - (rifa.num_apartados ?? 0)}</p>
               </div>
             )}
           </div>
@@ -237,8 +242,8 @@ export default function RegalosPage() {
               <NumberGrid
                 numInicio={rifa.num_inicio}
                 numFin={rifa.num_fin}
-                vendidos={rifa.numeros_vendidos ?? []}
-                apartados={rifa.numeros_apartados ?? []}
+                vendidos={vendidosArr}
+                apartados={apartadosArr}
                 seleccionados={seleccionados}
                 onToggle={toggleNumber}
               />

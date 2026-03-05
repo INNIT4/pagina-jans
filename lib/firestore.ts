@@ -13,7 +13,7 @@ import {
   setDoc,
   increment,
   runTransaction,
-  arrayUnion,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -31,8 +31,9 @@ export interface Rifa {
   num_fin: number;
   fecha_sorteo: string;
   activa: boolean;
-  numeros_vendidos: number[];
-  numeros_apartados: number[];
+  // Counters — derived from the `numeros` subcollection
+  num_vendidos: number;
+  num_apartados: number;
 }
 
 export interface Boleto {
@@ -101,27 +102,123 @@ export async function deleteRifa(id: string): Promise<void> {
   await deleteDoc(doc(db, "rifas", id));
 }
 
+// ─── Numbers subcollection ────────────────────────────────────────────────────
+// Each document key is the number (as string). Only occupied numbers exist.
+// Disponible = no document present.
+
+export async function getNumerosOcupados(rifaId: string): Promise<{ vendidos: number[]; apartados: number[] }> {
+  const snap = await getDocs(collection(db, "rifas", rifaId, "numeros"));
+  const vendidos: number[] = [];
+  const apartados: number[] = [];
+  snap.docs.forEach((d) => {
+    const n = parseInt(d.id);
+    if (!isNaN(n)) {
+      if (d.data().status === "vendido") vendidos.push(n);
+      else if (d.data().status === "apartado") apartados.push(n);
+    }
+  });
+  return { vendidos, apartados };
+}
+
 /**
- * Atomically checks that all `numeros` are still available and appends them
- * to `numeros_apartados`. Throws if any number is already vendido or apartado.
+ * Atomically checks availability and marks numbers as "apartado".
+ * Uses a transaction so two concurrent users cannot book the same number.
  */
 export async function reservarNumeros(rifaId: string, numeros: number[]): Promise<void> {
   await runTransaction(db, async (transaction) => {
-    const rifaRef = doc(db, "rifas", rifaId);
-    const rifaSnap = await transaction.get(rifaRef);
-    if (!rifaSnap.exists()) throw new Error("Rifa no encontrada.");
+    const refs = numeros.map((n) => doc(db, "rifas", rifaId, "numeros", String(n)));
+    const snaps = await Promise.all(refs.map((ref) => transaction.get(ref)));
 
-    const data = rifaSnap.data() as Rifa;
-    const vendidosSet = new Set(data.numeros_vendidos ?? []);
-    const apartadosSet = new Set(data.numeros_apartados ?? []);
-
-    const conflicto = numeros.find((n) => vendidosSet.has(n) || apartadosSet.has(n));
+    const conflicto = numeros.find((_, i) => snaps[i].exists());
     if (conflicto !== undefined) {
       throw new Error(`El número ${conflicto} ya no está disponible. Elige otro.`);
     }
 
-    transaction.update(rifaRef, { numeros_apartados: arrayUnion(...numeros) });
+    refs.forEach((ref) => transaction.set(ref, { status: "apartado" }));
+    transaction.update(doc(db, "rifas", rifaId), { num_apartados: increment(numeros.length) });
   });
+}
+
+/**
+ * Marks a boleto as pagado and moves its numbers from apartado → vendido atomically.
+ */
+export async function markBoletoPagadoConNumeros(boleto: {
+  id: string;
+  rifa_id: string;
+  numeros: number[];
+}): Promise<void> {
+  const batch = writeBatch(db);
+  boleto.numeros.forEach((n) => {
+    batch.set(doc(db, "rifas", boleto.rifa_id, "numeros", String(n)), { status: "vendido" });
+  });
+  batch.update(doc(db, "boletos", boleto.id), { status: "pagado" });
+  batch.update(doc(db, "rifas", boleto.rifa_id), {
+    num_apartados: increment(-boleto.numeros.length),
+    num_vendidos: increment(boleto.numeros.length),
+  });
+  await batch.commit();
+}
+
+/** Cancels a "pendiente" boleto and frees its numbers. */
+export async function cancelApartado(boleto: {
+  id: string;
+  rifa_id: string;
+  numeros: number[];
+}): Promise<void> {
+  const batch = writeBatch(db);
+  boleto.numeros.forEach((n) => {
+    batch.delete(doc(db, "rifas", boleto.rifa_id, "numeros", String(n)));
+  });
+  batch.update(doc(db, "boletos", boleto.id), { status: "cancelado" });
+  batch.update(doc(db, "rifas", boleto.rifa_id), {
+    num_apartados: increment(-boleto.numeros.length),
+  });
+  await batch.commit();
+}
+
+/** Reverts a "pagado" boleto back to "pendiente" and moves numbers vendido → apartado. */
+export async function revertPagadoToApartado(boleto: {
+  id: string;
+  rifa_id: string;
+  numeros: number[];
+}): Promise<void> {
+  const batch = writeBatch(db);
+  boleto.numeros.forEach((n) => {
+    batch.set(doc(db, "rifas", boleto.rifa_id, "numeros", String(n)), { status: "apartado" });
+  });
+  batch.update(doc(db, "boletos", boleto.id), { status: "pendiente" });
+  batch.update(doc(db, "rifas", boleto.rifa_id), {
+    num_vendidos: increment(-boleto.numeros.length),
+    num_apartados: increment(boleto.numeros.length),
+  });
+  await batch.commit();
+}
+
+/** Cancels a "pagado" boleto and frees its numbers entirely. */
+export async function cancelPagado(boleto: {
+  id: string;
+  rifa_id: string;
+  numeros: number[];
+}): Promise<void> {
+  const batch = writeBatch(db);
+  boleto.numeros.forEach((n) => {
+    batch.delete(doc(db, "rifas", boleto.rifa_id, "numeros", String(n)));
+  });
+  batch.update(doc(db, "boletos", boleto.id), { status: "cancelado" });
+  batch.update(doc(db, "rifas", boleto.rifa_id), {
+    num_vendidos: increment(-boleto.numeros.length),
+  });
+  await batch.commit();
+}
+
+/** Marks numbers directly as "vendido" (used for gift/regalo flow). */
+export async function registrarNumerosVendidos(rifaId: string, numeros: number[]): Promise<void> {
+  const batch = writeBatch(db);
+  numeros.forEach((n) => {
+    batch.set(doc(db, "rifas", rifaId, "numeros", String(n)), { status: "vendido" });
+  });
+  batch.update(doc(db, "rifas", rifaId), { num_vendidos: increment(numeros.length) });
+  await batch.commit();
 }
 
 // ─── Boletos ──────────────────────────────────────────────────────────────────
@@ -146,41 +243,6 @@ export async function getBoletoByFolio(folio: string): Promise<Boleto | null> {
 export async function getBoletosByCelular(celular: string): Promise<Boleto[]> {
   const snap = await getDocs(query(collection(db, "boletos"), where("celular", "==", celular)));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Boleto));
-}
-
-export async function markBoletoPagado(id: string): Promise<void> {
-  await updateDoc(doc(db, "boletos", id), { status: "pagado" });
-}
-
-/** Apartado → Disponible: cancels a "pendiente" boleto and frees its numbers. */
-export async function cancelApartado(boleto: { id: string; rifa_id: string; numeros: number[] }, rifa: { numeros_apartados: number[] }): Promise<void> {
-  const nuevosApartados = rifa.numeros_apartados.filter((n) => !boleto.numeros.includes(n));
-  await Promise.all([
-    updateDoc(doc(db, "boletos", boleto.id), { status: "cancelado" }),
-    updateDoc(doc(db, "rifas", boleto.rifa_id), { numeros_apartados: nuevosApartados }),
-  ]);
-}
-
-/** Pagado → Apartado: reverts a "pagado" boleto back to "pendiente" and moves numbers. */
-export async function revertPagadoToApartado(boleto: { id: string; rifa_id: string; numeros: number[] }, rifa: { numeros_vendidos: number[]; numeros_apartados: number[] }): Promise<void> {
-  const nuevosVendidos = rifa.numeros_vendidos.filter((n) => !boleto.numeros.includes(n));
-  const nuevosApartados = [...rifa.numeros_apartados, ...boleto.numeros];
-  await Promise.all([
-    updateDoc(doc(db, "boletos", boleto.id), { status: "pendiente" }),
-    updateDoc(doc(db, "rifas", boleto.rifa_id), {
-      numeros_vendidos: nuevosVendidos,
-      numeros_apartados: nuevosApartados,
-    }),
-  ]);
-}
-
-/** Pagado → Disponible: cancels a "pagado" boleto and frees its numbers entirely. */
-export async function cancelPagado(boleto: { id: string; rifa_id: string; numeros: number[] }, rifa: { numeros_vendidos: number[] }): Promise<void> {
-  const nuevosVendidos = rifa.numeros_vendidos.filter((n) => !boleto.numeros.includes(n));
-  await Promise.all([
-    updateDoc(doc(db, "boletos", boleto.id), { status: "cancelado" }),
-    updateDoc(doc(db, "rifas", boleto.rifa_id), { numeros_vendidos: nuevosVendidos }),
-  ]);
 }
 
 export async function getBoletosByRifa(rifaId: string): Promise<Boleto[]> {

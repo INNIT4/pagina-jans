@@ -28,8 +28,8 @@ export default async function RifasPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {rifas.map((rifa) => {
             const total = rifa.num_fin - rifa.num_inicio + 1;
-            const vendidos = rifa.numeros_vendidos?.length ?? 0;
-            const apartados = rifa.numeros_apartados?.length ?? 0;
+            const vendidos = rifa.num_vendidos ?? 0;
+            const apartados = rifa.num_apartados ?? 0;
             const disponibles = total - vendidos - apartados;
             const pct = Math.round(((vendidos + apartados) / total) * 100);
 

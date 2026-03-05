@@ -1,4 +1,4 @@
-import { getRifa } from "@/lib/firestore";
+import { getRifa, getNumerosOcupados } from "@/lib/firestore";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import RifaInteractive from "./RifaInteractive";
@@ -22,5 +22,6 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function RifaDetailPage({ params }: { params: { id: string } }) {
   const rifa = await getRifa(params.id).catch(() => null);
   if (!rifa || !rifa.activa) notFound();
-  return <RifaInteractive rifa={rifa} />;
+  const { vendidos, apartados } = await getNumerosOcupados(params.id);
+  return <RifaInteractive rifa={rifa} vendidos={vendidos} apartados={apartados} />;
 }

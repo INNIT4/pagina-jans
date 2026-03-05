@@ -26,7 +26,7 @@ export default async function RifasPreviasPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {rifas.map((rifa) => {
             const total = rifa.num_fin - rifa.num_inicio + 1;
-            const vendidos = rifa.numeros_vendidos?.length ?? 0;
+            const vendidos = rifa.num_vendidos ?? 0;
             const pct = total > 0 ? Math.round((vendidos / total) * 100) : 0;
 
             return (

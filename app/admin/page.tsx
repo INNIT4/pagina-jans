@@ -62,8 +62,8 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             {rifas.map((r) => {
               const total = r.num_fin - r.num_inicio + 1;
-              const pagados = r.numeros_vendidos?.length ?? 0;
-              const apartados = r.numeros_apartados?.length ?? 0;
+              const pagados = r.num_vendidos ?? 0;
+              const apartados = r.num_apartados ?? 0;
               const disponibles = total - pagados - apartados;
               const pctPagados = total > 0 ? (pagados / total) * 100 : 0;
               const pctApartados = total > 0 ? (apartados / total) * 100 : 0;

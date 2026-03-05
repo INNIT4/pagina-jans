@@ -89,8 +89,8 @@ export default function MetricasPage() {
 
   // Total numbers across all rifas
   const totalNumeros    = useMemo(() => rifas.reduce((s, r) => s + (r.num_fin - r.num_inicio + 1), 0), [rifas]);
-  const totalVendidos   = useMemo(() => rifas.reduce((s, r) => s + (r.numeros_vendidos?.length ?? 0), 0), [rifas]);
-  const totalApartados  = useMemo(() => rifas.reduce((s, r) => s + (r.numeros_apartados?.length ?? 0), 0), [rifas]);
+  const totalVendidos   = useMemo(() => rifas.reduce((s, r) => s + (r.num_vendidos ?? 0), 0), [rifas]);
+  const totalApartados  = useMemo(() => rifas.reduce((s, r) => s + (r.num_apartados ?? 0), 0), [rifas]);
   const totalDisponibles= totalNumeros - totalVendidos - totalApartados;
 
   // ── Revenue by rifa ─────────────────────────────────────────────────────────
@@ -352,8 +352,8 @@ export default function MetricasPage() {
             <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
               {rifas.map((r) => {
                 const total = r.num_fin - r.num_inicio + 1;
-                const vend = r.numeros_vendidos?.length ?? 0;
-                const apart = r.numeros_apartados?.length ?? 0;
+                const vend = r.num_vendidos ?? 0;
+                const apart = r.num_apartados ?? 0;
                 const disp = total - vend - apart;
                 const ing = pagados.filter((b) => b.rifa_id === r.id).reduce((s, b) => s + b.precio_total, 0);
                 const ocup = total > 0 ? ((vend + apart) / total) * 100 : 0;

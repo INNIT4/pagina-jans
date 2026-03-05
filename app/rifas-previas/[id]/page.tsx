@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getRifa, Rifa } from "@/lib/firestore";
+import { getRifa, getNumerosOcupados, Rifa } from "@/lib/firestore";
 import ImageCarousel from "@/components/ImageCarousel";
 import Link from "next/link";
 
@@ -10,13 +10,18 @@ export default function RifaPreviaDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [rifa, setRifa] = useState<Rifa | null>(null);
+  const [vendidosArr, setVendidosArr] = useState<number[]>([]);
+  const [apartadosArr, setApartadosArr] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getRifa(id)
-      .then((r) => {
-        if (!r) router.push("/rifas-previas");
+      .then(async (r) => {
+        if (!r) { router.push("/rifas-previas"); return; }
         setRifa(r);
+        const { vendidos, apartados } = await getNumerosOcupados(id);
+        setVendidosArr(vendidos);
+        setApartadosArr(apartados);
       })
       .finally(() => setLoading(false));
   }, [id, router]);
@@ -32,13 +37,13 @@ export default function RifaPreviaDetailPage() {
   if (!rifa) return null;
 
   const total = rifa.num_fin - rifa.num_inicio + 1;
-  const vendidos = rifa.numeros_vendidos?.length ?? 0;
-  const apartados = rifa.numeros_apartados?.length ?? 0;
+  const vendidos = rifa.num_vendidos ?? 0;
+  const apartados = rifa.num_apartados ?? 0;
   const pctVendidos = total > 0 ? (vendidos / total) * 100 : 0;
   const pctApartados = total > 0 ? (apartados / total) * 100 : 0;
 
-  const vendidosSet = new Set(rifa.numeros_vendidos ?? []);
-  const apartadosSet = new Set(rifa.numeros_apartados ?? []);
+  const vendidosSet = new Set(vendidosArr);
+  const apartadosSet = new Set(apartadosArr);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">

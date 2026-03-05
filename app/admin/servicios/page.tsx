@@ -81,9 +81,6 @@ export default function ServiciosPage() {
   }, [boletos, service.filterStatus, filterRifa, search]);
 
   async function handleAction(boleto: Boleto) {
-    const rifa = rifaMap.get(boleto.rifa_id);
-    if (!rifa) return;
-
     const confirmMsg =
       activeTab === "apartado-disponible"
         ? `¿Cancelar apartado del folio ${boleto.folio} y liberar sus números?`
@@ -96,20 +93,11 @@ export default function ServiciosPage() {
     setProcessing(boleto.id!);
     try {
       if (activeTab === "apartado-disponible") {
-        await cancelApartado(
-          { id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros },
-          { numeros_apartados: rifa.numeros_apartados ?? [] }
-        );
+        await cancelApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
       } else if (activeTab === "pagado-apartado") {
-        await revertPagadoToApartado(
-          { id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros },
-          { numeros_vendidos: rifa.numeros_vendidos ?? [], numeros_apartados: rifa.numeros_apartados ?? [] }
-        );
+        await revertPagadoToApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
       } else {
-        await cancelPagado(
-          { id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros },
-          { numeros_vendidos: rifa.numeros_vendidos ?? [] }
-        );
+        await cancelPagado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
       }
       await load();
     } catch {

@@ -104,8 +104,8 @@ export default function ReportesPage() {
     const headers = ["Rifa", "Total números", "Pagados", "Apartados", "Disponibles", "Ingresos (MXN)"];
     const rows = rifas.map((r) => {
       const total = r.num_fin - r.num_inicio + 1;
-      const pagados = r.numeros_vendidos?.length ?? 0;
-      const apartados = r.numeros_apartados?.length ?? 0;
+      const pagados = r.num_vendidos ?? 0;
+      const apartados = r.num_apartados ?? 0;
       const disponibles = total - pagados - apartados;
       const ingresos = boletos
         .filter((b) => b.rifa_id === r.id && b.status === "pagado")
@@ -310,8 +310,8 @@ export default function ReportesPage() {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {rifas.map((r) => {
                 const total = r.num_fin - r.num_inicio + 1;
-                const pagados = r.numeros_vendidos?.length ?? 0;
-                const apartados = r.numeros_apartados?.length ?? 0;
+                const pagados = r.num_vendidos ?? 0;
+                const apartados = r.num_apartados ?? 0;
                 const disponibles = total - pagados - apartados;
                 const pctPagados = total > 0 ? (pagados / total) * 100 : 0;
                 const pctApartados = total > 0 ? (apartados / total) * 100 : 0;

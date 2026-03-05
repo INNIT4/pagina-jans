@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getBoletos, markBoletoPagado, getRifas, updateRifa, cancelApartado, cancelPagado, Boleto, Rifa } from "@/lib/firestore";
+import { getBoletos, markBoletoPagadoConNumeros, getRifas, cancelApartado, cancelPagado, Boleto, Rifa } from "@/lib/firestore";
 
 const PAGE_SIZE = 20;
 
@@ -28,13 +28,7 @@ export default function AdminBoletosPage() {
   async function handleMarkPagado(boleto: Boleto) {
     if (!confirm(`¿Marcar boleto ${boleto.folio} como pagado?`)) return;
     setMarking(boleto.id!);
-    await markBoletoPagado(boleto.id!);
-    const rifa = rifas.get(boleto.rifa_id);
-    if (rifa) {
-      const nuevosApartados = (rifa.numeros_apartados ?? []).filter((n) => !boleto.numeros.includes(n));
-      const nuevosVendidos = [...(rifa.numeros_vendidos ?? []), ...boleto.numeros];
-      await updateRifa(boleto.rifa_id, { numeros_apartados: nuevosApartados, numeros_vendidos: nuevosVendidos });
-    }
+    await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
     setMarking(null);
     await load();
   }
@@ -42,11 +36,10 @@ export default function AdminBoletosPage() {
   async function handleCancel(boleto: Boleto) {
     if (!confirm(`¿Cancelar boleto ${boleto.folio}?`)) return;
     setMarking(boleto.id!);
-    const rifa = rifas.get(boleto.rifa_id);
-    if (boleto.status === "pendiente" && rifa) {
-      await cancelApartado(boleto as Parameters<typeof cancelApartado>[0], rifa);
-    } else if (boleto.status === "pagado" && rifa) {
-      await cancelPagado(boleto as Parameters<typeof cancelPagado>[0], rifa);
+    if (boleto.status === "pendiente") {
+      await cancelApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+    } else if (boleto.status === "pagado") {
+      await cancelPagado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
     }
     setMarking(null);
     await load();

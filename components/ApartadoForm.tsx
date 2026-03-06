@@ -100,7 +100,7 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
@@ -125,7 +125,7 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
                 <label className="block text-sm font-medium mb-1">Nombre</label>
                 <input
                   name="nombre" value={form.nombre} onChange={handle} required
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
                   placeholder="Juan"
                 />
               </div>
@@ -133,7 +133,7 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
                 <label className="block text-sm font-medium mb-1">Apellidos</label>
                 <input
                   name="apellidos" value={form.apellidos} onChange={handle} required
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
                   placeholder="Pérez García"
                 />
               </div>
@@ -144,7 +144,7 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
               <input
                 name="celular" value={form.celular} onChange={handle} required
                 pattern="[0-9]{10}" maxLength={10}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
                 placeholder="5512345678"
               />
             </div>
@@ -153,7 +153,7 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
               <label className="block text-sm font-medium mb-1">Estado</label>
               <select
                 name="estado" value={form.estado} onChange={handle} required
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
               >
                 <option value="">Selecciona tu estado</option>
                 {ESTADOS_MX.map((e) => <option key={e} value={e}>{e}</option>)}
@@ -167,7 +167,7 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
                 <input
                   value={codigo}
                   onChange={(e) => { setCodigo(e.target.value); setDescuento(null); setCodigoError(""); }}
-                  className="flex-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm uppercase"
+                  className="flex-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-gray-900 dark:text-white uppercase"
                   placeholder="CODIGO20"
                 />
                 <button

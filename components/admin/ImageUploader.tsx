@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { auth } from "@/lib/firebase";
 
 interface ImageUploaderProps {
   images: string[];
@@ -28,10 +29,13 @@ export default function ImageUploader({ images, onChange }: ImageUploaderProps) 
     setUploading(true);
     const newUrls: string[] = [];
     try {
+      const token = await auth.currentUser?.getIdToken();
       for (const file of Array.from(files)) {
         const fd = new FormData();
         fd.append("file", file);
-        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const res = await fetch("/api/upload", { method: "POST", body: fd, headers });
         const json = await res.json();
         if (!res.ok) { alert(json.error ?? "Error al subir imagen."); continue; }
         newUrls.push(json.url);

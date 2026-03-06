@@ -1,11 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { verifySession } from "@/lib/session";
+import { adminAuth } from "@/lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+/** Verifica admin por cookie __session O por header Authorization: Bearer <idToken> */
+async function isAdmin(req: NextRequest): Promise<boolean> {
+  // 1. Cookie de sesión HMAC
+  const sessionCookie = req.cookies.get("__session");
+  if (sessionCookie?.value && (await verifySession(sessionCookie.value))) return true;
+
+  // 2. Firebase ID token en header
+  const authHeader = req.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    try {
+      await adminAuth.verifyIdToken(authHeader.slice(7));
+      return true;
+    } catch { /* invalid token */ }
+  }
+
+  return false;
+}
 
 /** Verifica los magic bytes reales del archivo — no confía en el MIME del navegador */
 function checkMagicBytes(buf: Buffer, mimeType: string): boolean {
@@ -28,8 +47,7 @@ function checkMagicBytes(buf: Buffer, mimeType: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  const sessionCookie = req.cookies.get("__session");
-  if (!sessionCookie?.value || !(await verifySession(sessionCookie.value))) {
+  if (!(await isAdmin(req))) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 

@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase-admin";
 import { signSession } from "@/lib/session";
+import { getRatelimit } from "@/lib/ratelimit";
 
 const SESSION_COOKIE = "__session";
 const MAX_AGE = 60 * 60; // 1 hour
 
 // POST /api/admin/session — verify Firebase ID token, set HMAC-signed HttpOnly session cookie
 export async function POST(req: NextRequest) {
+  // Rate limiting — limita intentos de login por IP
+  const rl = getRatelimit();
+  if (rl) {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
+    const { success } = await rl.limit(`admin_login:${ip}`);
+    if (!success)
+      return NextResponse.json({ error: "Demasiados intentos. Espera un momento." }, { status: 429 });
+  }
+
   const { idToken } = await req.json().catch(() => ({}));
 
   if (!idToken || typeof idToken !== "string") {

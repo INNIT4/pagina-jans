@@ -1,8 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
+import { getRatelimit } from "@/lib/ratelimit";
 
 // POST /api/whatsapp/rotate — atomically returns current WhatsApp number and advances the index
-export async function POST() {
+export async function POST(req: NextRequest) {
+  // Rate limiting — evita abuso del endpoint para rotar/exponer números
+  const rl = getRatelimit();
+  if (rl) {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
+    const { success } = await rl.limit(`wa_rotate:${ip}`);
+    if (!success)
+      return NextResponse.json({ numero: "" }, { status: 429 });
+  }
+
   const db = adminDb();
   const ref = db.collection("whatsapp_config").doc("config");
 

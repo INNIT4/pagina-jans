@@ -85,12 +85,12 @@ function StatusBadge({ status }: { status: string }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function MetricasPage() {
-  const [boletos, setBoletos] = useState<Boleto[]>([]);
-  const [rifas, setRifas]     = useState<Rifa[]>([]);
-  const [codes, setCodes]     = useState<DiscountCode[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [period, setPeriod]   = useState<0 | 7 | 14 | 30>(14);
-  const [view, setView]       = useState<"global" | "rifa">("global");
+  const [boletos, setBoletos]         = useState<Boleto[]>([]);
+  const [rifas, setRifas]             = useState<Rifa[]>([]);
+  const [codes, setCodes]             = useState<DiscountCode[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [period, setPeriod]           = useState<0 | 7 | 14 | 30>(14);
+  const [selectedRifaId, setSelectedRifaId] = useState<string | null>(null);
 
   // ── Real-time subscriptions ─────────────────────────────────────────────────
   useEffect(() => {
@@ -113,6 +113,18 @@ export default function MetricasPage() {
     return () => { unsubB(); unsubR(); unsubC(); };
   }, []);
 
+  // ── Rifa seleccionada ───────────────────────────────────────────────────────
+  const selectedRifa = useMemo(() =>
+    selectedRifaId ? (rifas.find((r) => r.id === selectedRifaId) ?? null) : null,
+  [selectedRifaId, rifas]);
+
+  const isGlobal = selectedRifaId === null;
+
+  // ── Boletos activos (filtrados por rifa si se seleccionó una) ───────────────
+  const activeBoletos = useMemo(() =>
+    selectedRifaId ? boletos.filter((b) => b.rifa_id === selectedRifaId) : boletos,
+  [boletos, selectedRifaId]);
+
   // ── Period boundaries ───────────────────────────────────────────────────────
   const periodStart = useMemo(() => {
     if (period === 0) return null;
@@ -124,34 +136,34 @@ export default function MetricasPage() {
     return new Date(Date.now() - period * 2 * 24 * 60 * 60 * 1000);
   }, [period]);
 
-  // ── Boletos filtered by period ──────────────────────────────────────────────
+  // ── Boletos filtrados por período (sobre activeBoletos) ─────────────────────
   const boletosPeriod = useMemo(() => {
-    if (!periodStart) return boletos;
-    return boletos.filter((b) => {
-      const d = b.created_at?.toDate?.();
-      return d && d >= periodStart;
-    });
-  }, [boletos, periodStart]);
+    if (!periodStart) return activeBoletos;
+    return activeBoletos.filter((b) => { const d = b.created_at?.toDate?.(); return d && d >= periodStart; });
+  }, [activeBoletos, periodStart]);
 
   const boletosPrev = useMemo(() => {
     if (!periodStart || !prevPeriodStart) return [];
-    return boletos.filter((b) => {
+    return activeBoletos.filter((b) => {
       const d = b.created_at?.toDate?.();
       return d && d >= prevPeriodStart && d < periodStart;
     });
-  }, [boletos, periodStart, prevPeriodStart]);
+  }, [activeBoletos, periodStart, prevPeriodStart]);
 
-  // ── All-time base sets ──────────────────────────────────────────────────────
-  const pagadosAll    = useMemo(() => boletos.filter((b) => b.status === "pagado"),    [boletos]);
-  const pendientesAll = useMemo(() => boletos.filter((b) => b.status === "pendiente"), [boletos]);
-  const canceladosAll = useMemo(() => boletos.filter((b) => b.status === "cancelado"), [boletos]);
+  // ── Sets base ───────────────────────────────────────────────────────────────
+  const pagadosAll    = useMemo(() => activeBoletos.filter((b) => b.status === "pagado"),    [activeBoletos]);
+  const pendientesAll = useMemo(() => activeBoletos.filter((b) => b.status === "pendiente"), [activeBoletos]);
+  const canceladosAll = useMemo(() => activeBoletos.filter((b) => b.status === "cancelado"), [activeBoletos]);
   const regalosAll    = useMemo(() => pagadosAll.filter((b) => b.codigo_descuento === "REGALO"), [pagadosAll]);
+
+  // Alertas siempre globales
+  const pendientesGlobal = useMemo(() => boletos.filter((b) => b.status === "pendiente"), [boletos]);
 
   // ── Period sets ─────────────────────────────────────────────────────────────
   const pagadosPeriod = useMemo(() => boletosPeriod.filter((b) => b.status === "pagado"), [boletosPeriod]);
   const pagadosPrev   = useMemo(() => boletosPrev.filter((b) => b.status === "pagado"),   [boletosPrev]);
 
-  // ── All-time KPIs ───────────────────────────────────────────────────────────
+  // ── KPIs ────────────────────────────────────────────────────────────────────
   const ingresoTotal      = useMemo(() => pagadosAll.reduce((s, b) => s + b.precio_total, 0), [pagadosAll]);
   const ingresoPendiente  = useMemo(() => pendientesAll.reduce((s, b) => s + b.precio_total, 0), [pendientesAll]);
   const descuentoTotal    = useMemo(() =>
@@ -159,53 +171,44 @@ export default function MetricasPage() {
   , [pagadosAll]);
   const ticketPromedio    = pagadosAll.length > 0 ? ingresoTotal / pagadosAll.length : 0;
   const clientesUnicosAll = useMemo(() =>
-    new Set(boletos.filter((b) => b.celular).map((b) => b.celular)).size
-  , [boletos]);
-  const conversionAll = boletos.length > 0 ? (pagadosAll.length / boletos.length) * 100 : 0;
+    new Set(activeBoletos.filter((b) => b.celular).map((b) => b.celular)).size, [activeBoletos]);
+  const conversionAll     = activeBoletos.length > 0 ? (pagadosAll.length / activeBoletos.length) * 100 : 0;
 
-  // ── Nuevas métricas globales ────────────────────────────────────────────────
   const totalNumerosVendidosPagados = useMemo(() =>
     pagadosAll.reduce((s, b) => s + b.numeros.length, 0), [pagadosAll]);
-
-  const precioPorNumero  = totalNumerosVendidosPagados > 0 ? ingresoTotal / totalNumerosVendidosPagados : 0;
+  const precioPorNumero   = totalNumerosVendidosPagados > 0 ? ingresoTotal / totalNumerosVendidosPagados : 0;
   const numPromedioCompra = pagadosAll.length > 0 ? totalNumerosVendidosPagados / pagadosAll.length : 0;
 
-  // Análisis de calidad de revenue
-  const pagadosConDesc = useMemo(() =>
+  // ── Calidad de revenue ──────────────────────────────────────────────────────
+  const pagadosConDesc   = useMemo(() =>
     pagadosAll.filter((b) => b.codigo_descuento && b.codigo_descuento !== "" && b.codigo_descuento !== "REGALO"),
   [pagadosAll]);
-  const boletosConCodigo = useMemo(() =>
-    boletos.filter((b) => b.codigo_descuento && b.codigo_descuento !== "" && b.codigo_descuento !== "REGALO"),
-  [boletos]);
-  const boletosSinCodigo = useMemo(() =>
-    boletos.filter((b) => !b.codigo_descuento || b.codigo_descuento === ""),
-  [boletos]);
-  const pagadosSinDesc = useMemo(() =>
+  const pagadosSinDesc   = useMemo(() =>
     pagadosAll.filter((b) => !b.codigo_descuento || b.codigo_descuento === ""),
   [pagadosAll]);
+  const boletosConCodigo = useMemo(() =>
+    activeBoletos.filter((b) => b.codigo_descuento && b.codigo_descuento !== "" && b.codigo_descuento !== "REGALO"),
+  [activeBoletos]);
+  const boletosSinCodigo = useMemo(() =>
+    activeBoletos.filter((b) => !b.codigo_descuento || b.codigo_descuento === ""),
+  [activeBoletos]);
   const conversionConDesc  = boletosConCodigo.length > 0 ? (pagadosConDesc.length / boletosConCodigo.length) * 100 : 0;
   const conversionSinDesc  = boletosSinCodigo.length > 0 ? (pagadosSinDesc.length / boletosSinCodigo.length) * 100 : 0;
   const revenuePerdido     = useMemo(() => canceladosAll.reduce((s, b) => s + b.precio_total, 0), [canceladosAll]);
 
-  // Pareto
+  // ── Pareto ─────────────────────────────────────────────────────────────────
   const paretoDatos = useMemo(() => {
     if (ingresoTotal === 0) return { top20pct: 0, top5pct: 0, top20count: 0 };
-    const clientesSorted = (() => {
-      const map = new Map<string, number>();
-      pagadosAll.forEach((b) => map.set(b.celular || b.nombre, (map.get(b.celular || b.nombre) ?? 0) + b.precio_total));
-      return Array.from(map.values()).sort((a, b) => b - a);
-    })();
-    const top20count = Math.max(1, Math.ceil(clientesSorted.length * 0.2));
-    const top20revenue = clientesSorted.slice(0, top20count).reduce((s, v) => s + v, 0);
-    const top5revenue  = clientesSorted.slice(0, Math.min(5, clientesSorted.length)).reduce((s, v) => s + v, 0);
-    return {
-      top20pct:   (top20revenue / ingresoTotal) * 100,
-      top5pct:    (top5revenue  / ingresoTotal) * 100,
-      top20count,
-    };
+    const map = new Map<string, number>();
+    pagadosAll.forEach((b) => map.set(b.celular || b.nombre, (map.get(b.celular || b.nombre) ?? 0) + b.precio_total));
+    const sorted = Array.from(map.values()).sort((a, b) => b - a);
+    const top20count  = Math.max(1, Math.ceil(sorted.length * 0.2));
+    const top20revenue = sorted.slice(0, top20count).reduce((s, v) => s + v, 0);
+    const top5revenue  = sorted.slice(0, Math.min(5, sorted.length)).reduce((s, v) => s + v, 0);
+    return { top20pct: (top20revenue / ingresoTotal) * 100, top5pct: (top5revenue / ingresoTotal) * 100, top20count };
   }, [pagadosAll, ingresoTotal]);
 
-  // ── Period KPIs (for trends) ─────────────────────────────────────────────────
+  // ── Period KPIs (tendencias) ─────────────────────────────────────────────────
   const ingresoCurr     = useMemo(() => pagadosPeriod.reduce((s, b) => s + b.precio_total, 0), [pagadosPeriod]);
   const ingresoPrevVal  = useMemo(() => pagadosPrev.reduce((s, b) => s + b.precio_total, 0),   [pagadosPrev]);
   const clientesCurr    = useMemo(() =>
@@ -213,25 +216,25 @@ export default function MetricasPage() {
   const clientesPrevVal = useMemo(() =>
     new Set(pagadosPrev.filter((b) => b.celular).map((b) => b.celular)).size, [pagadosPrev]);
   const conversionCurr    = boletosPeriod.length > 0 ? (pagadosPeriod.length / boletosPeriod.length) * 100 : 0;
-  const conversionPrevVal = boletosPrev.length > 0   ? (pagadosPrev.length / boletosPrev.length) * 100     : 0;
+  const conversionPrevVal = boletosPrev.length > 0   ? (pagadosPrev.length   / boletosPrev.length)   * 100 : 0;
 
-  const trendIngresos   = period > 0 ? trendPct(ingresoCurr,         ingresoPrevVal)     : null;
-  const trendPagados    = period > 0 ? trendPct(pagadosPeriod.length, pagadosPrev.length) : null;
-  const trendClientes   = period > 0 ? trendPct(clientesCurr,         clientesPrevVal)    : null;
-  const trendConversion = period > 0 ? trendPct(conversionCurr,       conversionPrevVal)  : null;
+  const trendIngresos   = period > 0 ? trendPct(ingresoCurr,          ingresoPrevVal)     : null;
+  const trendPagados    = period > 0 ? trendPct(pagadosPeriod.length,  pagadosPrev.length) : null;
+  const trendClientes   = period > 0 ? trendPct(clientesCurr,          clientesPrevVal)    : null;
+  const trendConversion = period > 0 ? trendPct(conversionCurr,        conversionPrevVal)  : null;
 
-  // ── Alerts ──────────────────────────────────────────────────────────────────
+  // ── Alertas (siempre globales) ───────────────────────────────────────────────
   const riesgoVencer = useMemo(() => {
     const threshold = new Date(Date.now() - 20 * 60 * 60 * 1000);
-    return pendientesAll.filter((b) => { const d = b.created_at?.toDate?.(); return d && d < threshold; });
-  }, [pendientesAll]);
+    return pendientesGlobal.filter((b) => { const d = b.created_at?.toDate?.(); return d && d < threshold; });
+  }, [pendientesGlobal]);
   const riesgoVencerValor = useMemo(() => riesgoVencer.reduce((s, b) => s + b.precio_total, 0), [riesgoVencer]);
 
   const rifasOcupacionBaja = useMemo(() =>
     rifas.filter((r) => {
       if (!r.activa || !r.fecha_sorteo) return false;
       const total = r.num_fin - r.num_inicio + 1;
-      const ocup = total > 0 ? ((r.num_vendidos ?? 0) + (r.num_apartados ?? 0)) / total : 0;
+      const ocup  = total > 0 ? ((r.num_vendidos ?? 0) + (r.num_apartados ?? 0)) / total : 0;
       if (ocup >= 0.15) return false;
       const dias = (new Date(r.fecha_sorteo).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
       return dias >= 0 && dias < 14;
@@ -240,18 +243,26 @@ export default function MetricasPage() {
 
   const codesEnRiesgo   = useMemo(() => codes.filter((c) => c.activo && c.max_usos > 0 && c.usos >= c.max_usos - 1), [codes]);
   const rifasSinGanador = useMemo(() => rifas.filter((r) => !r.activa && !r.ganador), [rifas]);
-  const hasAlerts = riesgoVencer.length > 0 || rifasOcupacionBaja.length > 0 || codesEnRiesgo.length > 0 || rifasSinGanador.length > 0;
+  const hasAlerts       = riesgoVencer.length > 0 || rifasOcupacionBaja.length > 0 || codesEnRiesgo.length > 0 || rifasSinGanador.length > 0;
 
   // ── rifaMap ─────────────────────────────────────────────────────────────────
   const rifaMap = useMemo(() => new Map(rifas.map((r) => [r.id!, r])), [rifas]);
 
-  // ── Numbers global ──────────────────────────────────────────────────────────
-  const totalNumeros    = useMemo(() => rifas.reduce((s, r) => s + (r.num_fin - r.num_inicio + 1), 0), [rifas]);
-  const totalVendidos   = useMemo(() => rifas.reduce((s, r) => s + (r.num_vendidos ?? 0), 0), [rifas]);
-  const totalApartados  = useMemo(() => rifas.reduce((s, r) => s + (r.num_apartados ?? 0), 0), [rifas]);
-  const totalDisponibles = totalNumeros - totalVendidos - totalApartados;
+  // ── Números: global o por rifa seleccionada ──────────────────────────────────
+  const numDisplay = useMemo(() => {
+    if (selectedRifa) {
+      const total     = selectedRifa.num_fin - selectedRifa.num_inicio + 1;
+      const vendidos  = selectedRifa.num_vendidos ?? 0;
+      const apartados = selectedRifa.num_apartados ?? 0;
+      return { total, vendidos, apartados, disponibles: total - vendidos - apartados };
+    }
+    const total     = rifas.reduce((s, r) => s + (r.num_fin - r.num_inicio + 1), 0);
+    const vendidos  = rifas.reduce((s, r) => s + (r.num_vendidos ?? 0), 0);
+    const apartados = rifas.reduce((s, r) => s + (r.num_apartados ?? 0), 0);
+    return { total, vendidos, apartados, disponibles: total - vendidos - apartados };
+  }, [selectedRifa, rifas]);
 
-  // ── Revenue by rifa (for "Por rifa" view) ───────────────────────────────────
+  // ── Revenue by rifa (solo en vista global) ───────────────────────────────────
   const revenueByRifa = useMemo(() => {
     const map = new Map<string, number>();
     pagadosAll.forEach((b) => map.set(b.rifa_id, (map.get(b.rifa_id) ?? 0) + b.precio_total));
@@ -271,41 +282,40 @@ export default function MetricasPage() {
   // ── Time series ──────────────────────────────────────────────────────────────
   const timeSeries = useMemo(() => {
     const p = period > 0 ? period : 30;
-    const days: { date: string; label: string; pagados: number; ingresos: number }[] = [];
+    const days: { date: string; label: string; ingresos: number }[] = [];
     const now = new Date();
     for (let i = p - 1; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const key = d.toISOString().slice(0, 10);
-      const label = d.toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
-      days.push({ date: key, label, pagados: 0, ingresos: 0 });
+      days.push({ date: key, label: d.toLocaleDateString("es-MX", { day: "2-digit", month: "short" }), ingresos: 0 });
     }
     pagadosAll.forEach((b) => {
       const d = b.created_at?.toDate?.();
       if (!d) return;
       const key = d.toISOString().slice(0, 10);
       const entry = days.find((x) => x.date === key);
-      if (entry) { entry.pagados += 1; entry.ingresos += b.precio_total; }
+      if (entry) entry.ingresos += b.precio_total;
     });
     return days;
   }, [pagadosAll, period]);
   const maxIngresos = useMemo(() => Math.max(...timeSeries.map((d) => d.ingresos), 1), [timeSeries]);
 
-  // ── Velocidad de ventas ──────────────────────────────────────────────────────
+  // ── Velocidad ────────────────────────────────────────────────────────────────
   const velocidadBoletos  = period > 0 ? pagadosPeriod.length / period : pagadosAll.length / Math.max(1, 30);
   const velocidadIngresos = period > 0 ? ingresoCurr / period          : ingresoTotal / Math.max(1, 30);
   const proyeccionMensual = velocidadIngresos * 30;
 
   const proyeccionRifas = useMemo(() => {
-    return rifas.filter((r) => r.activa).map((r) => {
+    const source = isGlobal ? rifas.filter((r) => r.activa) : (selectedRifa ? [selectedRifa] : []);
+    return source.map((r) => {
       const disponibles = Math.max(0, (r.num_fin - r.num_inicio + 1) - (r.num_vendidos ?? 0) - (r.num_apartados ?? 0));
       const rifaPagadosPeriod = pagadosPeriod.filter((b) => b.rifa_id === r.id);
-      const vel = period > 0 ? rifaPagadosPeriod.length / period : 0;
+      const vel  = period > 0 ? rifaPagadosPeriod.length / period : 0;
       const dias = vel > 0 ? Math.ceil(disponibles / vel) : null;
-      const ingresoProyectado = disponibles * r.precio_boleto;
-      return { nombre: r.nombre, disponibles, dias, ingresoProyectado };
+      return { nombre: r.nombre, disponibles, dias, ingresoProyectado: disponibles * r.precio_boleto };
     });
-  }, [rifas, pagadosPeriod, period]);
+  }, [rifas, selectedRifa, isGlobal, pagadosPeriod, period]);
 
   // ── Top customers ────────────────────────────────────────────────────────────
   const topClientes = useMemo(() => {
@@ -319,10 +329,10 @@ export default function MetricasPage() {
     return Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, 10);
   }, [pagadosAll]);
 
-  // ── Geographic distribution (with revenue) ──────────────────────────────────
+  // ── Distribución por estado ──────────────────────────────────────────────────
   const byEstado = useMemo(() => {
     const map = new Map<string, { count: number; revenue: number }>();
-    boletos.filter((b) => b.estado).forEach((b) => {
+    activeBoletos.filter((b) => b.estado).forEach((b) => {
       const existing = map.get(b.estado);
       const rev = b.status === "pagado" ? b.precio_total : 0;
       if (existing) { existing.count++; existing.revenue += rev; }
@@ -330,11 +340,10 @@ export default function MetricasPage() {
     });
     return Array.from(map.entries())
       .map(([estado, data]) => ({ estado, count: data.count, revenue: data.revenue, rpc: data.count > 0 ? data.revenue / data.count : 0 }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
-  }, [boletos]);
+      .sort((a, b) => b.count - a.count).slice(0, 10);
+  }, [activeBoletos]);
 
-  // ── Discount codes usage ─────────────────────────────────────────────────────
+  // ── Códigos de descuento ─────────────────────────────────────────────────────
   const discountUsage = useMemo(() => {
     const map = new Map<string, { usos: number; ahorro: number }>();
     pagadosAll.filter((b) => b.codigo_descuento && b.codigo_descuento !== "REGALO").forEach((b) => {
@@ -346,19 +355,20 @@ export default function MetricasPage() {
     return Array.from(map.entries()).map(([codigo, data]) => ({ codigo, ...data })).sort((a, b) => b.usos - a.usos);
   }, [pagadosAll]);
 
-  // ── Number popularity ───────────────────────────────────────────────────────
+  // ── Números populares ────────────────────────────────────────────────────────
   const popularNumbers = useMemo(() => {
     const map = new Map<number, number>();
     pagadosAll.forEach((b) => b.numeros.forEach((n) => map.set(n, (map.get(n) ?? 0) + 1)));
     return Array.from(map.entries()).map(([n, count]) => ({ n, count })).sort((a, b) => b.count - a.count).slice(0, 20);
   }, [pagadosAll]);
 
-  // ── Rangos de números populares ─────────────────────────────────────────────
+  // ── Rangos de números ────────────────────────────────────────────────────────
   const rangosNumeros = useMemo(() => {
-    if (rifas.length === 0 || pagadosAll.length === 0) return [];
-    const numMin = Math.min(...rifas.map((r) => r.num_inicio));
-    const numMax = Math.max(...rifas.map((r) => r.num_fin));
-    const rangeSize = Math.ceil((numMax - numMin + 1) / 10);
+    const srcRifas = selectedRifa ? [selectedRifa] : rifas;
+    if (srcRifas.length === 0 || pagadosAll.length === 0) return [];
+    const numMin     = Math.min(...srcRifas.map((r) => r.num_inicio));
+    const numMax     = Math.max(...srcRifas.map((r) => r.num_fin));
+    const rangeSize  = Math.ceil((numMax - numMin + 1) / 10);
     const rangos = Array.from({ length: 10 }, (_, i) => {
       const start = numMin + i * rangeSize;
       const end   = Math.min(start + rangeSize - 1, numMax);
@@ -369,7 +379,7 @@ export default function MetricasPage() {
       if (idx >= 0 && idx < rangos.length) rangos[idx].count++;
     }));
     return rangos;
-  }, [rifas, pagadosAll]);
+  }, [selectedRifa, rifas, pagadosAll]);
 
   // ── Distribución de tamaño de compra ────────────────────────────────────────
   const distribucionTamano = useMemo(() => {
@@ -397,15 +407,12 @@ export default function MetricasPage() {
 
   // ── Días de semana (con revenue) ─────────────────────────────────────────────
   const diasSemana = useMemo(() => {
-    const nombres = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+    const nombres    = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
     const mapCount   = new Array(7).fill(0) as number[];
     const mapRevenue = new Array(7).fill(0) as number[];
     boletosPeriod.forEach((b) => {
       const d = b.created_at?.toDate?.();
-      if (d) {
-        mapCount[d.getDay()]++;
-        if (b.status === "pagado") mapRevenue[d.getDay()] += b.precio_total;
-      }
+      if (d) { mapCount[d.getDay()]++; if (b.status === "pagado") mapRevenue[d.getDay()] += b.precio_total; }
     });
     return mapCount.map((count, i) => ({ dia: nombres[i], count, revenue: mapRevenue[i] }));
   }, [boletosPeriod]);
@@ -424,14 +431,14 @@ export default function MetricasPage() {
     return { recurrentes, totalClientes: all.length };
   }, [pagadosAll]);
 
-  // ── Recent boletos ───────────────────────────────────────────────────────────
-  const recentBoletos = useMemo(() => {
-    return [...boletos].sort((a, b) => {
+  // ── Actividad reciente ───────────────────────────────────────────────────────
+  const recentBoletos = useMemo(() =>
+    [...activeBoletos].sort((a, b) => {
       const da = a.created_at?.toDate?.()?.getTime() ?? 0;
       const db_ = b.created_at?.toDate?.()?.getTime() ?? 0;
       return db_ - da;
-    }).slice(0, 15);
-  }, [boletos]);
+    }).slice(0, 15),
+  [activeBoletos]);
 
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -459,9 +466,12 @@ export default function MetricasPage() {
             </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {boletos.length} boletos · {rifas.length} rifas · {clientesUnicosAll} clientes únicos
+            {isGlobal
+              ? `${boletos.length} boletos · ${rifas.length} rifas · ${clientesUnicosAll} clientes únicos`
+              : `${activeBoletos.length} boletos · ${clientesUnicosAll} clientes · ${selectedRifa?.nombre}`}
           </p>
         </div>
+
         <div className="flex flex-wrap gap-2 items-center">
           {/* Período */}
           <div className="flex gap-1">
@@ -472,19 +482,56 @@ export default function MetricasPage() {
               </button>
             ))}
           </div>
-          {/* Vista */}
-          <div className="flex gap-1 border-l border-slate-200 dark:border-slate-700 pl-2">
-            {(["global", "rifa"] as const).map((v) => (
-              <button key={v} onClick={() => setView(v)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${view === v ? "bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-800" : "bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600"}`}>
-                {v === "global" ? "Global" : "Por rifa"}
-              </button>
-            ))}
+
+          {/* Selector de rifa */}
+          <div className="flex gap-1 border-l border-slate-200 dark:border-slate-700 pl-2 items-center">
+            <button
+              onClick={() => setSelectedRifaId(null)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${isGlobal ? "bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-800" : "bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600"}`}
+            >
+              Global
+            </button>
+            {rifas.length > 0 && (
+              <select
+                value={selectedRifaId ?? ""}
+                onChange={(e) => setSelectedRifaId(e.target.value || null)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer border-0 outline-none ${!isGlobal ? "bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-800" : "bg-slate-100 dark:bg-slate-700 text-slate-500"}`}
+              >
+                <option value="">Ver por rifa...</option>
+                {rifas.map((r) => (
+                  <option key={r.id} value={r.id}>{r.nombre}</option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── Alertas operativas ── */}
+      {/* ── Card info de la rifa seleccionada ── */}
+      {selectedRifa && (
+        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl px-6 py-4 flex flex-wrap gap-6 items-center">
+          <div>
+            <p className="text-lg font-black">{selectedRifa.nombre}</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Números {selectedRifa.num_inicio}–{selectedRifa.num_fin} · ${selectedRifa.precio_boleto}/número
+              {selectedRifa.fecha_sorteo && ` · Sorteo: ${new Date(selectedRifa.fecha_sorteo).toLocaleDateString("es-MX")}`}
+            </p>
+          </div>
+          <span className={`text-xs font-bold px-3 py-1 rounded-full ${selectedRifa.activa ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"}`}>
+            {selectedRifa.activa ? "Activa" : "Finalizada"}
+          </span>
+          {selectedRifa.ganador && (
+            <span className="text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-3 py-1 rounded-full">
+              Ganador: {selectedRifa.ganador.nombre} {selectedRifa.ganador.apellidos} — #{selectedRifa.ganador.numero}
+            </span>
+          )}
+          <button onClick={() => setSelectedRifaId(null)} className="ml-auto text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline">
+            Ver global
+          </button>
+        </div>
+      )}
+
+      {/* ── Alertas (siempre globales) ── */}
       {hasAlerts && (
         <div className="space-y-2">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Alertas operativas</p>
@@ -529,23 +576,19 @@ export default function MetricasPage() {
         </div>
       )}
 
-      {/* ── KPIs — 6 siempre + 2 extras en vista global ── */}
-      <div className={`grid gap-3 ${view === "global" ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3 xl:grid-cols-6"}`}>
+      {/* ── KPIs ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiCard label="Ingresos confirmados"  value={currency(ingresoTotal)}              color="bg-green-500"  trend={trendIngresos} />
         <KpiCard label="Ingresos pendientes"   value={currency(ingresoPendiente)}           color="bg-amber-400" />
         <KpiCard label="Boleto promedio"        value={currency(Math.round(ticketPromedio))} color="bg-blue-500" />
-        <KpiCard label="Tasa de conversión"    value={`${conversionAll.toFixed(1)}%`}       color="bg-purple-500" trend={trendConversion} sub={`${pagadosAll.length} de ${boletos.length}`} />
+        <KpiCard label="Tasa de conversión"    value={`${conversionAll.toFixed(1)}%`}       color="bg-purple-500" trend={trendConversion} sub={`${pagadosAll.length} de ${activeBoletos.length}`} />
         <KpiCard label="Clientes únicos"       value={clientesUnicosAll}                    color="bg-red-500"   trend={trendClientes} />
         <KpiCard label="Descuentos otorgados"  value={currency(Math.round(descuentoTotal))} color="bg-slate-400" />
-        {view === "global" && (
-          <>
-            <KpiCard label="Precio por número"      value={precioPorNumero > 0 ? currency(Math.round(precioPorNumero)) : "—"}  color="bg-teal-500"   sub="ingreso ÷ números vendidos" />
-            <KpiCard label="Números por compra"     value={numPromedioCompra > 0 ? numPromedioCompra.toFixed(1) : "—"}         color="bg-indigo-500" sub="promedio por boleto pagado" />
-          </>
-        )}
+        <KpiCard label="Precio por número"     value={precioPorNumero > 0 ? currency(Math.round(precioPorNumero)) : "—"} color="bg-teal-500" sub="ingreso ÷ números vendidos" />
+        <KpiCard label="Números por compra"    value={numPromedioCompra > 0 ? numPromedioCompra.toFixed(1) : "—"}        color="bg-indigo-500" sub="promedio por boleto pagado" />
       </div>
 
-      {/* ── Tendencia de boletos pagados ── */}
+      {/* ── Tendencia boletos ── */}
       {period > 0 && trendPagados !== null && (
         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl px-5 py-3 border border-slate-100 dark:border-slate-700 flex flex-wrap gap-6 items-center">
           <div className="flex items-center gap-2">
@@ -559,7 +602,7 @@ export default function MetricasPage() {
         </div>
       )}
 
-      {/* ── Estado de boletos + Números globales ── */}
+      {/* ── Estado de boletos + Números ── */}
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
           <SectionTitle>Estado de boletos</SectionTitle>
@@ -573,10 +616,10 @@ export default function MetricasPage() {
               <div key={s.label}>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-slate-600 dark:text-slate-400">{s.label}</span>
-                  <span className={`font-black ${s.textColor}`}>{s.count} <span className="font-normal text-slate-400">({pct(s.count, boletos.length)}%)</span></span>
+                  <span className={`font-black ${s.textColor}`}>{s.count} <span className="font-normal text-slate-400">({pct(s.count, activeBoletos.length)}%)</span></span>
                 </div>
                 <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div className={`h-full ${s.color} rounded-full transition-all duration-700`} style={{ width: barW(s.count, boletos.length) }} />
+                  <div className={`h-full ${s.color} rounded-full transition-all duration-700`} style={{ width: barW(s.count, activeBoletos.length) }} />
                 </div>
               </div>
             ))}
@@ -584,16 +627,16 @@ export default function MetricasPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
-          <SectionTitle>Números globales</SectionTitle>
+          <SectionTitle>{isGlobal ? "Números globales" : `Números — ${selectedRifa?.nombre}`}</SectionTitle>
           <div className="h-6 rounded-full overflow-hidden flex bg-slate-100 dark:bg-slate-700 mb-4">
-            <div className="h-full bg-green-500 transition-all duration-700" style={{ width: barW(totalVendidos, totalNumeros) }} title="Vendidos" />
-            <div className="h-full bg-amber-400 transition-all duration-700" style={{ width: barW(totalApartados, totalNumeros) }} title="Apartados" />
+            <div className="h-full bg-green-500 transition-all duration-700" style={{ width: barW(numDisplay.vendidos, numDisplay.total) }} title="Vendidos" />
+            <div className="h-full bg-amber-400 transition-all duration-700" style={{ width: barW(numDisplay.apartados, numDisplay.total) }} title="Apartados" />
           </div>
           <div className="grid grid-cols-3 gap-3 text-center">
             {[
-              { label: "Vendidos",    value: totalVendidos,    color: "text-green-600 dark:text-green-400", dot: "bg-green-500" },
-              { label: "Apartados",   value: totalApartados,   color: "text-amber-600 dark:text-amber-400", dot: "bg-amber-400" },
-              { label: "Disponibles", value: totalDisponibles, color: "text-slate-600 dark:text-slate-300", dot: "bg-slate-300" },
+              { label: "Vendidos",    value: numDisplay.vendidos,    color: "text-green-600 dark:text-green-400", dot: "bg-green-500" },
+              { label: "Apartados",   value: numDisplay.apartados,   color: "text-amber-600 dark:text-amber-400", dot: "bg-amber-400" },
+              { label: "Disponibles", value: numDisplay.disponibles, color: "text-slate-600 dark:text-slate-300", dot: "bg-slate-300" },
             ].map((s) => (
               <div key={s.label} className="bg-slate-50 dark:bg-slate-700/50 rounded-xl py-3">
                 <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
@@ -601,15 +644,17 @@ export default function MetricasPage() {
                   <span className={`w-2 h-2 rounded-full inline-block ${s.dot}`} />
                   <p className="text-xs text-slate-500">{s.label}</p>
                 </div>
-                <p className="text-xs text-slate-400">{pct(s.value, totalNumeros)}%</p>
+                <p className="text-xs text-slate-400">{pct(s.value, numDisplay.total)}%</p>
               </div>
             ))}
           </div>
-          <p className="text-xs text-slate-400 text-center mt-3">{totalNumeros} números totales en {rifas.length} rifa{rifas.length !== 1 ? "s" : ""}</p>
+          <p className="text-xs text-slate-400 text-center mt-3">
+            {numDisplay.total} números totales{isGlobal ? ` en ${rifas.length} rifa${rifas.length !== 1 ? "s" : ""}` : ""}
+          </p>
         </div>
       </div>
 
-      {/* ── Time series ── */}
+      {/* ── Ingresos por día ── */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
         <div className="flex items-center justify-between mb-4">
           <SectionTitle>Ingresos por día</SectionTitle>
@@ -617,7 +662,7 @@ export default function MetricasPage() {
         </div>
         <div className="flex items-end gap-1 h-36">
           {timeSeries.map((d) => (
-            <div key={d.date} className="flex-1 flex flex-col items-center gap-1 group relative">
+            <div key={d.date} className="flex-1 flex flex-col items-center group relative">
               <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-800 text-xs font-bold px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                 {currency(d.ingresos)}
               </div>
@@ -649,33 +694,25 @@ export default function MetricasPage() {
             <p className="text-xl font-black text-green-600 dark:text-green-400">{currency(Math.round(velocidadIngresos))}</p>
             <p className="text-xs text-slate-500 mt-1">ingresos / día</p>
           </div>
-          {view === "global" ? (
-            <>
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
-                <p className="text-xl font-black text-blue-600 dark:text-blue-400">{currency(Math.round(proyeccionMensual))}</p>
-                <p className="text-xs text-slate-500 mt-1">proyección mensual</p>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
-                <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">{numPromedioCompra > 0 ? numPromedioCompra.toFixed(1) : "—"}</p>
-                <p className="text-xs text-slate-500 mt-1">números / compra</p>
-              </div>
-            </>
-          ) : (
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center col-span-2">
-              <p className="text-sm font-bold">Ingreso proyectado (rifas activas)</p>
-              <p className="text-xl font-black text-blue-600 dark:text-blue-400 mt-1">
-                {currency(proyeccionRifas.reduce((s, r) => s + r.ingresoProyectado, 0))}
-              </p>
-              <p className="text-xs text-slate-400 mt-0.5">si se venden todos los números disponibles</p>
-            </div>
-          )}
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
+            <p className="text-xl font-black text-blue-600 dark:text-blue-400">{currency(Math.round(proyeccionMensual))}</p>
+            <p className="text-xs text-slate-500 mt-1">proyección mensual</p>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
+            <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">
+              {currency(proyeccionRifas.reduce((s, r) => s + r.ingresoProyectado, 0))}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">potencial disponible</p>
+          </div>
         </div>
-        {view === "rifa" && proyeccionRifas.length > 0 && (
+        {proyeccionRifas.length > 0 && (
           <div className="space-y-1">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Por rifa activa · {periodLabel}</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+              {isGlobal ? "Por rifa activa" : selectedRifa?.nombre} · {periodLabel}
+            </p>
             {proyeccionRifas.map((r) => (
               <div key={r.nombre} className="flex items-center gap-3 py-1.5 border-b border-slate-50 dark:border-slate-700/50 last:border-0 text-sm">
-                <span className="flex-1 font-semibold truncate">{r.nombre}</span>
+                {isGlobal && <span className="flex-1 font-semibold truncate">{r.nombre}</span>}
                 <span className="text-xs text-slate-400">{r.disponibles} disponibles</span>
                 <span className="text-xs text-blue-600 dark:text-blue-400 font-bold">{currency(r.ingresoProyectado)}</span>
                 <span className="text-xs text-slate-500 w-32 text-right flex-shrink-0">
@@ -687,122 +724,115 @@ export default function MetricasPage() {
         )}
       </div>
 
-      {/* ── Vista Global: secciones exclusivas ── */}
-      {view === "global" && (
-        <>
-          {/* ── Análisis de calidad de revenue ── */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
-            <SectionTitle>Calidad de revenue</SectionTitle>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
-                <p className="text-2xl font-black text-green-600 dark:text-green-400">
-                  {pagadosAll.length > 0 ? `${((pagadosSinDesc.length / pagadosAll.length) * 100).toFixed(1)}%` : "—"}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">ventas a precio lleno</p>
-                <p className="text-xs text-slate-400">{pagadosSinDesc.length} boletos</p>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
-                <p className="text-2xl font-black text-amber-600 dark:text-amber-400">
-                  {pagadosAll.length > 0 ? `${((pagadosConDesc.length / pagadosAll.length) * 100).toFixed(1)}%` : "—"}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">ventas con descuento</p>
-                <p className="text-xs text-slate-400">{pagadosConDesc.length} boletos</p>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
-                <p className="text-2xl font-black text-red-600 dark:text-red-400">{currency(Math.round(revenuePerdido))}</p>
-                <p className="text-xs text-slate-500 mt-1">revenue perdido</p>
-                <p className="text-xs text-slate-400">{canceladosAll.length} boleto{canceladosAll.length !== 1 ? "s" : ""} cancelado{canceladosAll.length !== 1 ? "s" : ""}</p>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
-                <div className="flex justify-center gap-3 mb-1">
-                  <div>
-                    <p className="text-lg font-black text-purple-600 dark:text-purple-400">{conversionConDesc.toFixed(0)}%</p>
-                    <p className="text-xs text-slate-400">con dto.</p>
-                  </div>
-                  <div className="text-slate-300 self-center">vs</div>
-                  <div>
-                    <p className="text-lg font-black text-slate-600 dark:text-slate-300">{conversionSinDesc.toFixed(0)}%</p>
-                    <p className="text-xs text-slate-400">sin dto.</p>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-500">conversión por canal</p>
-              </div>
-            </div>
+      {/* ── Calidad de revenue ── */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
+        <SectionTitle>Calidad de revenue</SectionTitle>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
+            <p className="text-2xl font-black text-green-600 dark:text-green-400">
+              {pagadosAll.length > 0 ? `${((pagadosSinDesc.length / pagadosAll.length) * 100).toFixed(1)}%` : "—"}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">ventas a precio lleno</p>
+            <p className="text-xs text-slate-400">{pagadosSinDesc.length} boletos</p>
           </div>
-
-          {/* ── Concentración de revenue (Pareto) + Distribución tamaño ── */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
-              <SectionTitle>Concentración de revenue</SectionTitle>
-              {ingresoTotal === 0 ? (
-                <p className="text-sm text-slate-400">Sin datos aún.</p>
-              ) : (
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <p className="text-4xl font-black text-red-600 dark:text-red-400">{paretoDatos.top20pct.toFixed(0)}%</p>
-                    <p className="text-sm text-slate-500 mt-1">
-                      del revenue viene del top {paretoDatos.top20count} cliente{paretoDatos.top20count !== 1 ? "s" : ""}
-                      <span className="text-slate-400"> (20%)</span>
-                    </p>
-                  </div>
-                  {/* Pareto bar */}
-                  <div className="h-4 rounded-full overflow-hidden flex bg-slate-100 dark:bg-slate-700">
-                    <div className="h-full bg-red-500 rounded-full transition-all duration-700" style={{ width: `${Math.min(paretoDatos.top20pct, 100)}%` }} />
-                  </div>
-                  <div className="flex justify-between text-xs text-slate-400">
-                    <span>Top 20% de clientes</span>
-                    <span>Resto</span>
-                  </div>
-                  <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      Los <strong>5 mejores clientes</strong> generan el{" "}
-                      <strong className="text-red-600 dark:text-red-400">{paretoDatos.top5pct.toFixed(0)}%</strong> del revenue total
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
-              <SectionTitle>Distribución de tamaño de compra</SectionTitle>
-              <div className="space-y-3">
-                {distribucionTamano.map((bk) => (
-                  <HBar key={bk.label} label={bk.label} value={bk.count} max={Math.max(...distribucionTamano.map((x) => x.count), 1)} formatted={`${bk.count} boleto${bk.count !== 1 ? "s" : ""}`} color="bg-indigo-500" />
-                ))}
-              </div>
-              <p className="text-xs text-slate-400 mt-3">Basado en {pagadosAll.length} boleto{pagadosAll.length !== 1 ? "s" : ""} pagado{pagadosAll.length !== 1 ? "s" : ""}</p>
-            </div>
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
+            <p className="text-2xl font-black text-amber-600 dark:text-amber-400">
+              {pagadosAll.length > 0 ? `${((pagadosConDesc.length / pagadosAll.length) * 100).toFixed(1)}%` : "—"}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">ventas con descuento</p>
+            <p className="text-xs text-slate-400">{pagadosConDesc.length} boletos</p>
           </div>
-        </>
-      )}
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
+            <p className="text-2xl font-black text-red-600 dark:text-red-400">{currency(Math.round(revenuePerdido))}</p>
+            <p className="text-xs text-slate-500 mt-1">revenue perdido</p>
+            <p className="text-xs text-slate-400">{canceladosAll.length} cancelado{canceladosAll.length !== 1 ? "s" : ""}</p>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
+            <div className="flex justify-center gap-3 mb-1">
+              <div>
+                <p className="text-lg font-black text-purple-600 dark:text-purple-400">{conversionConDesc.toFixed(0)}%</p>
+                <p className="text-xs text-slate-400">con dto.</p>
+              </div>
+              <div className="text-slate-300 self-center text-xs">vs</div>
+              <div>
+                <p className="text-lg font-black text-slate-600 dark:text-slate-300">{conversionSinDesc.toFixed(0)}%</p>
+                <p className="text-xs text-slate-400">sin dto.</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500">conversión por canal</p>
+          </div>
+        </div>
+      </div>
 
-      {/* ── Vista Por rifa: secciones exclusivas ── */}
-      {view === "rifa" && (
+      {/* ── Pareto + Distribución de tamaño ── */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
+          <SectionTitle>Concentración de revenue</SectionTitle>
+          {ingresoTotal === 0
+            ? <p className="text-sm text-slate-400">Sin datos aún.</p>
+            : (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <p className="text-4xl font-black text-red-600 dark:text-red-400">{paretoDatos.top20pct.toFixed(0)}%</p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    del revenue viene del top {paretoDatos.top20count} cliente{paretoDatos.top20count !== 1 ? "s" : ""}
+                    <span className="text-slate-400"> (20%)</span>
+                  </p>
+                </div>
+                <div className="h-4 rounded-full overflow-hidden flex bg-slate-100 dark:bg-slate-700">
+                  <div className="h-full bg-red-500 rounded-full transition-all duration-700" style={{ width: `${Math.min(paretoDatos.top20pct, 100)}%` }} />
+                </div>
+                <div className="flex justify-between text-xs text-slate-400">
+                  <span>Top 20% de clientes</span>
+                  <span>Resto</span>
+                </div>
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Los <strong>5 mejores clientes</strong> generan el{" "}
+                    <strong className="text-red-600 dark:text-red-400">{paretoDatos.top5pct.toFixed(0)}%</strong> del revenue
+                  </p>
+                </div>
+              </div>
+            )}
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
+          <SectionTitle>Distribución de tamaño de compra</SectionTitle>
+          <div className="space-y-3">
+            {distribucionTamano.map((bk) => (
+              <HBar key={bk.label} label={bk.label} value={bk.count} max={Math.max(...distribucionTamano.map((x) => x.count), 1)} formatted={`${bk.count} boleto${bk.count !== 1 ? "s" : ""}`} color="bg-indigo-500" />
+            ))}
+          </div>
+          <p className="text-xs text-slate-400 mt-3">{pagadosAll.length} boleto{pagadosAll.length !== 1 ? "s" : ""} pagado{pagadosAll.length !== 1 ? "s" : ""}</p>
+        </div>
+      </div>
+
+      {/* ── Comparación entre rifas (solo en global) ── */}
+      {isGlobal && (
         <>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
               <SectionTitle>Ingresos por rifa</SectionTitle>
-              <div className="space-y-3">
-                {revenueByRifa.length === 0
-                  ? <p className="text-sm text-slate-400">Sin datos aún.</p>
-                  : revenueByRifa.map((r) => (
-                    <HBar key={r.name} label={r.name} value={r.total} max={revenueByRifa[0].total} formatted={currency(r.total)} color="bg-red-500" />
-                  ))}
-              </div>
+              {revenueByRifa.length === 0
+                ? <p className="text-sm text-slate-400">Sin datos aún.</p>
+                : revenueByRifa.map((r) => (
+                  <div key={r.name} className="mb-3 last:mb-0">
+                    <HBar label={r.name} value={r.total} max={revenueByRifa[0].total} formatted={currency(r.total)} color="bg-red-500" />
+                  </div>
+                ))}
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
               <SectionTitle>Boletos vendidos por rifa</SectionTitle>
-              <div className="space-y-3">
-                {boletosByRifa.length === 0
-                  ? <p className="text-sm text-slate-400">Sin datos aún.</p>
-                  : boletosByRifa.map((r) => (
-                    <HBar key={r.name} label={r.name} value={r.count} max={boletosByRifa[0].count} formatted={`${r.count} boleto${r.count !== 1 ? "s" : ""}`} color="bg-blue-500" />
-                  ))}
-              </div>
+              {boletosByRifa.length === 0
+                ? <p className="text-sm text-slate-400">Sin datos aún.</p>
+                : boletosByRifa.map((r) => (
+                  <div key={r.name} className="mb-3 last:mb-0">
+                    <HBar label={r.name} value={r.count} max={boletosByRifa[0].count} formatted={`${r.count} boleto${r.count !== 1 ? "s" : ""}`} color="bg-blue-500" />
+                  </div>
+                ))}
             </div>
           </div>
 
-          {/* Detalle por rifa */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
             <SectionTitle>Detalle por rifa</SectionTitle>
             <div className="overflow-x-auto">
@@ -831,8 +861,12 @@ export default function MetricasPage() {
                     const pendRiesgo  = rifaPend.filter((b) => { const d = b.created_at?.toDate?.(); return d && d < threshold; }).length;
                     const ocup        = total > 0 ? ((vend + apart) / total) * 100 : 0;
                     return (
-                      <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                        <td className="py-2.5 px-2 font-semibold">{r.nombre}</td>
+                      <tr key={r.id}
+                        className="hover:bg-slate-50 dark:hover:bg-slate-700/30 cursor-pointer"
+                        onClick={() => setSelectedRifaId(r.id!)}
+                        title="Ver métricas de esta rifa"
+                      >
+                        <td className="py-2.5 px-2 font-semibold text-red-600 dark:text-red-400 hover:underline">{r.nombre}</td>
                         <td className="py-2.5 px-2">
                           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${r.activa ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-slate-100 text-slate-500 dark:bg-slate-700"}`}>
                             {r.activa ? "Activa" : "Finalizada"}
@@ -869,22 +903,12 @@ export default function MetricasPage() {
                 </tbody>
               </table>
             </div>
-          </div>
-
-          {/* Distribución de tamaño de compra (solo en vista rifa) */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
-            <SectionTitle>Distribución de tamaño de compra</SectionTitle>
-            <div className="space-y-3">
-              {distribucionTamano.map((bk) => (
-                <HBar key={bk.label} label={bk.label} value={bk.count} max={Math.max(...distribucionTamano.map((x) => x.count), 1)} formatted={`${bk.count} boleto${bk.count !== 1 ? "s" : ""}`} color="bg-indigo-500" />
-              ))}
-            </div>
-            <p className="text-xs text-slate-400 mt-3">Basado en {pagadosAll.length} boleto{pagadosAll.length !== 1 ? "s" : ""} pagado{pagadosAll.length !== 1 ? "s" : ""}</p>
+            <p className="text-xs text-slate-400 mt-3">Haz clic en una fila para ver las métricas de esa rifa.</p>
           </div>
         </>
       )}
 
-      {/* ── Top clientes + Estado (siempre) ── */}
+      {/* ── Top clientes + Estado ── */}
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
           <SectionTitle>Top 10 clientes</SectionTitle>
@@ -920,9 +944,9 @@ export default function MetricasPage() {
                     <div className="flex-1 h-4 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div className="h-full bg-purple-500 rounded-full transition-all duration-700" style={{ width: barW(e.count, byEstado[0].count) }} />
                     </div>
-                    <span className="text-xs text-slate-500 flex-shrink-0 w-8 text-right">{e.count}</span>
-                    <span className="text-xs text-green-600 dark:text-green-400 flex-shrink-0 w-20 text-right">{currency(Math.round(e.revenue))}</span>
-                    <span className="text-xs text-slate-400 flex-shrink-0 hidden lg:block w-20 text-right" title="Revenue por cliente">
+                    <span className="text-xs text-slate-500 w-8 text-right flex-shrink-0">{e.count}</span>
+                    <span className="text-xs text-green-600 dark:text-green-400 w-20 text-right flex-shrink-0">{currency(Math.round(e.revenue))}</span>
+                    <span className="text-xs text-slate-400 hidden lg:block w-20 text-right flex-shrink-0" title="Revenue por cliente">
                       {e.revenue > 0 ? `${currency(Math.round(e.rpc))}/cli` : "—"}
                     </span>
                   </div>
@@ -932,7 +956,7 @@ export default function MetricasPage() {
         </div>
       </div>
 
-      {/* ── Horas pico + Días de semana (con revenue) ── */}
+      {/* ── Horas pico + Días de semana ── */}
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
           <SectionTitle>Horas pico</SectionTitle>
@@ -958,7 +982,7 @@ export default function MetricasPage() {
                   <div className="h-full bg-violet-500 rounded-full transition-all duration-700"
                     style={{ width: barW(d.count, Math.max(...diasSemana.map((x) => x.count), 1)) }} />
                 </div>
-                <span className="text-xs font-bold w-16 text-right flex-shrink-0">{d.count} bol.</span>
+                <span className="text-xs font-bold w-14 text-right flex-shrink-0">{d.count} bol.</span>
                 {d.revenue > 0 && (
                   <span className="text-xs text-green-600 dark:text-green-400 w-20 text-right flex-shrink-0">{currency(Math.round(d.revenue))}</span>
                 )}
@@ -969,7 +993,7 @@ export default function MetricasPage() {
         </div>
       </div>
 
-      {/* ── Rangos de números populares + Números más populares ── */}
+      {/* ── Rangos + Números populares ── */}
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
           <SectionTitle>Rangos de números populares</SectionTitle>
@@ -982,7 +1006,7 @@ export default function MetricasPage() {
                 ))}
               </div>
             )}
-          <p className="text-xs text-slate-400 mt-3">Distribución macro de todos los números vendidos (todo el tiempo)</p>
+          <p className="text-xs text-slate-400 mt-3">Distribución macro (todo el tiempo)</p>
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
@@ -1016,9 +1040,7 @@ export default function MetricasPage() {
           </div>
           <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
             <p className="text-2xl font-black text-green-600 dark:text-green-400">
-              {clientesRecurrentes.totalClientes > 0
-                ? `${((clientesRecurrentes.recurrentes.length / clientesRecurrentes.totalClientes) * 100).toFixed(1)}%`
-                : "0%"}
+              {clientesRecurrentes.totalClientes > 0 ? `${((clientesRecurrentes.recurrentes.length / clientesRecurrentes.totalClientes) * 100).toFixed(1)}%` : "0%"}
             </p>
             <p className="text-xs text-slate-500 mt-1">tasa de retención</p>
           </div>
@@ -1059,21 +1081,23 @@ export default function MetricasPage() {
               </p>
             </div>
           )}
-        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700">
-          <p className="text-xs font-semibold text-slate-500 mb-2">Códigos registrados</p>
-          <div className="space-y-1.5">
-            {codes.map((c) => (
-              <div key={c.id} className="flex items-center justify-between text-xs">
-                <span className="font-mono font-bold">{c.codigo}</span>
-                <div className="flex items-center gap-2 text-slate-400">
-                  <span>{c.porcentaje}% dto.</span>
-                  <span>{c.usos}/{c.max_usos} usos</span>
-                  <span className={`w-2 h-2 rounded-full ${c.activo ? "bg-green-500" : "bg-slate-300"}`} />
+        {isGlobal && (
+          <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700">
+            <p className="text-xs font-semibold text-slate-500 mb-2">Códigos registrados</p>
+            <div className="space-y-1.5">
+              {codes.map((c) => (
+                <div key={c.id} className="flex items-center justify-between text-xs">
+                  <span className="font-mono font-bold">{c.codigo}</span>
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <span>{c.porcentaje}% dto.</span>
+                    <span>{c.usos}/{c.max_usos} usos</span>
+                    <span className={`w-2 h-2 rounded-full ${c.activo ? "bg-green-500" : "bg-slate-300"}`} />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ── Actividad reciente ── */}
@@ -1088,7 +1112,7 @@ export default function MetricasPage() {
                 <span className="font-mono font-bold text-xs text-red-600 dark:text-red-400 w-24 flex-shrink-0">{b.folio}</span>
                 <span className="text-sm flex-1 min-w-0 truncate">{b.nombre} {b.apellidos}</span>
                 <span className="text-xs text-slate-400 hidden sm:block flex-shrink-0 w-6 text-center" title="Números comprados">{b.numeros.length}</span>
-                <span className="text-xs text-slate-400 hidden md:block flex-shrink-0 truncate max-w-[100px]">{rifaNombre}</span>
+                {isGlobal && <span className="text-xs text-slate-400 hidden md:block flex-shrink-0 truncate max-w-[100px]">{rifaNombre}</span>}
                 <span className="text-xs font-bold flex-shrink-0">{currency(b.precio_total)}</span>
                 <StatusBadge status={b.status} />
                 <span className="text-xs text-slate-400 hidden lg:block whitespace-nowrap flex-shrink-0">{fecha}</span>

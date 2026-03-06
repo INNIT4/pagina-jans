@@ -1,14 +1,24 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import {
-  getBoletos, getRifas, Boleto, Rifa,
-  cancelApartado, revertPagadoToApartado, cancelPagado,
+  getBoletosPaginados, getRifas, Boleto, Rifa,
+  cancelApartado, revertPagadoToApartado, cancelPagado, markBoletoPagadoConNumeros,
 } from "@/lib/firestore";
 
-type ServiceType = "apartado-disponible" | "pagado-apartado" | "pagado-disponible";
+type ServiceType = "apartado-pagado" | "apartado-disponible" | "pagado-apartado" | "pagado-disponible";
 
 const SERVICES: { id: ServiceType; label: string; from: string; to: string; fromColor: string; toColor: string; desc: string; filterStatus: "pendiente" | "pagado" }[] = [
+  {
+    id: "apartado-pagado",
+    label: "Apartado → Pagado",
+    from: "Apartado",
+    to: "Pagado",
+    fromColor: "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
+    toColor: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+    desc: "Confirma el pago de un boleto pendiente recibido por WhatsApp. Los números pasan de apartados a vendidos.",
+    filterStatus: "pendiente",
+  },
   {
     id: "apartado-disponible",
     label: "Apartado → Disponible",
@@ -44,22 +54,39 @@ const SERVICES: { id: ServiceType; label: string; from: string; to: string; from
 export default function ServiciosPage() {
   const [boletos, setBoletos] = useState<Boleto[]>([]);
   const [rifaMap, setRifaMap] = useState<Map<string, Rifa>>(new Map());
-  const [activeTab, setActiveTab] = useState<ServiceType>("apartado-disponible");
+  const [activeTab, setActiveTab] = useState<ServiceType>("apartado-pagado");
   const [filterRifa, setFilterRifa] = useState("");
   const [search, setSearch] = useState("");
   const [processing, setProcessing] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [rifas, setRifas] = useState<Rifa[]>([]);
 
-  async function load() {
-    const [bs, rs] = await Promise.all([getBoletos(), getRifas()]);
-    setBoletos(bs);
-    setRifas(rs);
-    setRifaMap(new Map(rs.map((r) => [r.id!, r])));
-    setLoading(false);
+  const rifasLoaded = useRef(false);
+  const lastLoadedStatus = useRef<string | null>(null);
+
+  async function loadForStatus(status: "pendiente" | "pagado") {
+    setLoading(true);
+    try {
+      const { boletos: bs } = await getBoletosPaginados({ status, pageSize: 9999, loadAll: true });
+      setBoletos(bs);
+      if (!rifasLoaded.current) {
+        const rs = await getRifas();
+        setRifas(rs);
+        setRifaMap(new Map(rs.map((r) => [r.id!, r])));
+        rifasLoaded.current = true;
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const s = SERVICES.find((s) => s.id === activeTab)!;
+    if (s.filterStatus === lastLoadedStatus.current) return;
+    lastLoadedStatus.current = s.filterStatus;
+    loadForStatus(s.filterStatus);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const service = SERVICES.find((s) => s.id === activeTab)!;
 
@@ -82,7 +109,9 @@ export default function ServiciosPage() {
 
   async function handleAction(boleto: Boleto) {
     const confirmMsg =
-      activeTab === "apartado-disponible"
+      activeTab === "apartado-pagado"
+        ? `¿Confirmar pago del folio ${boleto.folio} recibido por WhatsApp?`
+        : activeTab === "apartado-disponible"
         ? `¿Cancelar apartado del folio ${boleto.folio} y liberar sus números?`
         : activeTab === "pagado-apartado"
         ? `¿Revertir el folio ${boleto.folio} de Pagado a Apartado?`
@@ -92,14 +121,16 @@ export default function ServiciosPage() {
 
     setProcessing(boleto.id!);
     try {
-      if (activeTab === "apartado-disponible") {
+      if (activeTab === "apartado-pagado") {
+        await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+      } else if (activeTab === "apartado-disponible") {
         await cancelApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
       } else if (activeTab === "pagado-apartado") {
         await revertPagadoToApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
       } else {
         await cancelPagado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
       }
-      await load();
+      await loadForStatus(service.filterStatus);
     } catch {
       alert("Error al procesar la acción. Intenta de nuevo.");
     }
@@ -107,12 +138,14 @@ export default function ServiciosPage() {
   }
 
   const actionLabel: Record<ServiceType, string> = {
+    "apartado-pagado": "Confirmar pago WhatsApp",
     "apartado-disponible": "Cancelar apartado",
     "pagado-apartado": "Revertir a apartado",
     "pagado-disponible": "Cancelar y liberar",
   };
 
   const actionColor: Record<ServiceType, string> = {
+    "apartado-pagado": "bg-green-600 hover:bg-green-700",
     "apartado-disponible": "bg-amber-500 hover:bg-amber-600",
     "pagado-apartado": "bg-blue-600 hover:bg-blue-700",
     "pagado-disponible": "bg-red-600 hover:bg-red-700",
@@ -136,7 +169,7 @@ export default function ServiciosPage() {
       </div>
 
       {/* Service tabs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {SERVICES.map((s) => (
           <button
             key={s.id}

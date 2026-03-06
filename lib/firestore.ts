@@ -72,6 +72,7 @@ export interface DiscountCode {
   activo: boolean;
   usos: number;
   max_usos: number;
+  rifa_ids?: string[]; // vacío o undefined = válido para todas las rifas
 }
 
 export interface WhatsAppConfig {

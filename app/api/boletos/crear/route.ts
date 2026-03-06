@@ -100,8 +100,11 @@ export async function POST(req: NextRequest) {
 
   // ── Generar folio único ───────────────────────────────────────────────────
   let folio = generateFolio();
-  const folioCheck = await db.collection("boletos").where("folio", "==", folio).limit(1).get();
-  if (!folioCheck.empty) folio = generateFolio();
+  for (let i = 0; i < 5; i++) {
+    const folioCheck = await db.collection("boletos").where("folio", "==", folio).limit(1).get();
+    if (folioCheck.empty) break;
+    folio = generateFolio();
+  }
 
   // ── Transacción atómica: verificar números + crear boleto + incrementar código ──
   try {

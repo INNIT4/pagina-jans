@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getRifas, createBoleto, getNumerosOcupados, registrarNumerosVendidos, Rifa } from "@/lib/firestore";
+import { getRifas, createBoleto, getNumerosOcupados, registrarNumerosVendidos, getBoletoByFolio, Rifa } from "@/lib/firestore";
 import { generateFolio } from "@/lib/folio";
 import { Timestamp } from "firebase/firestore";
 import NumberGrid from "@/components/NumberGrid";
@@ -48,7 +48,12 @@ export default function RegalosPage() {
     setSaving(true);
     setSuccess(null);
     try {
-      const folio = generateFolio();
+      let folio = generateFolio();
+      for (let i = 0; i < 5; i++) {
+        const exists = await getBoletoByFolio(folio);
+        if (!exists) break;
+        folio = generateFolio();
+      }
 
       await createBoleto({
         folio,

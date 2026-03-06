@@ -77,7 +77,7 @@ export default function RandomPicker({ disponibles, onPick }: RandomPickerProps)
     setDisplay([]);
   }
 
-  const max = Math.min(disponibles.length, 20);
+  const max = Math.min(disponibles.length, 1000);
 
   return (
     <div className="bg-gradient-to-br from-slate-900 to-black rounded-2xl p-5 border border-red-900/40">

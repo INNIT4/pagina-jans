@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Demasiados intentos." }, { status: 429 });
   }
 
-  const { codigo } = await req.json().catch(() => ({}));
+  const { codigo, rifa_id } = await req.json().catch(() => ({}));
   if (typeof codigo !== "string" || !codigo.trim())
     return NextResponse.json({ error: "Código requerido." }, { status: 400 });
 
@@ -31,6 +31,11 @@ export async function POST(req: NextRequest) {
   const data = snap.docs[0].data();
   if (data.usos >= data.max_usos)
     return NextResponse.json({ error: "Código inválido o expirado." }, { status: 404 });
+
+  // Verificar restricción por rifa
+  const rifaIds: string[] = data.rifa_ids ?? [];
+  if (rifaIds.length > 0 && (!rifa_id || !rifaIds.includes(rifa_id)))
+    return NextResponse.json({ error: "Este código no aplica para esta rifa." }, { status: 404 });
 
   // Solo devuelve el porcentaje — nunca el id interno ni otros campos
   return NextResponse.json({ porcentaje: data.porcentaje as number });

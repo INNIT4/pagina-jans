@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getBoletos, Boleto } from "@/lib/firestore";
+import { getBoletosPaginados, Boleto } from "@/lib/firestore";
+import { DocumentSnapshot } from "firebase/firestore";
 
 interface Cliente {
   nombre: string;
@@ -16,28 +17,34 @@ export default function AdminClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [filterEstado, setFilterEstado] = useState("");
   const [filterCelular, setFilterCelular] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadedCount, setLoadedCount] = useState(0);
 
   useEffect(() => {
-    getBoletos().then((boletos) => {
+    async function loadAll() {
       const map = new Map<string, Cliente>();
-      boletos.forEach((b) => {
-        const key = b.celular;
-        if (!map.has(key)) {
-          map.set(key, {
-            nombre: b.nombre,
-            apellidos: b.apellidos,
-            celular: b.celular,
-            estado: b.estado,
-            boletos: [],
-            totalGastado: 0,
-          });
-        }
-        const c = map.get(key)!;
-        c.boletos.push(b);
-        if (b.status === "pagado") c.totalGastado += b.precio_total;
-      });
+      let cursor: DocumentSnapshot | null = null;
+      let total = 0;
+      while (true) {
+        const { boletos, hasMore, lastDoc } = await getBoletosPaginados({ pageSize: 500, cursor });
+        boletos.forEach((b) => {
+          const key = b.celular;
+          if (!map.has(key)) {
+            map.set(key, { nombre: b.nombre, apellidos: b.apellidos, celular: b.celular, estado: b.estado, boletos: [], totalGastado: 0 });
+          }
+          const c = map.get(key)!;
+          c.boletos.push(b);
+          if (b.status === "pagado") c.totalGastado += b.precio_total;
+        });
+        total += boletos.length;
+        setLoadedCount(total);
+        if (!hasMore || !lastDoc) break;
+        cursor = lastDoc;
+      }
       setClientes(Array.from(map.values()));
-    });
+      setLoading(false);
+    }
+    loadAll();
   }, []);
 
   const filtered = clientes.filter((c) => {
@@ -68,7 +75,9 @@ export default function AdminClientesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-black">Clientes ({filtered.length})</h1>
+        <h1 className="text-2xl font-black">
+          Clientes {loading ? <span className="text-base font-normal text-slate-400">Cargando {loadedCount} boletos...</span> : `(${filtered.length})`}
+        </h1>
         <button
           onClick={exportCSV}
           className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-colors"

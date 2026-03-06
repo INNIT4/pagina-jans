@@ -46,7 +46,7 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
       const res = await fetch("/api/discount/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codigo: code }),
+        body: JSON.stringify({ codigo: code, rifa_id: rifa.id }),
       });
       const data = await res.json();
       if (res.ok) {

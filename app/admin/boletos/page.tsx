@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getBoletos, markBoletoPagadoConNumeros, getRifas, cancelApartado, cancelPagado, cancelarBoletosExpirados, getAppSettings, Boleto, Rifa } from "@/lib/firestore";
+import { getBoletos, markBoletoPagadoConNumeros, getRifas, cancelApartado, cancelPagado, cancelarBoletosExpirados, revertPagadoToApartado, getAppSettings, Boleto, Rifa } from "@/lib/firestore";
 
 const PAGE_SIZE = 20;
 
@@ -51,6 +51,14 @@ export default function AdminBoletosPage() {
     } else if (boleto.status === "pagado") {
       await cancelPagado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
     }
+    setMarking(null);
+    await load();
+  }
+
+  async function handleRevertir(boleto: Boleto) {
+    if (!confirm(`¿Revertir boleto ${boleto.folio} a "pendiente"? Los números volverán a estado apartado.`)) return;
+    setMarking(boleto.id!);
+    await revertPagadoToApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
     setMarking(null);
     await load();
   }
@@ -156,7 +164,7 @@ export default function AdminBoletosPage() {
                   {b.created_at?.toDate?.()?.toLocaleDateString("es-MX") ?? "—"}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 flex-wrap">
                     {b.status === "pendiente" && (
                       <button
                         onClick={() => handleMarkPagado(b)}
@@ -164,6 +172,15 @@ export default function AdminBoletosPage() {
                         className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors"
                       >
                         {marking === b.id ? "..." : "Marcar pagado"}
+                      </button>
+                    )}
+                    {b.status === "pagado" && (
+                      <button
+                        onClick={() => handleRevertir(b)}
+                        disabled={marking === b.id}
+                        className="text-xs px-2 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-900/40 dark:hover:bg-amber-900/60 dark:text-amber-300 font-bold rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        {marking === b.id ? "..." : "Revertir"}
                       </button>
                     )}
                     {(b.status === "pendiente" || b.status === "pagado") && (

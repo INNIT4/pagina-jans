@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getBoletos, markBoletoPagadoConNumeros, getRifas, cancelApartado, cancelPagado, cancelarBoletosExpirados, revertPagadoToApartado, getAppSettings, Boleto, Rifa } from "@/lib/firestore";
+import { useEffect, useRef, useState } from "react";
+import {
+  getBoletosPaginados, markBoletoPagadoConNumeros, getRifas,
+  cancelApartado, cancelPagado, cancelarBoletosExpirados,
+  revertPagadoToApartado, getAppSettings, Boleto, Rifa,
+} from "@/lib/firestore";
+import { DocumentSnapshot } from "firebase/firestore";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 25;
 
 export default function AdminBoletosPage() {
   const [boletos, setBoletos] = useState<Boleto[]>([]);
@@ -11,47 +16,96 @@ export default function AdminBoletosPage() {
   const [filterStatus, setFilterStatus] = useState<"todos" | "pendiente" | "pagado" | "cancelado">("todos");
   const [filterRifa, setFilterRifa] = useState("");
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [marking, setMarking] = useState<string | null>(null);
   const [canceladosMsg, setCanceladosMsg] = useState<string | null>(null);
   const [limitHoras, setLimitHoras] = useState(24);
   const [cancelacionActiva, setCancelacionActiva] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
-  async function load() {
-    const [bs, rs] = await Promise.all([getBoletos(), getRifas()]);
+  // Cursor stack: index 0 = null (primera página), index N = cursor para llegar a la página N
+  const cursorStack = useRef<(DocumentSnapshot | null)[]>([null]);
+  const [pageIdx, setPageIdx] = useState(0);
+
+  const isSearching = search.trim().length > 0;
+
+  async function loadPage(idx: number, stack: (DocumentSnapshot | null)[]) {
+    setLoading(true);
+    const status = filterStatus !== "todos" ? filterStatus : undefined;
+    const rifaId = filterRifa || undefined;
+    const { boletos: bs, hasMore: more, lastDoc } = await getBoletosPaginados({
+      status,
+      rifaId,
+      pageSize: PAGE_SIZE,
+      cursor: stack[idx] ?? null,
+      loadAll: isSearching,
+    });
     setBoletos(bs);
-    setRifas(new Map(rs.map((r) => [r.id!, r])));
+    setHasMore(!isSearching && more);
+    // Guardar cursor para la siguiente página si no lo tenemos ya
+    if (!isSearching && lastDoc && stack.length <= idx + 1) {
+      stack.push(lastDoc);
+    }
+    setLoading(false);
   }
 
+  // Inicialización: auto-cancel + cargar rifas + primera página
   useEffect(() => {
+    getRifas().then((rs) => setRifas(new Map(rs.map((r) => [r.id!, r]))));
     getAppSettings().then(async (s) => {
       setLimitHoras(s.cancelacion_horas);
       setCancelacionActiva(s.cancelacion_activa);
       if (s.cancelacion_activa) {
         const cancelados = await cancelarBoletosExpirados(s.cancelacion_horas);
         if (cancelados > 0) {
-          setCanceladosMsg(`${cancelados} boleto${cancelados > 1 ? "s" : ""} expirado${cancelados > 1 ? "s" : ""} cancelado${cancelados > 1 ? "s" : ""} automáticamente.`);
+          setCanceladosMsg(`${cancelados} boleto${cancelados > 1 ? "s" : ""} cancelado${cancelados > 1 ? "s" : ""} automáticamente.`);
         }
       }
-    }).finally(() => load());
+    }).finally(() => {
+      cursorStack.current = [null];
+      setPageIdx(0);
+      loadPage(0, cursorStack.current);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Actualizar "ahora" cada minuto para que los tiempos sean en vivo
+  // Al cambiar filtros o búsqueda: resetear a página 0
+  useEffect(() => {
+    cursorStack.current = [null];
+    setPageIdx(0);
+    loadPage(0, cursorStack.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterStatus, filterRifa, search]);
+
+  // Actualizar "ahora" cada minuto
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(id);
   }, []);
 
-  // Reset to page 1 when filters change
-  useEffect(() => { setPage(1); }, [filterStatus, filterRifa, search]);
+  function goNext() {
+    const next = pageIdx + 1;
+    setPageIdx(next);
+    loadPage(next, cursorStack.current);
+  }
+
+  function goPrev() {
+    const prev = pageIdx - 1;
+    setPageIdx(prev);
+    loadPage(prev, cursorStack.current);
+  }
+
+  async function reloadCurrentPage() {
+    await loadPage(pageIdx, cursorStack.current);
+  }
 
   async function handleMarkPagado(boleto: Boleto) {
     if (!confirm(`¿Marcar boleto ${boleto.folio} como pagado?`)) return;
     setMarking(boleto.id!);
     await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
     setMarking(null);
-    await load();
+    await reloadCurrentPage();
   }
 
   async function handleCancel(boleto: Boleto) {
@@ -59,11 +113,11 @@ export default function AdminBoletosPage() {
     setMarking(boleto.id!);
     if (boleto.status === "pendiente") {
       await cancelApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
-    } else if (boleto.status === "pagado") {
+    } else {
       await cancelPagado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
     }
     setMarking(null);
-    await load();
+    await reloadCurrentPage();
   }
 
   async function handleRevertir(boleto: Boleto) {
@@ -71,22 +125,18 @@ export default function AdminBoletosPage() {
     setMarking(boleto.id!);
     await revertPagadoToApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
     setMarking(null);
-    await load();
+    await reloadCurrentPage();
   }
 
+  // Filtro de texto client-side sobre los boletos cargados
   const q = search.trim().toUpperCase();
-  const filtered = boletos.filter((b) => {
-    if (filterStatus !== "todos" && b.status !== filterStatus) return false;
-    if (filterRifa && b.rifa_id !== filterRifa) return false;
-    if (q) {
-      const nombre = `${b.nombre} ${b.apellidos}`.toUpperCase();
-      if (!b.folio.includes(q) && !nombre.includes(q) && !b.celular.includes(q)) return false;
-    }
-    return true;
-  });
+  const displayed = q
+    ? boletos.filter((b) => {
+        const nombre = `${b.nombre} ${b.apellidos}`.toUpperCase();
+        return b.folio.includes(q) || nombre.includes(q) || b.celular.includes(q);
+      })
+    : boletos;
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const rifaOptions = Array.from(rifas.values());
 
   return (
@@ -131,7 +181,9 @@ export default function AdminBoletosPage() {
             <option key={r.id} value={r.id}>{r.nombre}</option>
           ))}
         </select>
-        <span className="px-3 py-2 text-sm text-slate-500">{filtered.length} boletos</span>
+        <span className="px-3 py-2 text-sm text-slate-500">
+          {loading ? "Cargando..." : `${displayed.length} boletos${isSearching ? " encontrados" : ""}`}
+        </span>
       </div>
 
       {/* Table */}
@@ -150,123 +202,115 @@ export default function AdminBoletosPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-            {paginated.map((b) => (
-              <tr key={b.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                <td className="px-4 py-3 font-mono font-bold text-red-600 dark:text-red-400">{b.folio}</td>
-                <td className="px-4 py-3">{rifas.get(b.rifa_id)?.nombre ?? b.rifa_id}</td>
-                <td className="px-4 py-3">
-                  <p>{b.nombre} {b.apellidos}</p>
-                  <p className="text-xs text-slate-400">{b.celular}</p>
-                </td>
-                <td className="px-4 py-3 text-xs">{b.numeros.join(", ")}</td>
-                <td className="px-4 py-3 font-semibold">${b.precio_total.toLocaleString("es-MX")}</td>
-                <td className="px-4 py-3">
-                  <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                    b.status === "pagado"
-                      ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                      : b.status === "cancelado"
-                      ? "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
-                      : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-                  }`}>
-                    {b.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-xs">
-                  {b.status === "pendiente" && b.created_at
-                    ? (() => {
-                        const creado = b.created_at.toDate().getTime();
-                        const transcurridoMs = now - creado;
-                        const restanteMs = limitHoras * 3_600_000 - transcurridoMs;
-                        const transcurridoH = transcurridoMs / 3_600_000;
-                        const restanteH = restanteMs / 3_600_000;
-                        const expirado = cancelacionActiva && restanteMs <= 0;
-                        const urgente = cancelacionActiva && !expirado && restanteH < 2;
-                        const advertencia = cancelacionActiva && !expirado && !urgente && restanteH < limitHoras * 0.5;
-
-                        const fmtH = (h: number) => {
-                          const abs = Math.abs(h);
-                          if (abs < 1) return `${Math.round(abs * 60)} min`;
-                          return `${abs.toFixed(1)} h`;
-                        };
-
-                        return (
-                          <div className={`space-y-0.5 font-medium ${
-                            expirado ? "text-red-600 dark:text-red-400" :
-                            urgente  ? "text-orange-500 dark:text-orange-400" :
-                            advertencia ? "text-yellow-600 dark:text-yellow-400" :
-                            "text-slate-500 dark:text-slate-400"
-                          }`}>
-                            <p>hace {fmtH(transcurridoH)}</p>
-                            {cancelacionActiva && (
-                              <p className="opacity-75">
-                                {expirado ? `expirado hace ${fmtH(-restanteH)}` : `quedan ${fmtH(restanteH)}`}
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })()
-                    : <span className="text-slate-400">{b.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? "—"}</span>
-                  }
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-1.5 flex-wrap">
-                    {b.status === "pendiente" && (
-                      <button
-                        onClick={() => handleMarkPagado(b)}
-                        disabled={marking === b.id}
-                        className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors"
-                      >
-                        {marking === b.id ? "..." : "Marcar pagado"}
-                      </button>
-                    )}
-                    {b.status === "pagado" && (
-                      <button
-                        onClick={() => handleRevertir(b)}
-                        disabled={marking === b.id}
-                        className="text-xs px-2 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-900/40 dark:hover:bg-amber-900/60 dark:text-amber-300 font-bold rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        {marking === b.id ? "..." : "Revertir"}
-                      </button>
-                    )}
-                    {(b.status === "pendiente" || b.status === "pagado") && (
-                      <button
-                        onClick={() => handleCancel(b)}
-                        disabled={marking === b.id}
-                        className="text-xs px-2 py-1.5 bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-700 dark:bg-slate-700 dark:hover:bg-red-900/30 dark:text-slate-300 font-bold rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        Cancelar
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {loading
+              ? Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    {Array.from({ length: 8 }).map((_, j) => (
+                      <td key={j} className="px-4 py-3">
+                        <div className="h-4 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              : displayed.map((b) => (
+                <tr key={b.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                  <td className="px-4 py-3 font-mono font-bold text-red-600 dark:text-red-400">{b.folio}</td>
+                  <td className="px-4 py-3">{rifas.get(b.rifa_id)?.nombre ?? b.rifa_id}</td>
+                  <td className="px-4 py-3">
+                    <p>{b.nombre} {b.apellidos}</p>
+                    <p className="text-xs text-slate-400">{b.celular}</p>
+                  </td>
+                  <td className="px-4 py-3 text-xs">{b.numeros.join(", ")}</td>
+                  <td className="px-4 py-3 font-semibold">${b.precio_total.toLocaleString("es-MX")}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                      b.status === "pagado"
+                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                        : b.status === "cancelado"
+                        ? "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+                        : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
+                    }`}>
+                      {b.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {b.status === "pendiente" && b.created_at
+                      ? (() => {
+                          const creado = b.created_at.toDate().getTime();
+                          const transcurridoMs = now - creado;
+                          const restanteMs = limitHoras * 3_600_000 - transcurridoMs;
+                          const transcurridoH = transcurridoMs / 3_600_000;
+                          const restanteH = restanteMs / 3_600_000;
+                          const expirado = cancelacionActiva && restanteMs <= 0;
+                          const urgente = cancelacionActiva && !expirado && restanteH < 2;
+                          const advertencia = cancelacionActiva && !expirado && !urgente && restanteH < limitHoras * 0.5;
+                          const fmtH = (h: number) => {
+                            const abs = Math.abs(h);
+                            if (abs < 1) return `${Math.round(abs * 60)} min`;
+                            return `${abs.toFixed(1)} h`;
+                          };
+                          return (
+                            <div className={`space-y-0.5 font-medium ${
+                              expirado ? "text-red-600 dark:text-red-400" :
+                              urgente  ? "text-orange-500 dark:text-orange-400" :
+                              advertencia ? "text-yellow-600 dark:text-yellow-400" :
+                              "text-slate-500 dark:text-slate-400"
+                            }`}>
+                              <p>hace {fmtH(transcurridoH)}</p>
+                              {cancelacionActiva && (
+                                <p className="opacity-75">
+                                  {expirado ? `expirado hace ${fmtH(-restanteH)}` : `quedan ${fmtH(restanteH)}`}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()
+                      : <span className="text-slate-400">{b.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? "—"}</span>
+                    }
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1.5 flex-wrap">
+                      {b.status === "pendiente" && (
+                        <button onClick={() => handleMarkPagado(b)} disabled={marking === b.id}
+                          className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors">
+                          {marking === b.id ? "..." : "Marcar pagado"}
+                        </button>
+                      )}
+                      {b.status === "pagado" && (
+                        <button onClick={() => handleRevertir(b)} disabled={marking === b.id}
+                          className="text-xs px-2 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-900/40 dark:hover:bg-amber-900/60 dark:text-amber-300 font-bold rounded-lg transition-colors disabled:opacity-50">
+                          {marking === b.id ? "..." : "Revertir"}
+                        </button>
+                      )}
+                      {(b.status === "pendiente" || b.status === "pagado") && (
+                        <button onClick={() => handleCancel(b)} disabled={marking === b.id}
+                          className="text-xs px-2 py-1.5 bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-700 dark:bg-slate-700 dark:hover:bg-red-900/30 dark:text-slate-300 font-bold rounded-lg transition-colors disabled:opacity-50">
+                          Cancelar
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            }
           </tbody>
         </table>
-        {filtered.length === 0 && (
+        {!loading && displayed.length === 0 && (
           <p className="text-center py-8 text-slate-400">Sin boletos.</p>
         )}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Pagination — solo cuando no hay búsqueda activa */}
+      {!isSearching && (pageIdx > 0 || hasMore) && (
         <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-slate-500">
-            Página {page} de {totalPages} · {filtered.length} resultados
-          </p>
+          <p className="text-sm text-slate-500">Página {pageIdx + 1}</p>
           <div className="flex gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-600 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700"
-            >
+            <button onClick={goPrev} disabled={pageIdx === 0 || loading}
+              className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-600 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700">
               Anterior
             </button>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-600 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700"
-            >
+            <button onClick={goNext} disabled={!hasMore || loading}
+              className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-600 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700">
               Siguiente
             </button>
           </div>

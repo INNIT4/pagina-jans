@@ -9,11 +9,14 @@ import {
   query,
   where,
   orderBy,
+  limit,
+  startAfter,
   Timestamp,
   setDoc,
   increment,
   runTransaction,
   writeBatch,
+  DocumentSnapshot,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -264,6 +267,41 @@ export async function createBoleto(data: Omit<Boleto, "id">): Promise<string> {
 export async function getBoletos(): Promise<Boleto[]> {
   const snap = await getDocs(query(collection(db, "boletos"), orderBy("created_at", "desc")));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Boleto));
+}
+
+export interface BoletosPage {
+  boletos: Boleto[];
+  hasMore: boolean;
+  lastDoc: DocumentSnapshot | null;
+}
+
+/**
+ * Carga boletos con filtros server-side y paginación por cursor.
+ * - status y rifaId se aplican en Firestore (where).
+ * - Cuando search está activo (pasado desde el componente), se omite el limit
+ *   para que el llamador pueda filtrar por texto sobre el conjunto completo.
+ */
+export async function getBoletosPaginados(opts: {
+  status?: string;
+  rifaId?: string;
+  pageSize: number;
+  cursor?: DocumentSnapshot | null;
+  loadAll?: boolean; // true cuando hay búsqueda de texto activa
+}): Promise<BoletosPage> {
+  const constraints: Parameters<typeof query>[1][] = [orderBy("created_at", "desc")];
+  if (opts.status) constraints.push(where("status", "==", opts.status));
+  if (opts.rifaId) constraints.push(where("rifa_id", "==", opts.rifaId));
+  if (!opts.loadAll) constraints.push(limit(opts.pageSize + 1));
+  if (opts.cursor) constraints.push(startAfter(opts.cursor));
+
+  const snap = await getDocs(query(collection(db, "boletos"), ...constraints));
+  const hasMore = !opts.loadAll && snap.docs.length > opts.pageSize;
+  const docs = hasMore ? snap.docs.slice(0, opts.pageSize) : snap.docs;
+  return {
+    boletos: docs.map((d) => ({ id: d.id, ...d.data() } as Boleto)),
+    hasMore,
+    lastDoc: docs.length > 0 ? docs[docs.length - 1] : null,
+  };
 }
 
 export async function getBoletoByFolio(folio: string): Promise<Boleto | null> {

@@ -76,6 +76,20 @@ export default function RifaPreviaDetailPage() {
         </div>
         <p className="text-slate-500 dark:text-slate-400 mb-4">{rifa.descripcion}</p>
 
+        {/* Ganador banner */}
+        {rifa.ganador && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-2xl p-5 mb-6">
+            <p className="text-xs font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide mb-1">Ganador</p>
+            <div className="flex items-baseline gap-3">
+              <span className="text-4xl font-black text-yellow-600 dark:text-yellow-400">#{rifa.ganador.numero}</span>
+              <div>
+                <p className="font-bold text-lg leading-tight">{rifa.ganador.nombre} {rifa.ganador.apellidos}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Folio: {rifa.ganador.folio}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {rifa.texto_inferior && (
           <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 mb-4 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
             {rifa.texto_inferior}
@@ -103,6 +117,11 @@ export default function RifaPreviaDetailPage() {
       <div>
         <h2 className="text-lg font-bold mb-2">Números</h2>
         <div className="flex flex-wrap gap-1.5 mb-4 text-xs text-slate-500">
+          {rifa.ganador && (
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded bg-yellow-400 inline-block" /> Ganador
+            </span>
+          )}
           <span className="flex items-center gap-1">
             <span className="w-3 h-3 rounded bg-slate-400 inline-block" /> Vendido
           </span>
@@ -118,12 +137,15 @@ export default function RifaPreviaDetailPage() {
           {Array.from({ length: total }, (_, i) => rifa.num_inicio + i).map((n) => {
             const isVendido = vendidosSet.has(n);
             const isApartado = apartadosSet.has(n);
+            const isGanador = rifa.ganador?.numero === n;
             return (
               <div
                 key={n}
                 className={`flex items-center justify-center rounded-lg text-xs font-bold select-none
                   ${total <= 100 ? "w-10 h-10" : total <= 500 ? "w-8 h-8 text-[10px]" : "w-6 h-6 text-[9px]"}
-                  ${isVendido
+                  ${isGanador
+                    ? "bg-yellow-400 text-white ring-2 ring-yellow-500"
+                    : isVendido
                     ? "bg-slate-400 dark:bg-slate-500 text-white"
                     : isApartado
                     ? "bg-amber-400 text-white"

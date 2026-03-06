@@ -19,6 +19,14 @@ import { db } from "./firebase";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface Ganador {
+  numero: number;
+  nombre: string;
+  apellidos: string;
+  folio: string;
+  anunciado_at: string; // ISO timestamp
+}
+
 export interface Rifa {
   id?: string;
   nombre: string;
@@ -34,6 +42,7 @@ export interface Rifa {
   // Counters — derived from the `numeros` subcollection
   num_vendidos: number;
   num_apartados: number;
+  ganador?: Ganador;
 }
 
 export interface Boleto {
@@ -99,6 +108,31 @@ export async function updateRifa(id: string, data: Partial<Rifa>): Promise<void>
 
 export async function deleteRifa(id: string): Promise<void> {
   await deleteDoc(doc(db, "rifas", id));
+}
+
+/**
+ * Busca el boleto pagado que contiene el número ganador,
+ * guarda el ganador en el documento de la rifa y la marca como inactiva.
+ * Lanza error si el número no corresponde a ningún boleto pagado.
+ */
+export async function anunciarGanador(rifaId: string, numero: number): Promise<Ganador> {
+  const snap = await getDocs(
+    query(collection(db, "boletos"), where("rifa_id", "==", rifaId), where("numeros", "array-contains", numero))
+  );
+  const boletoPagado = snap.docs.find((d) => d.data().status === "pagado");
+  if (!boletoPagado) {
+    throw new Error(`No se encontró un boleto pagado con el número ${numero}.`);
+  }
+  const data = boletoPagado.data() as Boleto;
+  const ganador: Ganador = {
+    numero,
+    nombre: data.nombre,
+    apellidos: data.apellidos,
+    folio: data.folio,
+    anunciado_at: new Date().toISOString(),
+  };
+  await updateDoc(doc(db, "rifas", rifaId), { ganador, activa: false });
+  return ganador;
 }
 
 // ─── Numbers subcollection ────────────────────────────────────────────────────

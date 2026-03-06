@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getRifas, getBoletos, getAppSettings, setAppSettings, Rifa } from "@/lib/firestore";
+import { AppSettings } from "@/lib/firestore";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -13,11 +14,17 @@ export default function AdminDashboard() {
     ingresos: 0,
   });
   const [rifas, setRifas] = useState<Rifa[]>([]);
-  const [mostrarApartados, setMostrarApartados] = useState(true);
+  const [settings, setSettings] = useState<AppSettings>({
+    mostrar_apartados: true,
+    cancelacion_activa: false,
+    cancelacion_horas: 24,
+  });
   const [togglingApartados, setTogglingApartados] = useState(false);
+  const [savingCancelacion, setSavingCancelacion] = useState(false);
+  const [horasInput, setHorasInput] = useState("24");
 
   useEffect(() => {
-    Promise.all([getRifas(), getBoletos(), getAppSettings().catch(() => ({ mostrar_apartados: true }))]).then(([rs, boletos, settings]) => {
+    Promise.all([getRifas(), getBoletos(), getAppSettings()]).then(([rs, boletos, s]) => {
       const pagados = boletos.filter((b) => b.status === "pagado");
       setStats({
         rifasActivas: rs.filter((r) => r.activa).length,
@@ -27,16 +34,32 @@ export default function AdminDashboard() {
         ingresos: pagados.reduce((sum, b) => sum + b.precio_total, 0),
       });
       setRifas(rs);
-      setMostrarApartados(settings.mostrar_apartados);
+      setSettings(s);
+      setHorasInput(String(s.cancelacion_horas));
     });
   }, []);
 
   async function toggleApartados() {
     setTogglingApartados(true);
-    const next = !mostrarApartados;
+    const next = !settings.mostrar_apartados;
     await setAppSettings({ mostrar_apartados: next });
-    setMostrarApartados(next);
+    setSettings((s) => ({ ...s, mostrar_apartados: next }));
     setTogglingApartados(false);
+  }
+
+  async function saveCancelacion() {
+    const horas = parseInt(horasInput);
+    if (isNaN(horas) || horas < 1) return;
+    setSavingCancelacion(true);
+    await setAppSettings({ cancelacion_activa: settings.cancelacion_activa, cancelacion_horas: horas });
+    setSettings((s) => ({ ...s, cancelacion_horas: horas }));
+    setSavingCancelacion(false);
+  }
+
+  async function toggleCancelacion() {
+    const next = !settings.cancelacion_activa;
+    await setAppSettings({ cancelacion_activa: next });
+    setSettings((s) => ({ ...s, cancelacion_activa: next }));
   }
 
   const cards = [
@@ -66,29 +89,83 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Apartados visibility toggle */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-5 mb-8 flex items-center justify-between gap-4">
-        <div>
-          <p className="font-bold text-sm">Mostrar apartados en la grid pública</p>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {mostrarApartados
-              ? "Los compradores ven los números apartados (amarillo) en la rifa."
-              : "Los apartados se muestran como disponibles para los compradores."}
-          </p>
-        </div>
-        <button
-          onClick={toggleApartados}
-          disabled={togglingApartados}
-          className={`relative inline-flex h-7 w-12 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
-            mostrarApartados ? "bg-green-500" : "bg-slate-300 dark:bg-slate-600"
-          }`}
-        >
-          <span
-            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
-              mostrarApartados ? "translate-x-5" : "translate-x-0"
+      {/* Settings panel */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-5 mb-8 space-y-5">
+        <h2 className="text-sm font-black text-slate-500 uppercase tracking-wide">Configuración</h2>
+
+        {/* Apartados toggle */}
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="font-bold text-sm">Mostrar apartados en la grid pública</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {settings.mostrar_apartados
+                ? "Los compradores ven los números apartados (amarillo)."
+                : "Los apartados aparecen como disponibles para los compradores."}
+            </p>
+          </div>
+          <button
+            onClick={toggleApartados}
+            disabled={togglingApartados}
+            className={`relative inline-flex h-7 w-12 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+              settings.mostrar_apartados ? "bg-green-500" : "bg-slate-300 dark:bg-slate-600"
             }`}
-          />
-        </button>
+          >
+            <span
+              className={`inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                settings.mostrar_apartados ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="border-t border-slate-100 dark:border-slate-700" />
+
+        {/* Cancelación automática */}
+        <div>
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <div>
+              <p className="font-bold text-sm">Cancelación automática de boletos pendientes</p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {settings.cancelacion_activa
+                  ? `Los boletos pendientes se cancelan tras ${settings.cancelacion_horas} h sin pago, al entrar a la sección Boletos.`
+                  : "Sin cancelación automática. El admin cancela manualmente."}
+              </p>
+            </div>
+            <button
+              onClick={toggleCancelacion}
+              className={`relative inline-flex h-7 w-12 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                settings.cancelacion_activa ? "bg-green-500" : "bg-slate-300 dark:bg-slate-600"
+              }`}
+            >
+              <span
+                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                  settings.cancelacion_activa ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+          {settings.cancelacion_activa && (
+            <div className="flex items-center gap-3 mt-2">
+              <label className="text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">Tiempo límite:</label>
+              <input
+                type="number"
+                min={1}
+                max={720}
+                value={horasInput}
+                onChange={(e) => setHorasInput(e.target.value)}
+                className="w-24 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+              <span className="text-sm text-slate-500">horas</span>
+              <button
+                onClick={saveCancelacion}
+                disabled={savingCancelacion}
+                className="px-4 py-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition-colors"
+              >
+                {savingCancelacion ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Numbers breakdown per rifa */}

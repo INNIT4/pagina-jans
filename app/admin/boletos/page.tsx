@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getBoletos, markBoletoPagadoConNumeros, getRifas, cancelApartado, cancelPagado, Boleto, Rifa } from "@/lib/firestore";
+import { getBoletos, markBoletoPagadoConNumeros, getRifas, cancelApartado, cancelPagado, cancelarBoletosExpirados, getAppSettings, Boleto, Rifa } from "@/lib/firestore";
 
 const PAGE_SIZE = 20;
 
@@ -13,6 +13,7 @@ export default function AdminBoletosPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [marking, setMarking] = useState<string | null>(null);
+  const [canceladosMsg, setCanceladosMsg] = useState<string | null>(null);
 
   async function load() {
     const [bs, rs] = await Promise.all([getBoletos(), getRifas()]);
@@ -20,7 +21,16 @@ export default function AdminBoletosPage() {
     setRifas(new Map(rs.map((r) => [r.id!, r])));
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    getAppSettings().then(async (s) => {
+      if (s.cancelacion_activa) {
+        const cancelados = await cancelarBoletosExpirados(s.cancelacion_horas);
+        if (cancelados > 0) {
+          setCanceladosMsg(`${cancelados} boleto${cancelados > 1 ? "s" : ""} expirado${cancelados > 1 ? "s" : ""} cancelado${cancelados > 1 ? "s" : ""} automáticamente.`);
+        }
+      }
+    }).finally(() => load());
+  }, []);
 
   // Reset to page 1 when filters change
   useEffect(() => { setPage(1); }, [filterStatus, filterRifa, search]);
@@ -63,6 +73,16 @@ export default function AdminBoletosPage() {
   return (
     <div>
       <h1 className="text-2xl font-black mb-6">Boletos</h1>
+
+      {canceladosMsg && (
+        <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3 mb-5 text-sm text-amber-800 dark:text-amber-300">
+          <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 102 0V6zm-1 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/>
+          </svg>
+          {canceladosMsg}
+          <button onClick={() => setCanceladosMsg(null)} className="ml-auto text-amber-500 hover:text-amber-700">✕</button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">

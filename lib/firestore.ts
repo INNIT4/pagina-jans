@@ -326,15 +326,88 @@ export async function deleteDiscountCode(id: string): Promise<void> {
 
 export interface AppSettings {
   mostrar_apartados: boolean;
+  cancelacion_activa: boolean;
+  cancelacion_horas: number;
 }
+
+const DEFAULT_SETTINGS: AppSettings = {
+  mostrar_apartados: true,
+  cancelacion_activa: false,
+  cancelacion_horas: 24,
+};
 
 export async function getAppSettings(): Promise<AppSettings> {
   const snap = await getDoc(doc(db, "settings", "config"));
-  return snap.exists() ? (snap.data() as AppSettings) : { mostrar_apartados: true };
+  return snap.exists() ? { ...DEFAULT_SETTINGS, ...(snap.data() as Partial<AppSettings>) } : DEFAULT_SETTINGS;
 }
 
 export async function setAppSettings(data: Partial<AppSettings>): Promise<void> {
   await setDoc(doc(db, "settings", "config"), data, { merge: true });
+}
+
+/**
+ * Cancela todos los boletos "pendiente" cuya fecha de creación supera `horas` horas.
+ * Libera sus números y actualiza los contadores de la rifa.
+ * Devuelve el número de boletos cancelados.
+ */
+export async function cancelarBoletosExpirados(horas: number): Promise<number> {
+  const corte = new Date(Date.now() - horas * 60 * 60 * 1000);
+  const corteTs = Timestamp.fromDate(corte);
+
+  const snap = await getDocs(
+    query(
+      collection(db, "boletos"),
+      where("status", "==", "pendiente"),
+      where("created_at", "<", corteTs)
+    )
+  );
+
+  if (snap.empty) return 0;
+
+  // Agrupar por rifa para actualizar los contadores de forma eficiente
+  const porRifa = new Map<string, { boletoId: string; numeros: number[] }[]>();
+  snap.docs.forEach((d) => {
+    const b = d.data() as Boleto;
+    const entry = { boletoId: d.id, numeros: b.numeros };
+    const arr = porRifa.get(b.rifa_id) ?? [];
+    arr.push(entry);
+    porRifa.set(b.rifa_id, arr);
+  });
+
+  // Firestore batch tiene límite de 500 ops; procesamos en lotes
+  const BATCH_LIMIT = 400;
+  let ops: (() => void)[] = [];
+  let batch = writeBatch(db);
+  let opCount = 0;
+  const batches: ReturnType<typeof writeBatch>[] = [batch];
+
+  function addOp(fn: (b: ReturnType<typeof writeBatch>) => void) {
+    if (opCount >= BATCH_LIMIT) {
+      batch = writeBatch(db);
+      batches.push(batch);
+      opCount = 0;
+    }
+    fn(batch);
+    opCount++;
+  }
+
+  porRifa.forEach((boletos, rifaId) => {
+    let totalNums = 0;
+    boletos.forEach(({ boletoId, numeros }) => {
+      // Cancelar boleto
+      addOp((b) => b.update(doc(db, "boletos", boletoId), { status: "cancelado" }));
+      // Liberar números
+      numeros.forEach((n) => {
+        addOp((b) => b.delete(doc(db, "rifas", rifaId, "numeros", String(n))));
+      });
+      totalNums += numeros.length;
+    });
+    // Decrementar contador de apartados
+    addOp((b) => b.update(doc(db, "rifas", rifaId), { num_apartados: increment(-totalNums) }));
+  });
+
+  await Promise.all(batches.map((b) => b.commit()));
+  return snap.size;
 }
 
 // ─── WhatsApp Config ──────────────────────────────────────────────────────────

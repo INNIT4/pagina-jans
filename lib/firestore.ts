@@ -356,3 +356,117 @@ export async function upsertBankAccount(id: string, data: Omit<BankAccount, "id"
 export async function deleteBankAccount(id: string): Promise<void> {
   await deleteDoc(doc(db, "bank_accounts", id));
 }
+
+// ─── Site Content (CMS) ───────────────────────────────────────────────────────
+
+export interface FaqItem {
+  q: string;
+  a: string;
+}
+
+export interface HowItWorksStep {
+  title: string;
+  desc: string;
+}
+
+export interface ValueCard {
+  icon: string;
+  title: string;
+  desc: string;
+}
+
+export interface SiteTexts {
+  hero_title: string;
+  hero_subtitle: string;
+  hero_banks_text: string;
+  how_it_works_title: string;
+  how_it_works_steps: HowItWorksStep[];
+  about_mission_title: string;
+  about_mission_text: string;
+  about_values: ValueCard[];
+  about_why_title: string;
+  about_why_items: string[];
+  faq_title: string;
+  faq_subtitle: string;
+  faq_items: FaqItem[];
+}
+
+export const DEFAULT_SITE_TEXTS: SiteTexts = {
+  hero_title: "Gana con Sorteos Jans",
+  hero_subtitle:
+    "Participa en nuestras rifas en línea. Elige tus números de la suerte, apártalos y paga fácilmente por transferencia bancaria.",
+  hero_banks_text: "Azteca · Nu · BBVA",
+  how_it_works_title: "¿Cómo participar?",
+  how_it_works_steps: [
+    { title: "Elige tu rifa", desc: "Navega las rifas disponibles y selecciona la que más te guste." },
+    { title: "Selecciona números", desc: "Elige tus números de la suerte en la cuadrícula interactiva." },
+    { title: "Aparta y paga", desc: "Completa el formulario y realiza tu pago por transferencia bancaria." },
+    { title: "Espera el sorteo", desc: "Recibirás confirmación por WhatsApp. ¡Buena suerte!" },
+  ],
+  about_mission_title: "Nuestra misión",
+  about_mission_text:
+    "En Sorteos Jans creemos en la transparencia y la confianza. Nuestro objetivo es brindarte una experiencia de compra de boletos segura, sencilla y emocionante desde la comodidad de tu hogar.",
+  about_values: [
+    { icon: "🔒", title: "Seguridad", desc: "Tus datos están protegidos y nunca compartimos tu información con terceros." },
+    { icon: "✅", title: "Transparencia", desc: "Los sorteos se realizan de forma pública y verificable. Todo queda registrado." },
+    { icon: "💬", title: "Soporte", desc: "Estamos disponibles por WhatsApp para resolver cualquier duda antes, durante y después del sorteo." },
+  ],
+  about_why_title: "¿Por qué elegirnos?",
+  about_why_items: [
+    "Sistema completamente en línea — disponible 24/7",
+    "Múltiples opciones de pago bancario",
+    "Confirmación inmediata por WhatsApp",
+    "Historial completo de rifas anteriores",
+    "Códigos de descuento exclusivos para nuestros clientes frecuentes",
+  ],
+  faq_title: "Preguntas Frecuentes",
+  faq_subtitle: "Respuestas a las dudas más comunes.",
+  faq_items: [
+    {
+      q: "¿Cómo aparto mis boletos?",
+      a: "Selecciona los números que deseas en la cuadrícula, haz clic en 'Apartar', llena el formulario con tus datos y confirma. Te llegará un folio de confirmación.",
+    },
+    {
+      q: "¿Cómo realizo el pago?",
+      a: "Después de apartar, serás redirigido a la página de tarjetas con los datos bancarios. Realiza la transferencia por el monto exacto e indica tu folio en el concepto.",
+    },
+    {
+      q: "¿Cuánto tiempo tengo para pagar?",
+      a: "Tienes 24 horas para realizar el pago después de apartar. Pasado ese tiempo, los números pueden liberarse.",
+    },
+    {
+      q: "¿Cómo sé si mi pago fue confirmado?",
+      a: "Puedes consultar el estado de tu boleto en la sección 'Consultar Boleto' usando tu folio o número de celular. También te notificaremos por WhatsApp.",
+    },
+    {
+      q: "¿Puedo apartar varios números?",
+      a: "Sí, puedes seleccionar todos los números que quieras en la cuadrícula antes de apartar.",
+    },
+    {
+      q: "¿Cómo funciona el sorteo?",
+      a: "El sorteo se realiza en la fecha indicada en cada rifa. El ganador se notifica públicamente y por WhatsApp.",
+    },
+    {
+      q: "¿Tienen códigos de descuento?",
+      a: "Sí, en ocasiones especiales emitimos códigos de descuento. Introdúcelos en el formulario de apartado para ver si aplican.",
+    },
+    {
+      q: "¿Cómo contactarlos?",
+      a: "Puedes contactarnos por WhatsApp usando el botón verde en la esquina inferior derecha, o enviar un mensaje directamente.",
+    },
+  ],
+};
+
+export async function getSiteTexts(): Promise<SiteTexts> {
+  try {
+    const snap = await getDoc(doc(db, "site_content", "texts"));
+    if (!snap.exists()) return DEFAULT_SITE_TEXTS;
+    return { ...DEFAULT_SITE_TEXTS, ...(snap.data() as Partial<SiteTexts>) };
+  } catch {
+    return DEFAULT_SITE_TEXTS;
+  }
+}
+
+export async function setSiteTexts(data: Partial<SiteTexts>): Promise<void> {
+  await setDoc(doc(db, "site_content", "texts"), data, { merge: true });
+}

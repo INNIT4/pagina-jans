@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: "/admin/codigos", label: "Descuentos" },
   { href: "/admin/whatsapp", label: "WhatsApp" },
   { href: "/admin/tarjetas", label: "Tarjetas" },
+  { href: "/admin/contenido", label: "Contenido" },
   { href: "/admin/reportes", label: "Reportes" },
   { href: "/admin/servicios", label: "Servicios" },
   { href: "/admin/regalos", label: "Regalos" },

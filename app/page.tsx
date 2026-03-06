@@ -1,15 +1,17 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getRifas } from "@/lib/firestore";
+import { getRifas, getSiteTexts, DEFAULT_SITE_TEXTS } from "@/lib/firestore";
 import BankCards from "@/components/BankCards";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
   let rifasActivas: Awaited<ReturnType<typeof getRifas>> = [];
+  let texts = DEFAULT_SITE_TEXTS;
   try {
-    const all = await getRifas();
+    const [all, t] = await Promise.all([getRifas(), getSiteTexts()]);
     rifasActivas = all.filter((r) => r.activa).slice(0, 3);
+    texts = t;
   } catch {
     // Firebase not configured yet
   }
@@ -38,11 +40,18 @@ export default async function HomePage() {
             </div>
           </div>
           <h1 className="text-5xl md:text-6xl font-black mb-6 leading-tight">
-            Gana con <span className="text-yellow-300">Sorteos Jans</span>
+            {texts.hero_title.includes("Sorteos Jans") ? (
+              <>
+                {texts.hero_title.split("Sorteos Jans")[0]}
+                <span className="text-yellow-300">Sorteos Jans</span>
+                {texts.hero_title.split("Sorteos Jans")[1]}
+              </>
+            ) : (
+              texts.hero_title
+            )}
           </h1>
           <p className="text-xl text-red-100 mb-8 max-w-2xl mx-auto">
-            Participa en nuestras rifas en línea. Elige tus números de la suerte, apártalos y paga
-            fácilmente por transferencia bancaria.
+            {texts.hero_subtitle}
           </p>
           <div className="flex flex-wrap gap-4 justify-center mb-6">
             <Link
@@ -71,7 +80,7 @@ export default async function HomePage() {
             </div>
             <div className="text-left">
               <p className="text-white font-bold text-sm leading-none">Métodos de pago</p>
-              <p className="text-white/60 text-xs mt-0.5">Azteca · Nu · BBVA</p>
+              <p className="text-white/60 text-xs mt-0.5">{texts.hero_banks_text}</p>
             </div>
             <svg className="w-4 h-4 text-white/60 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -83,17 +92,12 @@ export default async function HomePage() {
       {/* How it works */}
       <section className="py-20 px-4 bg-slate-50 dark:bg-slate-800">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">¿Cómo participar?</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">{texts.how_it_works_title}</h2>
           <div className="grid md:grid-cols-4 gap-8">
-            {[
-              { step: "1", title: "Elige tu rifa", desc: "Navega las rifas disponibles y selecciona la que más te guste." },
-              { step: "2", title: "Selecciona números", desc: "Elige tus números de la suerte en la cuadrícula interactiva." },
-              { step: "3", title: "Aparta y paga", desc: "Completa el formulario y realiza tu pago por transferencia bancaria." },
-              { step: "4", title: "Espera el sorteo", desc: "Recibirás confirmación por WhatsApp. ¡Buena suerte!" },
-            ].map((item) => (
-              <div key={item.step} className="text-center">
+            {texts.how_it_works_steps.map((item, i) => (
+              <div key={i} className="text-center">
                 <div className="w-14 h-14 rounded-full bg-red-600 text-white text-xl font-black flex items-center justify-center mx-auto mb-4">
-                  {item.step}
+                  {i + 1}
                 </div>
                 <h3 className="font-bold text-lg mb-2">{item.title}</h3>
                 <p className="text-slate-500 dark:text-slate-400 text-sm">{item.desc}</p>

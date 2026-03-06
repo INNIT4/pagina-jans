@@ -1,4 +1,10 @@
-export default function SobreNosotrosPage() {
+import { getSiteTexts } from "@/lib/firestore";
+
+export const revalidate = 300;
+
+export default async function SobreNosotrosPage() {
+  const texts = await getSiteTexts();
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <h1 className="text-4xl font-black mb-2">Sobre Nosotros</h1>
@@ -8,20 +14,13 @@ export default function SobreNosotrosPage() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/images/2.jpeg" alt="Sorteos Jans" className="w-full h-48 object-cover object-center" />
         <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-8">
-          <h2 className="text-3xl font-black text-white mb-2">Nuestra misión</h2>
-          <p className="text-white/80 text-base leading-relaxed max-w-2xl">
-            En Sorteos Jans creemos en la transparencia y la confianza. Nuestro objetivo es brindarte una
-            experiencia de compra de boletos segura, sencilla y emocionante desde la comodidad de tu hogar.
-          </p>
+          <h2 className="text-3xl font-black text-white mb-2">{texts.about_mission_title}</h2>
+          <p className="text-white/80 text-base leading-relaxed max-w-2xl">{texts.about_mission_text}</p>
         </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6 mb-10">
-        {[
-          { icon: "🔒", title: "Seguridad", desc: "Tus datos están protegidos y nunca compartimos tu información con terceros." },
-          { icon: "✅", title: "Transparencia", desc: "Los sorteos se realizan de forma pública y verificable. Todo queda registrado." },
-          { icon: "💬", title: "Soporte", desc: "Estamos disponibles por WhatsApp para resolver cualquier duda antes, durante y después del sorteo." },
-        ].map((item) => (
+        {texts.about_values.map((item) => (
           <div
             key={item.title}
             className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow border border-slate-100 dark:border-slate-700 text-center"
@@ -34,15 +33,9 @@ export default function SobreNosotrosPage() {
       </div>
 
       <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-8">
-        <h2 className="text-2xl font-bold mb-4">¿Por qué elegirnos?</h2>
+        <h2 className="text-2xl font-bold mb-4">{texts.about_why_title}</h2>
         <ul className="space-y-3 text-slate-600 dark:text-slate-300">
-          {[
-            "Sistema completamente en línea — disponible 24/7",
-            "Múltiples opciones de pago bancario",
-            "Confirmación inmediata por WhatsApp",
-            "Historial completo de rifas anteriores",
-            "Códigos de descuento exclusivos para nuestros clientes frecuentes",
-          ].map((item) => (
+          {texts.about_why_items.map((item) => (
             <li key={item} className="flex items-start gap-3">
               <span className="text-red-500 font-bold mt-0.5">✓</span>
               {item}

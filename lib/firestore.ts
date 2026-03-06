@@ -288,14 +288,19 @@ export async function getBoletosPaginados(opts: {
   cursor?: DocumentSnapshot | null;
   loadAll?: boolean; // true cuando hay búsqueda de texto activa
 }): Promise<BoletosPage> {
-  const constraints: Parameters<typeof query>[1][] = [orderBy("created_at", "desc")];
+  const hasFilters = !!(opts.status || opts.rifaId);
+  // Cuando hay filtros where+orderBy en campos distintos Firestore requiere un índice
+  // compuesto. Para evitarlo: si hay filtros, cargamos todo sin orderBy (el sort es
+  // client-side). Solo usamos orderBy+cursor cuando no hay filtros (vista "todos").
+  const constraints: Parameters<typeof query>[1][] = [];
   if (opts.status) constraints.push(where("status", "==", opts.status));
   if (opts.rifaId) constraints.push(where("rifa_id", "==", opts.rifaId));
-  if (!opts.loadAll) constraints.push(limit(opts.pageSize + 1));
-  if (opts.cursor) constraints.push(startAfter(opts.cursor));
+  if (!hasFilters) constraints.push(orderBy("created_at", "desc"));
+  if (!hasFilters && !opts.loadAll) constraints.push(limit(opts.pageSize + 1));
+  if (!hasFilters && opts.cursor) constraints.push(startAfter(opts.cursor));
 
   const snap = await getDocs(query(collection(db, "boletos"), ...constraints));
-  const hasMore = !opts.loadAll && snap.docs.length > opts.pageSize;
+  const hasMore = !hasFilters && !opts.loadAll && snap.docs.length > opts.pageSize;
   const docs = hasMore ? snap.docs.slice(0, opts.pageSize) : snap.docs;
   return {
     boletos: docs.map((d) => ({ id: d.id, ...d.data() } as Boleto)),

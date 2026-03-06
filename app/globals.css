@@ -3,8 +3,7 @@
 @tailwind utilities;
 
 body {
-  @apply bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors;
-  font-family: Arial, Helvetica, sans-serif;
+  @apply bg-brand-black text-white transition-colors;
 }
 
 @keyframes heartbeat {
@@ -27,4 +26,57 @@ body {
   .animate-heartbeat {
     animation: heartbeat 1.4s ease-in-out infinite;
   }
+}
+
+/* Racing / eSports decorative utilities */
+
+.clip-diagonal-bottom {
+  clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+}
+
+.clip-diagonal-top {
+  clip-path: polygon(0 15%, 100% 0, 100% 100%, 0 100%);
+}
+
+.racing-stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 40px,
+    rgba(255, 255, 255, 0.015) 40px,
+    rgba(255, 255, 255, 0.015) 80px
+  );
+}
+
+.glow-red {
+  box-shadow: 0 0 20px rgba(204, 0, 0, 0.4), 0 0 40px rgba(204, 0, 0, 0.1);
+}
+
+.accent-bar {
+  display: block;
+  width: 80px;
+  height: 4px;
+  background: #CC0000;
+  transform: skewX(-20deg);
+  margin-top: 12px;
+}
+
+.accent-bar-center {
+  display: block;
+  width: 80px;
+  height: 4px;
+  background: #CC0000;
+  transform: skewX(-20deg);
+  margin: 12px auto 0;
+}
+
+.step-number {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+.racing-chevrons::before {
+  content: "// // //";
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  opacity: 0.3;
 }

@@ -78,7 +78,7 @@ function ConsultaInner() {
       const res = await fetch(`/api/boletos/consulta?${param}`);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error ?? "Ocurrió un error al buscar. Intenta de nuevo.");
+        setError(data.error ?? "Ocurrio un error al buscar. Intenta de nuevo.");
         setLoading(false);
         return;
       }
@@ -87,7 +87,7 @@ function ConsultaInner() {
       setSearchedByCelular(esCelular);
 
       if (rawBoletos.length === 0) {
-        setError("No encontramos ningún boleto con ese dato. Verifica el folio, celular o número de boleto.");
+        setError("No encontramos ningun boleto con ese dato. Verifica el folio, celular o numero de boleto.");
       } else {
         const results: Result[] = await Promise.all(
           rawBoletos.map(async (b) => {
@@ -99,7 +99,7 @@ function ConsultaInner() {
         setResults(results);
       }
     } catch {
-      setError("Ocurrió un error al buscar. Intenta de nuevo.");
+      setError("Ocurrio un error al buscar. Intenta de nuevo.");
     }
     setLoading(false);
   }, []);
@@ -125,14 +125,15 @@ function ConsultaInner() {
     <div className="max-w-3xl mx-auto px-4 py-12">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-black mb-2">Consultar Boleto</h1>
-        <p className="text-slate-500 dark:text-slate-400">
-          Ingresa tu folio, número de celular o número de boleto para ver el estado de tus boletos.
+        <h1 className="text-4xl font-bold uppercase tracking-widest mb-2">Consultar Boleto</h1>
+        <span className="accent-bar" />
+        <p className="text-gray-400 mt-4">
+          Ingresa tu folio, numero de celular o numero de boleto para ver el estado de tus boletos.
         </p>
       </div>
 
       {/* Warning banner */}
-      <div className="flex gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-2xl p-4 mb-8">
+      <div className="flex gap-3 bg-amber-900/20 border border-amber-700 rounded-sm p-4 mb-8">
         <div className="flex-shrink-0 w-6 h-6 mt-0.5">
           <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 text-amber-500" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -140,30 +141,30 @@ function ConsultaInner() {
           </svg>
         </div>
         <div>
-          <p className="font-bold text-amber-800 dark:text-amber-300 text-sm mb-1">Importante</p>
-          <p className="text-amber-700 dark:text-amber-400 text-sm leading-relaxed">
-            Si ya realizaste tu pago por transferencia, <strong>por favor no realices el pago en línea</strong>.
-            Espera confirmación por parte de nuestro equipo.
+          <p className="font-bold text-amber-400 text-sm mb-1">Importante</p>
+          <p className="text-amber-400/80 text-sm leading-relaxed">
+            Si ya realizaste tu pago por transferencia, <strong>por favor no realices el pago en linea</strong>.
+            Espera confirmacion por parte de nuestro equipo.
           </p>
         </div>
       </div>
 
       {/* Search form */}
       <form onSubmit={buscar} className="mb-8">
-        <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">
-          Folio, celular o número de boleto
+        <label className="block text-sm font-semibold mb-2 text-gray-300">
+          Folio, celular o numero de boleto
         </label>
         <div className="flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="JNS-XXXXXX, 5512345678 o 042"
-            className="flex-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="flex-1 rounded-sm border border-gray-700 bg-brand-dark px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-red"
           />
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-xl transition-colors flex items-center gap-2"
+            className="px-6 py-3 bg-brand-red hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-sm transition-colors flex items-center gap-2"
           >
             {loading ? (
               <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -179,7 +180,7 @@ function ConsultaInner() {
       </form>
 
       {error && (
-        <div className="flex gap-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm mb-6">
+        <div className="flex gap-3 bg-red-900/30 border border-red-700 rounded-sm p-4 text-red-300 text-sm mb-6">
           <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M12 3a9 9 0 100 18A9 9 0 0012 3z" />
@@ -205,7 +206,7 @@ function ConsultaInner() {
               <div className="flex justify-center mb-6">
                 <button
                   onClick={() => setShowModal(true)}
-                  className="animate-heartbeat flex items-center gap-3 px-7 py-3.5 bg-red-600 hover:bg-red-700 text-white font-black rounded-2xl shadow-lg text-base"
+                  className="animate-heartbeat flex items-center gap-3 px-7 py-3.5 bg-brand-red hover:bg-red-700 text-white font-bold rounded-sm shadow-lg text-base"
                 >
                   <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5
@@ -216,20 +217,21 @@ function ConsultaInner() {
                   Subir comprobante de pago
                 </button>
               </div>
-              <div className="border-t border-slate-200 dark:border-slate-700 my-8" />
-              <h2 className="text-2xl font-black mb-1">Realiza tu pago</h2>
-              <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
+              <div className="border-t border-gray-800 my-8" />
+              <h2 className="text-2xl font-bold uppercase tracking-wider mb-1">Realiza tu pago</h2>
+              <span className="accent-bar" />
+              <p className="text-gray-400 text-sm mb-6 mt-4">
                 Transfiere el monto exacto a cualquiera de las siguientes cuentas e indica tu folio en el concepto.
               </p>
               <BankCards />
-              <div className="mt-6 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-2xl p-5">
-                <h3 className="font-bold text-amber-800 dark:text-amber-300 mb-2">Instrucciones de pago</h3>
-                <ol className="text-sm text-amber-700 dark:text-amber-400 space-y-1 list-decimal list-inside">
+              <div className="mt-6 bg-amber-900/20 border border-amber-700 rounded-sm p-5">
+                <h3 className="font-bold text-amber-400 mb-2">Instrucciones de pago</h3>
+                <ol className="text-sm text-amber-400/80 space-y-1 list-decimal list-inside">
                   <li>Elige cualquiera de las cuentas bancarias de arriba.</li>
                   <li>Realiza la transferencia por el monto exacto de tu boleto.</li>
                   <li>En el campo concepto/referencia escribe tu folio.</li>
-                  <li>Envíanos el comprobante por WhatsApp para agilizar la confirmación.</li>
-                  <li>Una vez verificado, tu estado cambiará a <strong>Pago confirmado</strong>.</li>
+                  <li>Envianos el comprobante por WhatsApp para agilizar la confirmacion.</li>
+                  <li>Una vez verificado, tu estado cambiara a <strong>Pago confirmado</strong>.</li>
                 </ol>
               </div>
             </div>
@@ -253,19 +255,19 @@ function ResultsSummary({ results }: { results: Result[] }) {
     .reduce((s, r) => s + r.boleto.precio_total, 0);
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow p-5 mb-6">
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+    <div className="bg-brand-dark border border-gray-800 rounded-sm shadow p-5 mb-6">
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
         Resumen — {results.length} boleto{results.length > 1 ? "s" : ""} encontrado{results.length > 1 ? "s" : ""}
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <Chip label="Total boletos"  value={String(results.length)}          color="slate" />
-        <Chip label="Números"        value={String(totalNums)}               color="red"   />
+        <Chip label="Numeros"        value={String(totalNums)}               color="red"   />
         <Chip label="Pagados"        value={String(pagados)}                 color="green" />
         <Chip label="Pendientes"     value={String(pendientes)}              color="amber" />
         <Chip label="Monto activo"   value={`$${totalPago.toLocaleString("es-MX")}`} color="blue" />
       </div>
       {cancelados > 0 && (
-        <p className="text-xs text-slate-400 mt-3">{cancelados} boleto{cancelados > 1 ? "s" : ""} cancelado{cancelados > 1 ? "s" : ""} no incluido{cancelados > 1 ? "s" : ""} en el monto.</p>
+        <p className="text-xs text-gray-500 mt-3">{cancelados} boleto{cancelados > 1 ? "s" : ""} cancelado{cancelados > 1 ? "s" : ""} no incluido{cancelados > 1 ? "s" : ""} en el monto.</p>
       )}
     </div>
   );
@@ -273,16 +275,16 @@ function ResultsSummary({ results }: { results: Result[] }) {
 
 function Chip({ label, value, color }: { label: string; value: string; color: "slate" | "red" | "green" | "amber" | "blue" }) {
   const styles: Record<string, string> = {
-    slate: "bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200",
-    red:   "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300",
-    green: "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300",
-    amber: "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300",
-    blue:  "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300",
+    slate: "bg-gray-800 text-gray-200",
+    red:   "bg-red-900/30 text-red-300",
+    green: "bg-green-900/30 text-green-300",
+    amber: "bg-amber-900/20 text-amber-300",
+    blue:  "bg-blue-900/30 text-blue-300",
   };
   return (
-    <div className={`rounded-xl px-3 py-2 ${styles[color]}`}>
+    <div className={`rounded-sm px-3 py-2 ${styles[color]}`}>
       <p className="text-xs opacity-70 mb-0.5">{label}</p>
-      <p className="font-black text-base leading-none">{value}</p>
+      <p className="font-bold text-base leading-none">{value}</p>
     </div>
   );
 }
@@ -309,15 +311,15 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
     setWaLoading(true);
     try {
       const numero = await getRotatedWhatsApp();
-      if (!numero) { alert("No hay número de WhatsApp configurado."); return; }
+      if (!numero) { alert("No hay numero de WhatsApp configurado."); return; }
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
       const fecha = boleto.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? new Date().toLocaleString("es-MX");
       const rifaNombre = rifa?.nombre ?? "Sorteos Jans";
       const message =
-        `👋 Hola, soy ${boleto.nombre} ${boleto.apellidos}\nSeleccioné: ${boleto.numeros.length} números\n──────────────\n` +
-        `🎫 Números: ${boleto.numeros.join(", ")}\n🎯 Sorteo: ${rifaNombre}\n🏷️ Folio: ${boleto.folio}\n` +
+        `👋 Hola, soy ${boleto.nombre} ${boleto.apellidos}\nSeleccione: ${boleto.numeros.length} numeros\n──────────────\n` +
+        `🎫 Numeros: ${boleto.numeros.join(", ")}\n🎯 Sorteo: ${rifaNombre}\n🏷️ Folio: ${boleto.folio}\n` +
         `📅 Fecha: ${fecha}\n💰 Total: $${boleto.precio_total.toLocaleString("es-MX")}\n──────────────\n` +
-        `💳 Métodos de pago: ${siteUrl}/tarjetas\n🏷️ Consulta: ${siteUrl}/consulta?f=${boleto.folio}&act=1`;
+        `💳 Metodos de pago: ${siteUrl}/tarjetas\n🏷️ Consulta: ${siteUrl}/consulta?f=${boleto.folio}&act=1`;
       window.open(buildWhatsAppUrl(numero, message), "_blank");
     } catch {
       alert("Error al abrir WhatsApp. Intenta de nuevo.");
@@ -338,7 +340,7 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
 
   const headerGradient =
     status === "pagado"    ? "bg-gradient-to-br from-green-700 to-green-500" :
-    status === "cancelado" ? "bg-gradient-to-br from-slate-700 to-slate-500" :
+    status === "cancelado" ? "bg-gradient-to-br from-gray-700 to-gray-500" :
                              "bg-gradient-to-br from-amber-600 to-amber-400";
 
   const statusLabel =
@@ -362,28 +364,28 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
     );
 
   const numChipColor =
-    status === "pagado"    ? "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700" :
-    status === "cancelado" ? "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600 line-through" :
-                             "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-100 dark:border-red-800";
+    status === "pagado"    ? "bg-green-900/40 text-green-200 border-green-700" :
+    status === "cancelado" ? "bg-gray-800 text-gray-500 border-gray-700 line-through" :
+                             "bg-red-900/30 text-red-300 border-red-800";
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden mb-6">
+    <div className="bg-brand-dark border border-gray-800 rounded-sm shadow-lg overflow-hidden mb-6">
 
       {/* ── Header ── */}
       <div className={`${headerGradient} px-6 py-5`}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center text-white flex-shrink-0">
+            <div className="w-11 h-11 rounded-sm bg-white/20 flex items-center justify-center text-white flex-shrink-0">
               {statusIcon}
             </div>
             <div>
               <p className="text-white/70 text-xs font-medium">Estado</p>
-              <p className="text-white font-black text-lg leading-tight">{statusLabel}</p>
+              <p className="text-white font-bold text-lg leading-tight">{statusLabel}</p>
             </div>
           </div>
           <div className="text-right flex-shrink-0">
             <p className="text-white/70 text-xs">Folio</p>
-            <p className="text-white font-black text-xl tracking-wider font-mono">{boleto.folio}</p>
+            <p className="text-white font-bold text-xl tracking-wider font-mono">{boleto.folio}</p>
           </div>
         </div>
 
@@ -401,22 +403,22 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
 
       {/* ── Notice banners ── */}
       {status === "pendiente" && (
-        <div className="mx-5 mt-4 flex gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3">
+        <div className="mx-5 mt-4 flex gap-2 bg-amber-900/20 border border-amber-700 rounded-sm px-4 py-3">
           <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
           </svg>
-          <p className="text-amber-800 dark:text-amber-300 text-xs leading-relaxed">
-            Tu boleto está apartado. Una vez que realices tu pago por transferencia, nuestro equipo lo confirmará y el estado cambiará a <strong>Pago confirmado</strong>.
+          <p className="text-amber-400/80 text-xs leading-relaxed">
+            Tu boleto esta apartado. Una vez que realices tu pago por transferencia, nuestro equipo lo confirmara y el estado cambiara a <strong>Pago confirmado</strong>.
           </p>
         </div>
       )}
       {status === "cancelado" && (
-        <div className="mx-5 mt-4 flex gap-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3">
-          <svg className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+        <div className="mx-5 mt-4 flex gap-2 bg-gray-800/50 border border-gray-700 rounded-sm px-4 py-3">
+          <svg className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
           </svg>
-          <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed">
-            Este boleto fue cancelado y sus números ya están disponibles nuevamente. Si tienes dudas, contacta a nuestro equipo.
+          <p className="text-gray-400 text-xs leading-relaxed">
+            Este boleto fue cancelado y sus numeros ya estan disponibles nuevamente. Si tienes dudas, contacta a nuestro equipo.
           </p>
         </div>
       )}
@@ -437,9 +439,9 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
             <InfoCell label="Fecha sorteo" value={fechaSorteo} />
           )}
           {boleto.descuento_aplicado > 0 && (
-            <div className="col-span-2 sm:col-span-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl px-3 py-2">
-              <p className="text-xs text-green-600 dark:text-green-400 mb-0.5">Descuento aplicado</p>
-              <p className="font-black text-green-700 dark:text-green-300">
+            <div className="col-span-2 sm:col-span-1 bg-green-900/20 border border-green-700 rounded-sm px-3 py-2">
+              <p className="text-xs text-green-400 mb-0.5">Descuento aplicado</p>
+              <p className="font-bold text-green-300">
                 {boleto.descuento_aplicado}%
                 {boleto.codigo_descuento && (
                   <span className="text-xs font-mono ml-1 opacity-70">({boleto.codigo_descuento})</span>
@@ -450,23 +452,23 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
         </div>
 
         {/* Divider */}
-        <div className="border-t border-slate-100 dark:border-slate-700" />
+        <div className="border-t border-gray-800" />
 
         {/* Numbers grid */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-              Números seleccionados
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
+              Numeros seleccionados
             </p>
-            <span className="text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full">
-              {boleto.numeros.length} {boleto.numeros.length === 1 ? "número" : "números"}
+            <span className="text-xs font-bold bg-gray-800 text-gray-400 px-2 py-0.5 rounded-sm">
+              {boleto.numeros.length} {boleto.numeros.length === 1 ? "numero" : "numeros"}
             </span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {[...boleto.numeros].sort((a, b) => a - b).map((n) => (
               <span
                 key={n}
-                className={`inline-flex items-center justify-center min-w-[2.5rem] h-10 px-2 rounded-xl font-bold text-sm border ${numChipColor}`}
+                className={`inline-flex items-center justify-center min-w-[2.5rem] h-10 px-2 rounded-sm font-bold text-sm border ${numChipColor}`}
               >
                 {n}
               </span>
@@ -476,11 +478,11 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
 
         {/* Admin comment */}
         {comprobante?.admin_comentario && (
-          <div className="border border-orange-200 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-4 space-y-2">
-            <p className="text-xs font-bold text-orange-700 dark:text-orange-300 uppercase tracking-wide">
+          <div className="border border-orange-700 bg-orange-900/20 rounded-sm p-4 space-y-2">
+            <p className="text-xs font-bold text-orange-300 uppercase tracking-widest">
               Comentario del administrador
             </p>
-            <p className="text-xs text-orange-600 dark:text-orange-400">
+            <p className="text-xs text-orange-400">
               [{comprobante.admin_comentario.created_at.toDate().toLocaleString("es-MX", {
                 timeZone: "America/Mexico_City",
                 day: "2-digit", month: "short", year: "2-digit",
@@ -491,7 +493,7 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
               href={comprobante.archivo_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-700 dark:text-orange-300 underline underline-offset-2"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-300 underline underline-offset-2"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -499,7 +501,7 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
               </svg>
               Ver comprobante enviado
             </a>
-            <p className="text-sm font-semibold text-orange-800 dark:text-orange-200">
+            <p className="text-sm font-semibold text-orange-200">
               {comprobante.admin_comentario.texto}
             </p>
           </div>
@@ -511,7 +513,7 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
             <button
               onClick={handleWhatsApp}
               disabled={waLoading}
-              className="flex-1 py-3 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-sm transition-colors text-sm flex items-center justify-center gap-2"
             >
               {waLoading ? (
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -525,10 +527,10 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
             <button
               onClick={handleDownload}
               disabled={downloading}
-              className="flex-1 py-3 border-2 border-red-500 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 py-3 border-2 border-brand-red text-brand-red font-bold rounded-sm hover:bg-brand-red/10 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {downloading ? (
-                <span className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                <span className="w-4 h-4 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
               ) : (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -546,9 +548,9 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
 
 function StatTile({ label, value, small }: { label: string; value: string; small?: boolean }) {
   return (
-    <div className="bg-white/15 rounded-xl px-3 py-2">
+    <div className="bg-white/15 rounded-sm px-3 py-2">
       <p className="text-white/60 text-xs leading-none mb-1">{label}</p>
-      <p className={`text-white font-black leading-tight ${small ? "text-sm" : "text-base"}`}>{value}</p>
+      <p className={`text-white font-bold leading-tight ${small ? "text-sm" : "text-base"}`}>{value}</p>
     </div>
   );
 }
@@ -556,8 +558,8 @@ function StatTile({ label, value, small }: { label: string; value: string; small
 function InfoCell({ label, value, wide, mono }: { label: string; value: string; wide?: boolean; mono?: boolean }) {
   return (
     <div className={wide ? "col-span-2 sm:col-span-1" : ""}>
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{label}</p>
-      <p className={`font-semibold text-sm text-slate-800 dark:text-slate-100 ${mono ? "font-mono" : ""}`}>{value}</p>
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-0.5">{label}</p>
+      <p className={`font-semibold text-sm text-white ${mono ? "font-mono" : ""}`}>{value}</p>
     </div>
   );
 }
@@ -592,7 +594,7 @@ function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: ()
     if (!allowed.includes(f.type)) return "Solo se permiten JPG, PNG, GIF o PDF.";
     const maxSize = f.type === "application/pdf" ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
     if (f.size > maxSize)
-      return `El archivo supera el límite de ${f.type === "application/pdf" ? "10" : "5"} MB.`;
+      return `El archivo supera el limite de ${f.type === "application/pdf" ? "10" : "5"} MB.`;
     return null;
   }
 
@@ -618,7 +620,7 @@ function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: ()
       if (!res.ok) { setErr(data.error ?? "Error al subir."); return; }
       setSuccess(true);
     } catch {
-      setErr("Error de conexión. Intenta de nuevo.");
+      setErr("Error de conexion. Intenta de nuevo.");
     } finally {
       setUploading(false);
     }
@@ -626,29 +628,29 @@ function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: ()
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-[520px] max-h-[85vh] overflow-y-auto shadow-2xl flex flex-col">
+      <div className="bg-brand-dark border border-gray-800 rounded-sm w-full max-w-[520px] max-h-[85vh] overflow-y-auto shadow-2xl flex flex-col">
         {/* Red top strip */}
-        <div className="h-2 bg-gradient-to-r from-red-600 to-red-500 rounded-t-3xl flex-shrink-0" />
+        <div className="h-1 bg-brand-red flex-shrink-0" />
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
-              <svg className="w-5 h-5 text-red-600 dark:text-red-400" viewBox="0 0 24 24" fill="currentColor">
+            <div className="w-10 h-10 rounded-sm bg-brand-red/20 flex items-center justify-center">
+              <svg className="w-5 h-5 text-brand-red" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
               </svg>
             </div>
             <div>
-              <h2 className="font-black text-lg text-slate-900 dark:text-slate-100 leading-tight">Subir comprobante</h2>
-              <p className="text-xs text-slate-400">de pago</p>
+              <h2 className="font-bold text-lg text-white leading-tight">Subir comprobante</h2>
+              <p className="text-xs text-gray-500">de pago</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-sm hover:bg-gray-800 text-gray-500 hover:text-white transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -659,20 +661,20 @@ function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: ()
         <div className="px-6 pb-6 space-y-5">
           {success ? (
             <div className="flex flex-col items-center gap-4 py-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
-                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 rounded-full bg-green-900/40 flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <div>
-                <p className="font-black text-xl text-slate-900 dark:text-slate-100 mb-1">¡Comprobante enviado!</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Nuestro equipo revisará tu pago y actualizará el estado de tu boleto.
+                <p className="font-bold text-xl text-white mb-1">¡Comprobante enviado!</p>
+                <p className="text-sm text-gray-400">
+                  Nuestro equipo revisara tu pago y actualizara el estado de tu boleto.
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-colors"
+                className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-sm transition-colors"
               >
                 Cerrar
               </button>
@@ -680,30 +682,30 @@ function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: ()
           ) : (
             <>
               {/* Resumen */}
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-4 space-y-2 text-sm">
+              <div className="bg-gray-800/50 rounded-sm p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Titular</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-100">{nombre}</span>
+                  <span className="text-gray-500">Titular</span>
+                  <span className="font-semibold text-white">{nombre}</span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="text-slate-500 dark:text-slate-400 flex-shrink-0">Folio{folios.length > 1 ? "s" : ""}</span>
-                  <span className="font-mono font-bold text-red-600 dark:text-red-400 text-right break-all">
+                  <span className="text-gray-500 flex-shrink-0">Folio{folios.length > 1 ? "s" : ""}</span>
+                  <span className="font-mono font-bold text-brand-red text-right break-all">
                     {folios.join(", ")}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Números</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-100">{totalNums}</span>
+                  <span className="text-gray-500">Numeros</span>
+                  <span className="font-semibold text-white">{totalNums}</span>
                 </div>
-                <div className="flex justify-between border-t border-slate-200 dark:border-slate-600 pt-2 mt-2">
-                  <span className="font-bold text-slate-700 dark:text-slate-300">Total a pagar</span>
-                  <span className="font-black text-red-600 dark:text-red-400">${montoTotal.toLocaleString("es-MX")}</span>
+                <div className="flex justify-between border-t border-gray-700 pt-2 mt-2">
+                  <span className="font-bold text-gray-300">Total a pagar</span>
+                  <span className="font-bold text-brand-red">${montoTotal.toLocaleString("es-MX")}</span>
                 </div>
               </div>
 
               {/* Upload area */}
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">
                   Archivo comprobante
                 </p>
                 {!file ? (
@@ -717,31 +719,31 @@ function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: ()
                       const f = e.dataTransfer.files[0];
                       if (f) pickFile(f);
                     }}
-                    className={`border-2 border-dashed rounded-2xl px-6 py-8 text-center cursor-pointer transition-colors ${
+                    className={`border-2 border-dashed rounded-sm px-6 py-8 text-center cursor-pointer transition-colors ${
                       dragging
-                        ? "border-red-400 bg-red-50 dark:bg-red-900/20"
-                        : "border-slate-200 dark:border-slate-600 hover:border-red-300 dark:hover:border-red-700 hover:bg-slate-50 dark:hover:bg-slate-700/30"
+                        ? "border-brand-red bg-brand-red/10"
+                        : "border-gray-700 hover:border-brand-red/50 hover:bg-gray-800/30"
                     }`}
                   >
-                    <svg className="w-10 h-10 mx-auto mb-3 text-slate-300 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-10 h-10 mx-auto mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                         d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
-                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                      Haz clic o arrastra tu archivo aquí
+                    <p className="text-sm font-semibold text-gray-300 mb-1">
+                      Haz clic o arrastra tu archivo aqui
                     </p>
-                    <p className="text-xs text-slate-400">JPG, PNG, GIF hasta 5 MB · PDF hasta 10 MB</p>
+                    <p className="text-xs text-gray-600">JPG, PNG, GIF hasta 5 MB · PDF hasta 10 MB</p>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3">
-                    <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-3 bg-gray-800/50 border border-gray-700 rounded-sm px-4 py-3">
+                    <svg className="w-5 h-5 text-brand-red flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                     </svg>
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200 flex-1 truncate">{file.name}</span>
+                    <span className="text-sm font-medium text-white flex-1 truncate">{file.name}</span>
                     <button
                       onClick={() => setFile(null)}
-                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex-shrink-0"
+                      className="text-gray-500 hover:text-white flex-shrink-0"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -763,7 +765,7 @@ function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: ()
               </div>
 
               {err && (
-                <div className="flex gap-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl px-4 py-3 text-red-700 dark:text-red-300 text-sm">
+                <div className="flex gap-2 bg-red-900/30 border border-red-700 rounded-sm px-4 py-3 text-red-300 text-sm">
                   <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M12 3a9 9 0 100 18A9 9 0 0012 3z" />
@@ -776,7 +778,7 @@ function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: ()
                 <button
                   onClick={handleSubmit}
                   disabled={uploading}
-                  className="w-full py-3.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black rounded-2xl transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-brand-red hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-sm transition-colors flex items-center justify-center gap-2"
                 >
                   {uploading ? (
                     <>
@@ -790,14 +792,14 @@ function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: ()
               )}
 
               {/* Payment instructions */}
-              <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-2xl p-5">
-                <h3 className="font-bold text-amber-800 dark:text-amber-300 mb-2">Instrucciones de pago</h3>
-                <ol className="text-sm text-amber-700 dark:text-amber-400 space-y-1 list-decimal list-inside">
+              <div className="bg-amber-900/20 border border-amber-700 rounded-sm p-5">
+                <h3 className="font-bold text-amber-400 mb-2">Instrucciones de pago</h3>
+                <ol className="text-sm text-amber-400/80 space-y-1 list-decimal list-inside">
                   <li>Elige cualquiera de las cuentas bancarias de abajo.</li>
                   <li>Realiza la transferencia por el monto exacto de tu boleto.</li>
                   <li>En el campo concepto/referencia escribe tu folio.</li>
-                  <li>Sube aquí tu comprobante de pago.</li>
-                  <li>Una vez verificado, tu estado cambiará a <strong>Pago confirmado</strong>.</li>
+                  <li>Sube aqui tu comprobante de pago.</li>
+                  <li>Una vez verificado, tu estado cambiara a <strong>Pago confirmado</strong>.</li>
                 </ol>
               </div>
 

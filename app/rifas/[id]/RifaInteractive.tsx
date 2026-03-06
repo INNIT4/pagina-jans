@@ -53,29 +53,30 @@ export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApar
         />
 
         <div className="mt-6">
-          <h1 className="text-3xl font-black mb-2">{rifa.nombre}</h1>
-          <p className="text-slate-500 dark:text-slate-400 mb-4">{rifa.descripcion}</p>
+          <h1 className="text-3xl font-bold uppercase tracking-widest mb-2">{rifa.nombre}</h1>
+          <span className="accent-bar" />
+          <p className="text-gray-400 mb-4 mt-4">{rifa.descripcion}</p>
 
           {rifa.texto_inferior && (
-            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 mb-4 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+            <div className="bg-brand-dark border border-gray-800 rounded-sm p-5 mb-4 whitespace-pre-wrap text-sm text-gray-300 leading-relaxed">
               {rifa.texto_inferior}
             </div>
           )}
 
           <div className="flex flex-wrap gap-4">
-            <div className="bg-red-50 dark:bg-red-900/30 rounded-xl px-4 py-2">
-              <p className="text-xs text-red-500">Precio boleto</p>
-              <p className="font-black text-xl text-red-700 dark:text-red-300">
+            <div className="bg-brand-red/20 border border-brand-red/30 rounded-sm px-4 py-2">
+              <p className="text-xs text-brand-red">Precio boleto</p>
+              <p className="font-bold text-xl text-brand-red">
                 ${rifa.precio_boleto.toLocaleString("es-MX")} MXN
               </p>
             </div>
-            <div className="bg-slate-50 dark:bg-slate-800 rounded-xl px-4 py-2">
-              <p className="text-xs text-slate-500">Fecha sorteo</p>
-              <p className="font-bold">{new Date(rifa.fecha_sorteo).toLocaleDateString("es-MX")}</p>
+            <div className="bg-brand-dark border border-gray-800 rounded-sm px-4 py-2">
+              <p className="text-xs text-gray-500">Fecha sorteo</p>
+              <p className="font-bold text-white">{new Date(rifa.fecha_sorteo).toLocaleDateString("es-MX")}</p>
             </div>
-            <div className="bg-green-50 dark:bg-green-900/30 rounded-xl px-4 py-2">
-              <p className="text-xs text-green-600">Disponibles</p>
-              <p className="font-black text-xl text-green-700 dark:text-green-300">{disponibles}</p>
+            <div className="bg-green-900/30 border border-green-700/30 rounded-sm px-4 py-2">
+              <p className="text-xs text-green-500">Disponibles</p>
+              <p className="font-bold text-xl text-green-400">{disponibles}</p>
             </div>
           </div>
         </div>
@@ -91,7 +92,7 @@ export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApar
 
       {/* Search */}
       <div className="mb-6">
-        <h2 className="text-lg font-bold mb-3">Buscar números</h2>
+        <h2 className="text-lg font-bold uppercase tracking-wider mb-3">Buscar numeros</h2>
         <NumberSearch
           numInicio={rifa.num_inicio}
           numFin={rifa.num_fin}
@@ -101,10 +102,10 @@ export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApar
 
       {/* Grid */}
       <div className="mb-8">
-        <h2 className="text-lg font-bold mb-3">
-          Selecciona tus números
+        <h2 className="text-lg font-bold uppercase tracking-wider mb-3">
+          Selecciona tus numeros
           {visibles !== null && (
-            <span className="ml-2 text-sm font-normal text-slate-400">
+            <span className="ml-2 text-sm font-normal text-gray-500">
               ({visibles.length} resultados)
             </span>
           )}
@@ -123,24 +124,24 @@ export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApar
 
       {/* Floating cart */}
       {seleccionados.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4 shadow-2xl">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-brand-dark border-t border-gray-800 p-4 shadow-2xl">
           <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium">{seleccionados.length} boleto(s) seleccionado(s)</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-sm font-medium text-white">{seleccionados.length} boleto(s) seleccionado(s)</p>
+              <p className="text-xs text-gray-500">
                 Total: ${(seleccionados.length * rifa.precio_boleto).toLocaleString("es-MX")} MXN
               </p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setSeleccionados([])}
-                className="px-4 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700"
+                className="px-4 py-2 text-sm border border-gray-700 rounded-sm hover:bg-gray-800 text-gray-400 transition-colors"
               >
                 Limpiar
               </button>
               <button
                 onClick={() => setShowForm(true)}
-                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors"
+                className="px-6 py-2 bg-brand-red hover:bg-red-700 text-white font-bold rounded-sm transition-colors"
               >
                 Apartar
               </button>

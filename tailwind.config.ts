@@ -8,7 +8,16 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        "brand-red": "#CC0000",
+        "brand-black": "#111111",
+        "brand-dark": "#0A0A0A",
+      },
+      fontFamily: {
+        racing: ["var(--font-racing)", "sans-serif"],
+      },
+    },
   },
   plugins: [],
 };

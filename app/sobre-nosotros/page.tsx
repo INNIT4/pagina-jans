@@ -7,15 +7,16 @@ export default async function SobreNosotrosPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-4xl font-black mb-2">Sobre Nosotros</h1>
-      <p className="text-slate-500 dark:text-slate-400 mb-10">Conoce más sobre Sorteos Jans.</p>
+      <h1 className="text-4xl font-bold uppercase tracking-widest mb-2">Sobre Nosotros</h1>
+      <span className="accent-bar" />
+      <p className="text-gray-400 mb-10 mt-4">Conoce mas sobre Sorteos Jans.</p>
 
-      <div className="relative rounded-3xl overflow-hidden mb-10">
+      <div className="relative rounded-sm overflow-hidden mb-10">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/images/2.jpeg" alt="Sorteos Jans" className="w-full h-48 object-cover object-center" />
-        <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-8">
-          <h2 className="text-3xl font-black text-white mb-2">{texts.about_mission_title}</h2>
-          <p className="text-white/80 text-base leading-relaxed max-w-2xl">{texts.about_mission_text}</p>
+        <div className="absolute inset-0 bg-brand-black/60 flex flex-col justify-end p-8">
+          <h2 className="text-3xl font-bold text-white mb-2 uppercase tracking-wider">{texts.about_mission_title}</h2>
+          <p className="text-gray-300 text-base leading-relaxed max-w-2xl">{texts.about_mission_text}</p>
         </div>
       </div>
 
@@ -23,21 +24,21 @@ export default async function SobreNosotrosPage() {
         {texts.about_values.map((item) => (
           <div
             key={item.title}
-            className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow border border-slate-100 dark:border-slate-700 text-center"
+            className="bg-brand-dark border border-gray-800 rounded-sm p-6 text-center hover:border-brand-red hover:glow-red transition-all"
           >
             <span className="text-4xl block mb-3">{item.icon}</span>
-            <h3 className="font-bold text-lg mb-2">{item.title}</h3>
-            <p className="text-slate-500 dark:text-slate-400 text-sm">{item.desc}</p>
+            <h3 className="font-bold text-lg mb-2 text-white">{item.title}</h3>
+            <p className="text-gray-400 text-sm">{item.desc}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-8">
-        <h2 className="text-2xl font-bold mb-4">{texts.about_why_title}</h2>
-        <ul className="space-y-3 text-slate-600 dark:text-slate-300">
+      <div className="bg-brand-dark border border-gray-800 rounded-sm p-8">
+        <h2 className="text-2xl font-bold uppercase tracking-wider mb-4 text-white">{texts.about_why_title}</h2>
+        <ul className="space-y-3 text-gray-300">
           {texts.about_why_items.map((item) => (
             <li key={item} className="flex items-start gap-3">
-              <span className="text-red-500 font-bold mt-0.5">✓</span>
+              <span className="text-brand-red font-bold mt-0.5">&#10003;</span>
               {item}
             </li>
           ))}

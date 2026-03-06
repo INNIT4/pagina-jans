@@ -8,8 +8,9 @@ export default async function FAQPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
-      <h1 className="text-4xl font-black mb-2">{texts.faq_title}</h1>
-      <p className="text-slate-500 dark:text-slate-400 mb-8">{texts.faq_subtitle}</p>
+      <h1 className="text-4xl font-bold uppercase tracking-widest mb-2">{texts.faq_title}</h1>
+      <span className="accent-bar" />
+      <p className="text-gray-400 mb-8 mt-4">{texts.faq_subtitle}</p>
       <FaqAccordion items={texts.faq_items} />
     </div>
   );

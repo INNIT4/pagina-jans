@@ -7,20 +7,43 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import Logo from "@/components/Logo";
 
-const NAV_ITEMS = [
-  { href: "/admin", label: "Dashboard", exact: true },
-  { href: "/admin/rifas", label: "Rifas" },
-  { href: "/admin/boletos", label: "Boletos" },
-  { href: "/admin/comprobantes", label: "Comprobantes" },
-  { href: "/admin/clientes", label: "Clientes" },
-  { href: "/admin/codigos", label: "Descuentos" },
-  { href: "/admin/whatsapp", label: "WhatsApp" },
-  { href: "/admin/tarjetas", label: "Tarjetas" },
-  { href: "/admin/contenido", label: "Contenido" },
-  { href: "/admin/reportes", label: "Reportes" },
-  { href: "/admin/servicios", label: "Servicios" },
-  { href: "/admin/regalos", label: "Regalos" },
-  { href: "/admin/metricas", label: "Métricas" },
+const NAV_GROUPS: { label: string | null; items: { href: string; label: string; exact?: boolean }[] }[] = [
+  {
+    label: null,
+    items: [{ href: "/admin", label: "Dashboard", exact: true }],
+  },
+  {
+    label: "Ventas",
+    items: [
+      { href: "/admin/rifas", label: "Rifas" },
+      { href: "/admin/boletos", label: "Boletos" },
+      { href: "/admin/comprobantes", label: "Comprobantes" },
+      { href: "/admin/servicios", label: "Servicios" },
+    ],
+  },
+  {
+    label: "Clientes",
+    items: [
+      { href: "/admin/clientes", label: "Clientes" },
+      { href: "/admin/codigos", label: "Descuentos" },
+      { href: "/admin/regalos", label: "Regalos" },
+    ],
+  },
+  {
+    label: "Configuración",
+    items: [
+      { href: "/admin/whatsapp", label: "WhatsApp" },
+      { href: "/admin/tarjetas", label: "Tarjetas" },
+      { href: "/admin/contenido", label: "Contenido" },
+    ],
+  },
+  {
+    label: "Análisis",
+    items: [
+      { href: "/admin/reportes", label: "Reportes" },
+      { href: "/admin/metricas", label: "Métricas" },
+    ],
+  },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -59,29 +82,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100">
       {/* Sidebar */}
       <aside className="w-56 flex-shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col">
         <div className="p-4 border-b border-slate-100 dark:border-slate-700">
           <Logo size="sm" showText={true} />
         </div>
-        <nav className="flex-1 p-3 space-y-1">
-          {NAV_ITEMS.map((item) => {
-            const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
-                    : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={gi}>
+              {group.label && (
+                <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  {group.label}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        active
+                          ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                          : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
         <div className="p-3 border-t border-slate-100 dark:border-slate-700">
           <button

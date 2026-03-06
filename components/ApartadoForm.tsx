@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Rifa, createBoleto, reservarNumeros, validateDiscountCode, incrementDiscountUse, getBoletoByFolio } from "@/lib/firestore";
+import { Rifa, createBoleto, reservarNumeros, validateDiscountCode, getBoletoByFolio } from "@/lib/firestore";
 import { generateFolio } from "@/lib/folio";
 import { Timestamp } from "firebase/firestore";
 
@@ -89,9 +89,13 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
       // Reserve numbers atomically (transaction checks availability)
       await reservarNumeros(rifa.id!, numeros);
 
-      // Increment discount code if used
+      // Increment discount code if used (server-side to prevent direct Firestore writes)
       if (descuento) {
-        await incrementDiscountUse(descuento.id);
+        await fetch("/api/discount/use", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: descuento.id }),
+        });
       }
 
       // Redirect to consulta

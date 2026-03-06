@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Rifas — público lee, admin escribe
+    match /rifas/{rifaId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+
+      // Números — público puede reservar (libre→apartado), admin puede todo
+      match /numeros/{numero} {
+        allow read: if true;
+        allow write: if request.auth != null;
+        // Público solo puede crear o actualizar con { status: 'apartado' }
+        // y solo si el número no está ya pagado
+        allow create: if request.resource.data.keys().hasOnly(['status'])
+                        && request.resource.data.status == 'apartado';
+        allow update: if request.resource.data.keys().hasOnly(['status'])
+                        && request.resource.data.status == 'apartado'
+                        && resource.data.status != 'pagado';
+      }
+    }
+
+    // Boletos — público lee y crea (para apartar y consultar folio), admin puede todo
+    match /boletos/{boletoId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if request.auth != null;
+    }
+
+    // Códigos de descuento — público solo lee, admin gestiona
+    // El incremento de usos va por /api/discount/use (Admin SDK, bypasses rules)
+    match /discount_codes/{codeId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // WhatsApp config — público solo lee, admin gestiona
+    // La rotación va por /api/whatsapp/rotate (Admin SDK, bypasses rules)
+    match /whatsapp_config/{doc} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Cuentas bancarias — público lee, admin gestiona
+    match /bank_accounts/{accountId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Configuración de la app
+    match /settings/{doc} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Contenido del sitio (CMS)
+    match /site_content/{doc} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Comprobantes de pago — público crea y lee, solo admin actualiza
+    match /comprobantes/{comprobanteId} {
+      allow read, create: if true;
+      allow update: if request.auth != null;
+    }
+  }
+}

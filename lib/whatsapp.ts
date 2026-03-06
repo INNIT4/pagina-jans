@@ -1,4 +1,4 @@
-import { getWhatsAppConfig, getAndRotateWhatsApp } from "./firestore";
+import { getWhatsAppConfig } from "./firestore";
 
 /** Lee el número activo SIN rotar — para cachés y previews. */
 export async function getActiveWhatsApp(): Promise<string> {
@@ -8,9 +8,12 @@ export async function getActiveWhatsApp(): Promise<string> {
   return config.numeros[indice] ?? "";
 }
 
-/** Lee el número activo Y rota al siguiente — llamar al hacer click real. */
+/** Lee el número activo Y rota al siguiente — llama al API route (server-side). */
 export async function getRotatedWhatsApp(): Promise<string> {
-  return (await getAndRotateWhatsApp()) ?? "";
+  const res = await fetch("/api/whatsapp/rotate", { method: "POST" });
+  if (!res.ok) return "";
+  const data = (await res.json()) as { numero?: string };
+  return data.numero ?? "";
 }
 
 export function buildWhatsAppUrl(numero: string, message: string): string {

@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { adminStorage } from "@/lib/firebase-admin";
 import { verifySession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
@@ -31,7 +29,7 @@ function checkMagicBytes(buf: Buffer, mimeType: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  // Only authenticated admins may upload — verify HMAC signature, not just existence
+  // Only authenticated admins may upload
   const sessionCookie = req.cookies.get("__session");
   if (!sessionCookie?.value || !(await verifySession(sessionCookie.value))) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
@@ -49,24 +47,35 @@ export async function POST(req: NextRequest) {
   if (file.size > MAX_SIZE)
     return NextResponse.json({ error: "El archivo supera el límite de 5 MB." }, { status: 400 });
 
-  const ext = path.extname(file.name).toLowerCase().replace(/[^.a-z0-9]/g, "");
+  const ext = "." + file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "");
   if (!ALLOWED_EXTENSIONS.includes(ext))
     return NextResponse.json({ error: "Extensión no permitida." }, { status: 400 });
 
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  // Validar magic bytes reales — rechaza archivos con MIME falso
+  // Validar magic bytes reales
   if (!checkMagicBytes(buffer, file.type))
     return NextResponse.json({ error: "El contenido del archivo no coincide con su tipo." }, { status: 400 });
 
-  const baseName = path.basename(file.name, path.extname(file.name))
+  const baseName = file.name
+    .replace(/\.[^.]+$/, "")
     .replace(/[^a-zA-Z0-9-_]/g, "_")
     .slice(0, 60);
-  const filename = `${Date.now()}-${baseName}${ext}`;
+  const filename = `rifas/${Date.now()}-${baseName}${ext}`;
 
-  await mkdir(UPLOAD_DIR, { recursive: true });
-  await writeFile(path.join(UPLOAD_DIR, filename), buffer);
+  try {
+    const bucket = adminStorage();
+    const blob = bucket.file(filename);
+    await blob.save(buffer, {
+      metadata: { contentType: file.type },
+    });
+    await blob.makePublic();
 
-  return NextResponse.json({ url: `/uploads/${filename}` });
+    const url = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+    return NextResponse.json({ url });
+  } catch (err) {
+    console.error("Upload error:", err);
+    return NextResponse.json({ error: "Error al subir la imagen." }, { status: 500 });
+  }
 }

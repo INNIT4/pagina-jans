@@ -140,12 +140,20 @@ export default function AdminBoletosPage() {
 
   // Filtro de texto client-side sobre los boletos cargados
   const q = search.trim().toUpperCase();
-  const displayed = q
+  const STATUS_PRIORITY: Record<string, number> = { pendiente: 0, pagado: 1, cancelado: 2 };
+
+  const displayed = (q
     ? boletos.filter((b) => {
         const nombre = `${b.nombre} ${b.apellidos}`.toUpperCase();
         return b.folio.includes(q) || nombre.includes(q) || b.celular.includes(q);
       })
-    : boletos;
+    : boletos
+  ).slice().sort((a, b) => {
+    const pa = STATUS_PRIORITY[a.status] ?? 3;
+    const pb = STATUS_PRIORITY[b.status] ?? 3;
+    if (pa !== pb) return pa - pb;
+    return (b.created_at?.toMillis?.() ?? 0) - (a.created_at?.toMillis?.() ?? 0);
+  });
 
   const rifaOptions = Array.from(rifas.values());
 

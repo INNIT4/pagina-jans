@@ -21,11 +21,10 @@ service cloud.firestore {
       }
     }
 
-    // Boletos — público lee y crea (para apartar y consultar folio), admin puede todo
+    // Boletos — solo admin lee/escribe. Creación y consulta pública van por API server-side
+    // que usa el Admin SDK (bypass de estas reglas) con validación de precio y rate limiting.
     match /boletos/{boletoId} {
-      allow read: if true;
-      allow create: if true;
-      allow update, delete: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
 
     // Códigos de descuento — público solo lee, admin gestiona

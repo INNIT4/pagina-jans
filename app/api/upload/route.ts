@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { verifySession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +11,9 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
 
 export async function POST(req: NextRequest) {
-  // Only authenticated admins may upload
-  const token = req.cookies.get("__session");
-  if (!token?.value) {
+  // Only authenticated admins may upload — verify HMAC signature, not just existence
+  const sessionCookie = req.cookies.get("__session");
+  if (!sessionCookie?.value || !(await verifySession(sessionCookie.value))) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 

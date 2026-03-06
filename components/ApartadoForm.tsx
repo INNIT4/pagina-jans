@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Rifa, createBoleto, reservarNumeros, validateDiscountCode, getBoletoByFolio } from "@/lib/firestore";
-import { generateFolio } from "@/lib/folio";
-import { Timestamp } from "firebase/firestore";
+import { Rifa, validateDiscountCode } from "@/lib/firestore";
 
 const ESTADOS_MX = [
   "Aguascalientes","Baja California","Baja California Sur","Campeche","Chiapas","Chihuahua",
@@ -65,44 +63,31 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
     setLoading(true);
 
     try {
-      // Generate unique folio (retry once on collision — extremely rare)
-      let folio = generateFolio();
-      const folioExiste = await getBoletoByFolio(folio);
-      if (folioExiste) folio = generateFolio();
-
-      // Save boleto
-      await createBoleto({
-        folio,
-        rifa_id: rifa.id!,
-        numeros,
-        nombre: form.nombre,
-        apellidos: form.apellidos,
-        celular: form.celular,
-        estado: form.estado,
-        codigo_descuento: descuento ? codigo.toUpperCase() : "",
-        descuento_aplicado: descuento ? descuento.porcentaje : 0,
-        precio_total: total,
-        status: "pendiente",
-        created_at: Timestamp.now(),
+      // Todo se valida y calcula en el servidor — precio, descuento y reserva atómica
+      const res = await fetch("/api/boletos/crear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rifa_id: rifa.id,
+          numeros,
+          nombre: form.nombre,
+          apellidos: form.apellidos,
+          celular: form.celular,
+          estado: form.estado,
+          codigo_descuento: descuento ? codigo.trim().toUpperCase() : "",
+        }),
       });
 
-      // Reserve numbers atomically (transaction checks availability)
-      await reservarNumeros(rifa.id!, numeros);
-
-      // Increment discount code if used (server-side to prevent direct Firestore writes)
-      if (descuento) {
-        await fetch("/api/discount/use", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: descuento.id }),
-        });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error ?? "Ocurrió un error. Intenta de nuevo.");
+        setLoading(false);
+        return;
       }
 
-      // Redirect to consulta
-      router.push(`/consulta?f=${folio}&act=1`);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Ocurrió un error. Intenta de nuevo.";
-      alert(msg);
+      router.push(`/consulta?f=${data.folio}&act=1`);
+    } catch {
+      alert("Error de conexión. Intenta de nuevo.");
     }
     setLoading(false);
   }

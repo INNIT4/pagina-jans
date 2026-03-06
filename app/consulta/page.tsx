@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { getBoletoByFolio, getBoletosByCelular, getBoletosByNumero, getRifa, Boleto, Rifa } from "@/lib/firestore";
+import { getRifa, getComprobanteByFolio, Boleto, Rifa, Comprobante } from "@/lib/firestore";
 import { downloadComprobante } from "@/lib/pdf";
 import { getRotatedWhatsApp, buildWhatsAppUrl } from "@/lib/whatsapp";
 import BankCards from "@/components/BankCards";
@@ -10,6 +10,33 @@ import BankCards from "@/components/BankCards";
 interface Result {
   boleto: Boleto;
   rifa: Rifa | null;
+}
+
+// Tipo que devuelve /api/boletos/consulta (created_at como ms en lugar de Timestamp)
+interface ApiBoleto {
+  id: string;
+  folio: string;
+  rifa_id: string;
+  numeros: number[];
+  nombre: string;
+  apellidos: string;
+  celular: string;
+  estado: string;
+  status: "pendiente" | "pagado" | "cancelado";
+  precio_total: number;
+  descuento_aplicado: number;
+  codigo_descuento: string;
+  created_at_ms: number | null;
+}
+
+function adaptBoleto(b: ApiBoleto): Boleto {
+  return {
+    ...b,
+    // Reconstruir un objeto compatible con Timestamp para BoletoCard
+    created_at: {
+      toDate: () => new Date(b.created_at_ms ?? Date.now()),
+    } as unknown as import("firebase/firestore").Timestamp,
+  };
 }
 
 export default function ConsultaPage() {
@@ -26,6 +53,8 @@ function ConsultaInner() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Result[] | null>(null);
   const [error, setError] = useState("");
+  const [searchedByCelular, setSearchedByCelular] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const buscarFolio = useCallback(async (val: string) => {
     setLoading(true);
@@ -33,32 +62,41 @@ function ConsultaInner() {
     setResults(null);
 
     try {
-      let boletos: Boleto[] = [];
+      let param: string;
+      let esCelular = false;
 
       const soloDigitos = /^\d+$/.test(val);
       if (!soloDigitos || val.startsWith("JNS-")) {
-        // Folio
-        const b = await getBoletoByFolio(val);
-        if (b) boletos = [b];
+        param = `folio=${encodeURIComponent(val)}`;
       } else if (val.length === 10) {
-        // Celular
-        boletos = await getBoletosByCelular(val);
+        esCelular = true;
+        param = `celular=${encodeURIComponent(val)}`;
       } else {
-        // Número de boleto
-        boletos = await getBoletosByNumero(Number(val));
+        param = `numero=${encodeURIComponent(val)}`;
       }
 
-      if (boletos.length === 0) {
+      const res = await fetch(`/api/boletos/consulta?${param}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Ocurrió un error al buscar. Intenta de nuevo.");
+        setLoading(false);
+        return;
+      }
+
+      const { boletos: rawBoletos } = await res.json() as { boletos: ApiBoleto[] };
+      setSearchedByCelular(esCelular);
+
+      if (rawBoletos.length === 0) {
         setError("No encontramos ningún boleto con ese dato. Verifica el folio, celular o número de boleto.");
       } else {
-        const res: Result[] = await Promise.all(
-          boletos.map(async (b) => {
+        const results: Result[] = await Promise.all(
+          rawBoletos.map(async (b) => {
             let rifa: Rifa | null = null;
             try { rifa = await getRifa(b.rifa_id); } catch {}
-            return { boleto: b, rifa };
+            return { boleto: adaptBoleto(b), rifa };
           })
         );
-        setResults(res);
+        setResults(results);
       }
     } catch {
       setError("Ocurrió un error al buscar. Intenta de nuevo.");
@@ -154,10 +192,30 @@ function ConsultaInner() {
         <>
           <ResultsSummary results={results} />
           {results.map(({ boleto, rifa }) => (
-            <BoletoCard key={boleto.id} boleto={boleto} rifa={rifa} />
+            <BoletoCard key={boleto.id} boleto={boleto} rifa={rifa} showCelular={searchedByCelular} />
           ))}
+          {showModal && (
+            <ComprobanteModal
+              results={results.filter((r) => r.boleto.status === "pendiente")}
+              onClose={() => setShowModal(false)}
+            />
+          )}
           {results.some((r) => r.boleto.status === "pendiente") && (
             <div className="mt-2">
+              <div className="flex justify-center mb-6">
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="animate-heartbeat flex items-center gap-3 px-7 py-3.5 bg-red-600 hover:bg-red-700 text-white font-black rounded-2xl shadow-lg text-base"
+                >
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5
+                             2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09
+                             C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5
+                             c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                  </svg>
+                  Subir comprobante de pago
+                </button>
+              </div>
               <div className="border-t border-slate-200 dark:border-slate-700 my-8" />
               <h2 className="text-2xl font-black mb-1">Realiza tu pago</h2>
               <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
@@ -231,9 +289,15 @@ function Chip({ label, value, color }: { label: string; value: string; color: "s
 
 // ─── Boleto card ──────────────────────────────────────────────────────────────
 
-function BoletoCard({ boleto, rifa }: { boleto: Boleto; rifa: Rifa | null }) {
+function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa | null; showCelular?: boolean }) {
   const [downloading, setDownloading] = useState(false);
   const [waLoading, setWaLoading] = useState(false);
+  const [comprobante, setComprobante] = useState<Comprobante | null>(null);
+
+  useEffect(() => {
+    if (boleto.status !== "pendiente") return;
+    getComprobanteByFolio(boleto.folio).then(setComprobante).catch(() => {});
+  }, [boleto.folio, boleto.status]);
 
   async function handleDownload() {
     setDownloading(true);
@@ -246,7 +310,7 @@ function BoletoCard({ boleto, rifa }: { boleto: Boleto; rifa: Rifa | null }) {
     try {
       const numero = await getRotatedWhatsApp();
       if (!numero) { alert("No hay número de WhatsApp configurado."); return; }
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://srtsjans.com";
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
       const fecha = boleto.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? new Date().toLocaleString("es-MX");
       const rifaNombre = rifa?.nombre ?? "Sorteos Jans";
       const message =
@@ -363,7 +427,7 @@ function BoletoCard({ boleto, rifa }: { boleto: Boleto; rifa: Rifa | null }) {
         {/* Titular + meta */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <InfoCell label="Titular" value={`${boleto.nombre} ${boleto.apellidos}`} wide />
-          <InfoCell label="Celular"    value={boleto.celular} mono />
+          {showCelular && <InfoCell label="Celular" value={boleto.celular} mono />}
           <InfoCell label="Estado"     value={boleto.estado || "—"} />
           <InfoCell label="Apartado el" value={fecha} />
           {rifa?.nombre && (
@@ -409,6 +473,37 @@ function BoletoCard({ boleto, rifa }: { boleto: Boleto; rifa: Rifa | null }) {
             ))}
           </div>
         </div>
+
+        {/* Admin comment */}
+        {comprobante?.admin_comentario && (
+          <div className="border border-orange-200 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-4 space-y-2">
+            <p className="text-xs font-bold text-orange-700 dark:text-orange-300 uppercase tracking-wide">
+              Comentario del administrador
+            </p>
+            <p className="text-xs text-orange-600 dark:text-orange-400">
+              [{comprobante.admin_comentario.created_at.toDate().toLocaleString("es-MX", {
+                timeZone: "America/Mexico_City",
+                day: "2-digit", month: "short", year: "2-digit",
+                hour: "2-digit", minute: "2-digit", hour12: false,
+              })} hora CDMX]
+            </p>
+            <a
+              href={comprobante.archivo_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-700 dark:text-orange-300 underline underline-offset-2"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+              Ver comprobante enviado
+            </a>
+            <p className="text-sm font-semibold text-orange-800 dark:text-orange-200">
+              {comprobante.admin_comentario.texto}
+            </p>
+          </div>
+        )}
 
         {/* Actions */}
         {status !== "cancelado" && (
@@ -463,6 +558,254 @@ function InfoCell({ label, value, wide, mono }: { label: string; value: string; 
     <div className={wide ? "col-span-2 sm:col-span-1" : ""}>
       <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{label}</p>
       <p className={`font-semibold text-sm text-slate-800 dark:text-slate-100 ${mono ? "font-mono" : ""}`}>{value}</p>
+    </div>
+  );
+}
+
+// ─── Comprobante Modal ─────────────────────────────────────────────────────────
+
+function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: () => void }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [err, setErr] = useState("");
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const nombre = results[0]?.boleto
+    ? `${results[0].boleto.nombre} ${results[0].boleto.apellidos}`
+    : "";
+  const folios = results.map((r) => r.boleto.folio);
+  const totalNums = results.reduce((s, r) => s + r.boleto.numeros.length, 0);
+  const montoTotal = results.reduce((s, r) => s + r.boleto.precio_total, 0);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  function validateFile(f: File): string | null {
+    const allowed = ["image/jpeg", "image/png", "image/gif", "application/pdf"];
+    if (!allowed.includes(f.type)) return "Solo se permiten JPG, PNG, GIF o PDF.";
+    const maxSize = f.type === "application/pdf" ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (f.size > maxSize)
+      return `El archivo supera el límite de ${f.type === "application/pdf" ? "10" : "5"} MB.`;
+    return null;
+  }
+
+  function pickFile(f: File) {
+    const e = validateFile(f);
+    if (e) { setErr(e); return; }
+    setErr("");
+    setFile(f);
+  }
+
+  async function handleSubmit() {
+    if (!file) return;
+    setUploading(true);
+    setErr("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("nombre", nombre);
+      fd.append("folios", JSON.stringify(folios));
+      fd.append("monto_total", String(montoTotal));
+      const res = await fetch("/api/comprobantes/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) { setErr(data.error ?? "Error al subir."); return; }
+      setSuccess(true);
+    } catch {
+      setErr("Error de conexión. Intenta de nuevo.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-[520px] max-h-[85vh] overflow-y-auto shadow-2xl flex flex-col">
+        {/* Red top strip */}
+        <div className="h-2 bg-gradient-to-r from-red-600 to-red-500 rounded-t-3xl flex-shrink-0" />
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
+              <svg className="w-5 h-5 text-red-600 dark:text-red-400" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+              </svg>
+            </div>
+            <div>
+              <h2 className="font-black text-lg text-slate-900 dark:text-slate-100 leading-tight">Subir comprobante</h2>
+              <p className="text-xs text-slate-400">de pago</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="px-6 pb-6 space-y-5">
+          {success ? (
+            <div className="flex flex-col items-center gap-4 py-6 text-center">
+              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-black text-xl text-slate-900 dark:text-slate-100 mb-1">¡Comprobante enviado!</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Nuestro equipo revisará tu pago y actualizará el estado de tu boleto.
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Resumen */}
+              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400">Titular</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{nombre}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-500 dark:text-slate-400 flex-shrink-0">Folio{folios.length > 1 ? "s" : ""}</span>
+                  <span className="font-mono font-bold text-red-600 dark:text-red-400 text-right break-all">
+                    {folios.join(", ")}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400">Números</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{totalNums}</span>
+                </div>
+                <div className="flex justify-between border-t border-slate-200 dark:border-slate-600 pt-2 mt-2">
+                  <span className="font-bold text-slate-700 dark:text-slate-300">Total a pagar</span>
+                  <span className="font-black text-red-600 dark:text-red-400">${montoTotal.toLocaleString("es-MX")}</span>
+                </div>
+              </div>
+
+              {/* Upload area */}
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                  Archivo comprobante
+                </p>
+                {!file ? (
+                  <div
+                    onClick={() => inputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragging(false);
+                      const f = e.dataTransfer.files[0];
+                      if (f) pickFile(f);
+                    }}
+                    className={`border-2 border-dashed rounded-2xl px-6 py-8 text-center cursor-pointer transition-colors ${
+                      dragging
+                        ? "border-red-400 bg-red-50 dark:bg-red-900/20"
+                        : "border-slate-200 dark:border-slate-600 hover:border-red-300 dark:hover:border-red-700 hover:bg-slate-50 dark:hover:bg-slate-700/30"
+                    }`}
+                  >
+                    <svg className="w-10 h-10 mx-auto mb-3 text-slate-300 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                      Haz clic o arrastra tu archivo aquí
+                    </p>
+                    <p className="text-xs text-slate-400">JPG, PNG, GIF hasta 5 MB · PDF hasta 10 MB</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3">
+                    <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200 flex-1 truncate">{file.name}</span>
+                    <button
+                      onClick={() => setFile(null)}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex-shrink-0"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) pickFile(f);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+
+              {err && (
+                <div className="flex gap-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl px-4 py-3 text-red-700 dark:text-red-300 text-sm">
+                  <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+                  </svg>
+                  {err}
+                </div>
+              )}
+
+              {file && (
+                <button
+                  onClick={handleSubmit}
+                  disabled={uploading}
+                  className="w-full py-3.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black rounded-2xl transition-colors flex items-center justify-center gap-2"
+                >
+                  {uploading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    "Enviar comprobante"
+                  )}
+                </button>
+              )}
+
+              {/* Payment instructions */}
+              <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-2xl p-5">
+                <h3 className="font-bold text-amber-800 dark:text-amber-300 mb-2">Instrucciones de pago</h3>
+                <ol className="text-sm text-amber-700 dark:text-amber-400 space-y-1 list-decimal list-inside">
+                  <li>Elige cualquiera de las cuentas bancarias de abajo.</li>
+                  <li>Realiza la transferencia por el monto exacto de tu boleto.</li>
+                  <li>En el campo concepto/referencia escribe tu folio.</li>
+                  <li>Sube aquí tu comprobante de pago.</li>
+                  <li>Una vez verificado, tu estado cambiará a <strong>Pago confirmado</strong>.</li>
+                </ol>
+              </div>
+
+              <BankCards />
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

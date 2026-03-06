@@ -15,6 +15,7 @@ export default function AdminBoletosPage() {
   const [marking, setMarking] = useState<string | null>(null);
   const [canceladosMsg, setCanceladosMsg] = useState<string | null>(null);
   const [limitHoras, setLimitHoras] = useState(24);
+  const [cancelacionActiva, setCancelacionActiva] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
   async function load() {
@@ -26,6 +27,7 @@ export default function AdminBoletosPage() {
   useEffect(() => {
     getAppSettings().then(async (s) => {
       setLimitHoras(s.cancelacion_horas);
+      setCancelacionActiva(s.cancelacion_activa);
       if (s.cancelacion_activa) {
         const cancelados = await cancelarBoletosExpirados(s.cancelacion_horas);
         if (cancelados > 0) {
@@ -177,9 +179,9 @@ export default function AdminBoletosPage() {
                         const restanteMs = limitHoras * 3_600_000 - transcurridoMs;
                         const transcurridoH = transcurridoMs / 3_600_000;
                         const restanteH = restanteMs / 3_600_000;
-                        const expirado = restanteMs <= 0;
-                        const urgente = !expirado && restanteH < 2;
-                        const advertencia = !expirado && !urgente && restanteH < limitHoras * 0.5;
+                        const expirado = cancelacionActiva && restanteMs <= 0;
+                        const urgente = cancelacionActiva && !expirado && restanteH < 2;
+                        const advertencia = cancelacionActiva && !expirado && !urgente && restanteH < limitHoras * 0.5;
 
                         const fmtH = (h: number) => {
                           const abs = Math.abs(h);
@@ -195,9 +197,11 @@ export default function AdminBoletosPage() {
                             "text-slate-500 dark:text-slate-400"
                           }`}>
                             <p>hace {fmtH(transcurridoH)}</p>
-                            <p className="opacity-75">
-                              {expirado ? `expirado hace ${fmtH(-restanteH)}` : `quedan ${fmtH(restanteH)}`}
-                            </p>
+                            {cancelacionActiva && (
+                              <p className="opacity-75">
+                                {expirado ? `expirado hace ${fmtH(-restanteH)}` : `quedan ${fmtH(restanteH)}`}
+                              </p>
+                            )}
                           </div>
                         );
                       })()

@@ -205,7 +205,7 @@ export default function AdminBoletosPage() {
                           </div>
                         );
                       })()
-                    : <span className="text-slate-400">{b.created_at?.toDate?.()?.toLocaleDateString("es-MX") ?? "—"}</span>
+                    : <span className="text-slate-400">{b.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? "—"}</span>
                   }
                 </td>
                 <td className="px-4 py-3">

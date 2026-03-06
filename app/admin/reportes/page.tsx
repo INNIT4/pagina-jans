@@ -65,7 +65,7 @@ export default function ReportesPage() {
         b.numeros.join(" | "),
         String(b.precio_total),
         b.status === "pagado" ? "Pagado" : "Pendiente",
-        b.created_at?.toDate?.()?.toLocaleDateString("es-MX") ?? "",
+        b.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? "",
       ]);
     downloadCSV("reporte-folios.csv", rows, headers);
   }
@@ -84,7 +84,7 @@ export default function ReportesPage() {
       String(b.descuento_aplicado),
       String(b.precio_total),
       b.status === "pagado" ? "Pagado" : "Pendiente",
-      b.created_at?.toDate?.()?.toLocaleDateString("es-MX") ?? "",
+      b.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? "",
     ]);
     downloadCSV("reporte-privado.csv", rows, headers);
   }
@@ -229,7 +229,7 @@ export default function ReportesPage() {
                       <StatusBadge status={b.status} />
                     </td>
                     <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">
-                      {b.created_at?.toDate?.()?.toLocaleDateString("es-MX") ?? "—"}
+                      {b.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? "—"}
                     </td>
                   </tr>
                 ))}
@@ -264,7 +264,7 @@ export default function ReportesPage() {
                   <td className="px-4 py-3 font-semibold">${b.precio_total.toLocaleString("es-MX")}</td>
                   <td className="px-4 py-3"><StatusBadge status={b.status} /></td>
                   <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">
-                    {b.created_at?.toDate?.()?.toLocaleDateString("es-MX") ?? "—"}
+                    {b.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? "—"}
                   </td>
                 </tr>
               ))}

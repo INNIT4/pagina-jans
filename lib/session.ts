@@ -4,7 +4,7 @@
  */
 
 const ALG = { name: "HMAC", hash: "SHA-256" } as const;
-const SESSION_DURATION_MS = 60 * 60 * 1000; // 1 hour
+const SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 function b64url(buf: ArrayBuffer | Uint8Array): string {
   const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);

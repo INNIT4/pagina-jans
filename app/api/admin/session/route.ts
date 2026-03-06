@@ -4,7 +4,7 @@ import { signSession } from "@/lib/session";
 import { getRatelimit } from "@/lib/ratelimit";
 
 const SESSION_COOKIE = "__session";
-const MAX_AGE = 60 * 60; // 1 hour
+const MAX_AGE = 8 * 60 * 60; // 8 hours
 
 // POST /api/admin/session — verify Firebase ID token, set HMAC-signed HttpOnly session cookie
 export async function POST(req: NextRequest) {

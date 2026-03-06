@@ -14,6 +14,8 @@ export default function AdminBoletosPage() {
   const [page, setPage] = useState(1);
   const [marking, setMarking] = useState<string | null>(null);
   const [canceladosMsg, setCanceladosMsg] = useState<string | null>(null);
+  const [limitHoras, setLimitHoras] = useState(24);
+  const [now, setNow] = useState(() => Date.now());
 
   async function load() {
     const [bs, rs] = await Promise.all([getBoletos(), getRifas()]);
@@ -23,6 +25,7 @@ export default function AdminBoletosPage() {
 
   useEffect(() => {
     getAppSettings().then(async (s) => {
+      setLimitHoras(s.cancelacion_horas);
       if (s.cancelacion_activa) {
         const cancelados = await cancelarBoletosExpirados(s.cancelacion_horas);
         if (cancelados > 0) {
@@ -30,6 +33,12 @@ export default function AdminBoletosPage() {
         }
       }
     }).finally(() => load());
+  }, []);
+
+  // Actualizar "ahora" cada minuto para que los tiempos sean en vivo
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
   }, []);
 
   // Reset to page 1 when filters change
@@ -160,8 +169,40 @@ export default function AdminBoletosPage() {
                     {b.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-xs text-slate-400">
-                  {b.created_at?.toDate?.()?.toLocaleDateString("es-MX") ?? "—"}
+                <td className="px-4 py-3 text-xs">
+                  {b.status === "pendiente" && b.created_at
+                    ? (() => {
+                        const creado = b.created_at.toDate().getTime();
+                        const transcurridoMs = now - creado;
+                        const restanteMs = limitHoras * 3_600_000 - transcurridoMs;
+                        const transcurridoH = transcurridoMs / 3_600_000;
+                        const restanteH = restanteMs / 3_600_000;
+                        const expirado = restanteMs <= 0;
+                        const urgente = !expirado && restanteH < 2;
+                        const advertencia = !expirado && !urgente && restanteH < limitHoras * 0.5;
+
+                        const fmtH = (h: number) => {
+                          const abs = Math.abs(h);
+                          if (abs < 1) return `${Math.round(abs * 60)} min`;
+                          return `${abs.toFixed(1)} h`;
+                        };
+
+                        return (
+                          <div className={`space-y-0.5 font-medium ${
+                            expirado ? "text-red-600 dark:text-red-400" :
+                            urgente  ? "text-orange-500 dark:text-orange-400" :
+                            advertencia ? "text-yellow-600 dark:text-yellow-400" :
+                            "text-slate-500 dark:text-slate-400"
+                          }`}>
+                            <p>hace {fmtH(transcurridoH)}</p>
+                            <p className="opacity-75">
+                              {expirado ? `expirado hace ${fmtH(-restanteH)}` : `quedan ${fmtH(restanteH)}`}
+                            </p>
+                          </div>
+                        );
+                      })()
+                    : <span className="text-slate-400">{b.created_at?.toDate?.()?.toLocaleDateString("es-MX") ?? "—"}</span>
+                  }
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1.5 flex-wrap">

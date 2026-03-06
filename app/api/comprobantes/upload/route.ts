@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
+import { put } from "@vercel/blob";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { adminDb } from "@/lib/firebase-admin";
-import { adminStorage } from "@/lib/firebase-admin";
 import { Timestamp } from "firebase-admin/firestore";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,6 @@ export const dynamic = "force-dynamic";
 const MAX_IMG     = 5  * 1024 * 1024;
 const MAX_PDF     = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "application/pdf"];
-const ALLOWED_EXTS  = [".jpg", ".jpeg", ".png", ".gif", ".pdf"];
 
 let _rl: Ratelimit | null = null;
 function getRl() {
@@ -35,7 +34,7 @@ function checkMagicBytes(buf: Buffer, mimeType: string): boolean {
     case "image/gif":
       return buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38;
     case "application/pdf":
-      return buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46; // %PDF
+      return buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46;
     default:
       return false;
   }
@@ -77,31 +76,26 @@ export async function POST(req: NextRequest) {
   if (file.size > (isPdf ? MAX_PDF : MAX_IMG))
     return NextResponse.json({ error: `Supera el límite de ${isPdf ? "10" : "5"} MB.` }, { status: 400 });
 
-  const ext = "." + file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (!ALLOWED_EXTS.includes(ext)) return NextResponse.json({ error: "Extensión no permitida." }, { status: 400 });
-
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  // Validar magic bytes reales — rechaza archivos con MIME falso
   if (!checkMagicBytes(buffer, file.type))
     return NextResponse.json({ error: "El contenido del archivo no coincide con su tipo." }, { status: 400 });
 
-  const filename = `comprobantes/${randomUUID()}${ext}`;
+  const ext = "." + file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "");
 
   try {
-    const bucket = adminStorage();
-    const blob = bucket.file(filename);
-    await blob.save(buffer, {
-      metadata: { contentType: file.type },
+    const blob = await put(`comprobantes/${randomUUID()}${ext}`, buffer, {
+      access: "public",
+      contentType: file.type,
     });
-    await blob.makePublic();
 
-    const archivo_url  = `https://storage.googleapis.com/${bucket.name}/${filename}`;
     const archivo_tipo = isPdf ? "pdf" : "imagen";
 
     const db  = adminDb();
     const ref = await db.collection("comprobantes").add({
-      nombre: nombre.trim(), folios, monto_total, archivo_url, archivo_tipo,
+      nombre: nombre.trim(), folios, monto_total,
+      archivo_url: blob.url,
+      archivo_tipo,
       status: "pendiente",
       created_at: Timestamp.now(),
     });

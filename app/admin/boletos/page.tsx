@@ -30,29 +30,41 @@ export default function AdminBoletosPage() {
 
   const isSearching = search.trim().length > 0;
 
+  // Ref para poder llamar loadPage con los valores actuales sin dependencias stale
+  const filtersRef = useRef({ filterStatus, filterRifa, isSearching, pageIdx });
+  useEffect(() => { filtersRef.current = { filterStatus, filterRifa, isSearching, pageIdx }; });
+
   async function loadPage(idx: number, stack: (DocumentSnapshot | null)[]) {
     setLoading(true);
-    const status = filterStatus !== "todos" ? filterStatus : undefined;
-    const rifaId = filterRifa || undefined;
-    const { boletos: bs, hasMore: more, lastDoc } = await getBoletosPaginados({
-      status,
-      rifaId,
-      pageSize: PAGE_SIZE,
-      cursor: stack[idx] ?? null,
-      loadAll: isSearching,
-    });
-    setBoletos(bs);
-    setHasMore(!isSearching && more);
-    // Guardar cursor para la siguiente página si no lo tenemos ya
-    if (!isSearching && lastDoc && stack.length <= idx + 1) {
-      stack.push(lastDoc);
+    const { filterStatus: status, filterRifa: rifaId, isSearching: searching } = filtersRef.current;
+    try {
+      const { boletos: bs, hasMore: more, lastDoc } = await getBoletosPaginados({
+        status: status !== "todos" ? status : undefined,
+        rifaId: rifaId || undefined,
+        pageSize: PAGE_SIZE,
+        cursor: stack[idx] ?? null,
+        loadAll: searching,
+      });
+      setBoletos(bs);
+      setHasMore(!searching && more);
+      if (!searching && lastDoc && stack.length <= idx + 1) {
+        stack.push(lastDoc);
+      }
+    } catch (e) {
+      console.error("Error cargando boletos:", e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
-  // Inicialización: auto-cancel + cargar rifas + primera página
+  // Inicialización única: auto-cancel + rifas + primera carga
+  const initialized = useRef(false);
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
     getRifas().then((rs) => setRifas(new Map(rs.map((r) => [r.id!, r]))));
+
     getAppSettings().then(async (s) => {
       setLimitHoras(s.cancelacion_horas);
       setCancelacionActiva(s.cancelacion_activa);
@@ -62,16 +74,14 @@ export default function AdminBoletosPage() {
           setCanceladosMsg(`${cancelados} boleto${cancelados > 1 ? "s" : ""} cancelado${cancelados > 1 ? "s" : ""} automáticamente.`);
         }
       }
-    }).finally(() => {
-      cursorStack.current = [null];
-      setPageIdx(0);
-      loadPage(0, cursorStack.current);
-    });
+    }).finally(() => loadPage(0, cursorStack.current));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Al cambiar filtros o búsqueda: resetear a página 0
+  // Al cambiar filtros o búsqueda: resetear a página 0 (no corre en el primer mount)
+  const firstRender = useRef(true);
   useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
     cursorStack.current = [null];
     setPageIdx(0);
     loadPage(0, cursorStack.current);

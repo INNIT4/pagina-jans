@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Rifa, validateDiscountCode } from "@/lib/firestore";
+import { Rifa } from "@/lib/firestore";
 
 const ESTADOS_MX = [
   "Aguascalientes","Baja California","Baja California Sur","Campeche","Chiapas","Chihuahua",
@@ -24,7 +24,7 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
     nombre: "", apellidos: "", celular: "", estado: "",
   });
   const [codigo, setCodigo] = useState("");
-  const [descuento, setDescuento] = useState<{ id: string; porcentaje: number } | null>(null);
+  const [descuento, setDescuento] = useState<{ porcentaje: number } | null>(null);
   const [codigoError, setCodigoError] = useState("");
   const [loading, setLoading] = useState(false);
   const [validatingCode, setValidatingCode] = useState(false);
@@ -43,12 +43,17 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
     setValidatingCode(true);
     setCodigoError("");
     try {
-      const result = await validateDiscountCode(code);
-      if (result) {
-        setDescuento({ id: result.id!, porcentaje: result.porcentaje });
+      const res = await fetch("/api/discount/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo: code }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setDescuento({ porcentaje: data.porcentaje as number });
       } else {
         setDescuento(null);
-        setCodigoError("Código inválido o expirado.");
+        setCodigoError(data.error ?? "Código inválido o expirado.");
       }
     } catch {
       setCodigoError("Error al validar el código.");

@@ -1,11 +1,14 @@
-import { getWhatsAppConfig } from "./firestore";
-
-/** Lee el número activo SIN rotar — para cachés y previews. */
+/** Lee si hay un número activo configurado — llama al API (no expone el número al cliente). */
 export async function getActiveWhatsApp(): Promise<string> {
-  const config = await getWhatsAppConfig();
-  if (!config?.numeros?.length) return "";
-  const indice = (config.indice_actual ?? 0) % config.numeros.length;
-  return config.numeros[indice] ?? "";
+  try {
+    const res = await fetch("/api/whatsapp/active");
+    if (!res.ok) return "";
+    const data = (await res.json()) as { activo?: boolean };
+    // Devuelve "1" si activo (solo para mantener compatibilidad con la comprobación !!n)
+    return data.activo ? "1" : "";
+  } catch {
+    return "";
+  }
 }
 
 /** Lee el número activo Y rota al siguiente — llama al API route (server-side). */

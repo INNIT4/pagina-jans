@@ -7,61 +7,56 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
 
-      // Números — público puede reservar (libre→apartado), admin puede todo
+      // Números — Admin SDK reserva/vende via /api/boletos/crear (bypasses rules).
+      // Solo lectura pública para mostrar la grid de números.
       match /numeros/{numero} {
         allow read: if true;
         allow write: if request.auth != null;
-        // Público solo puede crear o actualizar con { status: 'apartado' }
-        // y solo si el número no está ya pagado
-        allow create: if request.resource.data.keys().hasOnly(['status'])
-                        && request.resource.data.status == 'apartado';
-        allow update: if request.resource.data.keys().hasOnly(['status'])
-                        && request.resource.data.status == 'apartado'
-                        && resource.data.status != 'pagado';
       }
     }
 
     // Boletos — solo admin lee/escribe. Creación y consulta pública van por API server-side
-    // que usa el Admin SDK (bypass de estas reglas) con validación de precio y rate limiting.
+    // (/api/boletos/crear y /api/boletos/consulta) con Admin SDK + rate limiting.
     match /boletos/{boletoId} {
       allow read, write: if request.auth != null;
     }
 
-    // Códigos de descuento — público solo lee, admin gestiona
-    // El incremento de usos va por /api/discount/use (Admin SDK, bypasses rules)
+    // Códigos de descuento — solo admin gestiona.
+    // Validación pública va por /api/discount/validate (Admin SDK + rate limiting).
     match /discount_codes/{codeId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
 
-    // WhatsApp config — público solo lee, admin gestiona
-    // La rotación va por /api/whatsapp/rotate (Admin SDK, bypasses rules)
+    // WhatsApp config — solo admin gestiona.
+    // Rotación pública va por /api/whatsapp/rotate (Admin SDK).
+    // Disponibilidad pública va por /api/whatsapp/active (solo devuelve booleano).
     match /whatsapp_config/{doc} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
 
-    // Cuentas bancarias — público lee, admin gestiona
+    // Cuentas bancarias — público lee (para mostrar las tarjetas de pago), admin gestiona
     match /bank_accounts/{accountId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Configuración de la app
+    // Configuración de la app — admin gestiona, lectura pública para settings no sensibles
     match /settings/{doc} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Contenido del sitio (CMS)
+    // Contenido del sitio (CMS) — público lee, admin edita
     match /site_content/{doc} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Comprobantes de pago — público crea y lee, solo admin actualiza
+    // Comprobantes de pago — creación pública via /api/comprobantes/upload (Admin SDK).
+    // Lectura pública solo del comprobante propio (el admin ve todos vía Admin SDK).
     match /comprobantes/{comprobanteId} {
-      allow read, create: if true;
+      allow read: if true;
+      allow create: if false;   // Solo via /api/comprobantes/upload (Admin SDK)
       allow update: if request.auth != null;
     }
   }

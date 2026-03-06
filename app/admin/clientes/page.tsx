@@ -49,12 +49,14 @@ export default function AdminClientesPage() {
   const estados = Array.from(new Set(clientes.map((c) => c.estado))).sort();
 
   function exportCSV() {
-    const header = "Nombre,Apellidos,Celular,Estado,Boletos,Total Pagado";
-    const rows = filtered.map((c) =>
-      `${c.nombre},${c.apellidos},${c.celular},${c.estado},${c.boletos.length},$${c.totalGastado}`
-    );
-    const csv = [header, ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+    const headers = ["Nombre", "Apellidos", "Celular", "Estado MX", "Boletos", "Total pagado (MXN)"];
+    const rows = filtered.map((c) => [
+      c.nombre, c.apellidos, c.celular, c.estado,
+      String(c.boletos.length), String(c.totalGastado),
+    ].map(escape).join(","));
+    const csv = "\uFEFF" + [headers.map(escape).join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

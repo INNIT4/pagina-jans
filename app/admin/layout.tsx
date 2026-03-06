@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", exact: true },
   { href: "/admin/rifas", label: "Rifas" },
   { href: "/admin/boletos", label: "Boletos" },
+  { href: "/admin/comprobantes", label: "Comprobantes" },
   { href: "/admin/clientes", label: "Clientes" },
   { href: "/admin/codigos", label: "Descuentos" },
   { href: "/admin/whatsapp", label: "WhatsApp" },

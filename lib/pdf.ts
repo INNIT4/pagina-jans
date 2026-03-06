@@ -45,26 +45,38 @@ export async function downloadComprobante(boleto: Boleto, rifaNombre: string): P
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
 
-  const rows = [
+  const rows: [string, string][] = [
     ["Rifa", rifaNombre],
     ["Nombre", `${boleto.nombre} ${boleto.apellidos}`],
-    ["Celular", boleto.celular],
     ["Estado", boleto.estado],
-    ["Números", boleto.numeros.join(", ")],
     ["Precio Total", `$${boleto.precio_total.toLocaleString("es-MX")} MXN`],
     ["Fecha de apartado", boleto.created_at?.toDate?.()?.toLocaleDateString("es-MX") ?? "—"],
   ];
 
+  const valueMaxWidth = 120; // mm — from x=70 to right margin
   let y = 70;
+
   rows.forEach(([label, value]) => {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(100, 100, 100);
     doc.text(label + ":", 20, y);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(30, 30, 30);
-    doc.text(value, 70, y);
-    y += 10;
+    const lines = doc.splitTextToSize(value, valueMaxWidth) as string[];
+    doc.text(lines, 70, y);
+    y += 10 * lines.length;
   });
+
+  // Números — wrapped
+  const numerosText = [...boleto.numeros].sort((a, b) => a - b).join(", ");
+  const numerosLines = doc.splitTextToSize(numerosText, valueMaxWidth) as string[];
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Números (${boleto.numeros.length}):`, 20, y);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(30, 30, 30);
+  doc.text(numerosLines, 70, y);
+  y += 10 * numerosLines.length;
 
   // Footer — red-50 bg
   doc.setFillColor(254, 242, 242); // red-50

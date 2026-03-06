@@ -133,6 +133,7 @@ export default function AdminRifasPage() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 dark:bg-slate-700">
             <tr>
+              <th className="px-4 py-3 w-14" />
               <th className="text-left px-4 py-3 font-semibold text-slate-500">Nombre</th>
               <th className="text-left px-4 py-3 font-semibold text-slate-500">Precio</th>
               <th className="text-left px-4 py-3 font-semibold text-slate-500">Números</th>
@@ -145,6 +146,21 @@ export default function AdminRifasPage() {
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
             {rifas.map((r) => (
               <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <td className="px-4 py-3">
+                  {(r.imagenes_url?.[0] || r.imagen_url) ? (
+                    <img
+                      src={r.imagenes_url?.[0] ?? r.imagen_url}
+                      alt={r.nombre}
+                      className="w-10 h-10 rounded-lg object-cover bg-slate-100 dark:bg-slate-700"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </td>
                 <td className="px-4 py-3 font-medium">
                   <div>{r.nombre}</div>
                   {r.ganador && (

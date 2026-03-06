@@ -32,7 +32,7 @@ export default function TarjetasActions({ folio }: { folio: string }) {
         if (rifa?.nombre) rifaNombre = rifa.nombre;
       } catch {}
 
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://srtsjans.com";
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
       const fecha =
         boleto.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ??
         new Date().toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });

@@ -17,6 +17,7 @@ import {
   runTransaction,
   writeBatch,
   DocumentSnapshot,
+  QueryConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -165,13 +166,18 @@ export async function reservarNumeros(rifaId: string, numeros: number[]): Promis
     const refs = numeros.map((n) => doc(db, "rifas", rifaId, "numeros", String(n)));
     const snaps = await Promise.all(refs.map((ref) => transaction.get(ref)));
 
-    const conflicto = numeros.find((_, i) => snaps[i].exists());
+    // Solo bloquear números ya vendidos (pagados); los apartados se pueden tomar
+    const conflicto = numeros.find((_, i) => snaps[i].exists() && snaps[i].data()?.status === "vendido");
     if (conflicto !== undefined) {
       throw new Error(`El número ${conflicto} ya no está disponible. Elige otro.`);
     }
 
+    // Solo incrementar el contador por números que aún no están apartados
+    const nuevos = numeros.filter((_, i) => !snaps[i].exists()).length;
     refs.forEach((ref) => transaction.set(ref, { status: "apartado" }));
-    transaction.update(doc(db, "rifas", rifaId), { num_apartados: increment(numeros.length) });
+    if (nuevos > 0) {
+      transaction.update(doc(db, "rifas", rifaId), { num_apartados: increment(nuevos) });
+    }
   });
 }
 
@@ -373,7 +379,7 @@ export interface AppSettings {
   cancelacion_horas: number;
 }
 
-const DEFAULT_SETTINGS: AppSettings = {
+export const DEFAULT_SETTINGS: AppSettings = {
   mostrar_apartados: true,
   cancelacion_activa: false,
   cancelacion_horas: 24,
@@ -419,7 +425,6 @@ export async function cancelarBoletosExpirados(horas: number): Promise<number> {
 
   // Firestore batch tiene límite de 500 ops; procesamos en lotes
   const BATCH_LIMIT = 400;
-  let ops: (() => void)[] = [];
   let batch = writeBatch(db);
   let opCount = 0;
   const batches: ReturnType<typeof writeBatch>[] = [batch];
@@ -619,4 +624,66 @@ export async function getSiteTexts(): Promise<SiteTexts> {
 
 export async function setSiteTexts(data: Partial<SiteTexts>): Promise<void> {
   await setDoc(doc(db, "site_content", "texts"), data, { merge: true });
+}
+
+// ─── Comprobantes ──────────────────────────────────────────────────────────────
+
+export interface Comprobante {
+  id?: string;
+  nombre: string;
+  folios: string[];
+  monto_total: number;
+  archivo_url: string;
+  archivo_tipo: "imagen" | "pdf";
+  status: "pendiente" | "revisado";
+  created_at: Timestamp;
+  admin_comentario?: {
+    texto: string;
+    created_at: Timestamp;
+  };
+}
+
+export async function createComprobante(data: Omit<Comprobante, "id">): Promise<string> {
+  const ref = await addDoc(collection(db, "comprobantes"), data);
+  return ref.id;
+}
+
+export async function getComprobantesPaginados(opts: {
+  status?: "pendiente" | "revisado";
+  pageSize: number;
+  cursor?: DocumentSnapshot | null;
+}): Promise<{ comprobantes: Comprobante[]; hasMore: boolean; lastDoc: DocumentSnapshot | null }> {
+  const constraints: QueryConstraint[] = [];
+  if (opts.status) constraints.push(where("status", "==", opts.status));
+  constraints.push(orderBy("created_at", "desc"));
+  constraints.push(limit(opts.pageSize + 1));
+  if (opts.cursor) constraints.push(startAfter(opts.cursor));
+
+  const snap = await getDocs(query(collection(db, "comprobantes"), ...constraints));
+  const hasMore = snap.docs.length > opts.pageSize;
+  const docs = hasMore ? snap.docs.slice(0, opts.pageSize) : snap.docs;
+  return {
+    comprobantes: docs.map((d) => ({ id: d.id, ...d.data() } as Comprobante)),
+    hasMore,
+    lastDoc: docs.length > 0 ? docs[docs.length - 1] : null,
+  };
+}
+
+export async function updateComprobanteStatus(id: string, status: "pendiente" | "revisado"): Promise<void> {
+  await updateDoc(doc(db, "comprobantes", id), { status });
+}
+
+export async function updateComprobanteComentario(id: string, texto: string): Promise<void> {
+  await updateDoc(doc(db, "comprobantes", id), {
+    admin_comentario: { texto, created_at: Timestamp.now() },
+  });
+}
+
+export async function getComprobanteByFolio(folio: string): Promise<Comprobante | null> {
+  const snap = await getDocs(
+    query(collection(db, "comprobantes"), where("folios", "array-contains", folio))
+  );
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return { id: d.id, ...d.data() } as Comprobante;
 }

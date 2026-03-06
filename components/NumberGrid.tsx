@@ -20,7 +20,7 @@ const PAGE_SIZE = 200;
 const STATUS_CLASSES: Record<NumberStatus, string> = {
   disponible:  "bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800 cursor-pointer",
   vendido:     "",
-  apartado:    "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200 cursor-not-allowed opacity-75",
+  apartado:    "bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800 cursor-pointer",
   seleccionado:"bg-blue-500 text-white dark:bg-blue-600 cursor-pointer ring-2 ring-blue-400",
 };
 
@@ -74,11 +74,6 @@ export default function NumberGrid({
         <span className="flex items-center gap-1.5">
           <span className="w-4 h-4 rounded bg-blue-500 inline-block" /> Seleccionado
         </span>
-        {mostrarApartados && (
-          <span className="flex items-center gap-1.5">
-            <span className="w-4 h-4 rounded bg-yellow-200 dark:bg-yellow-900 inline-block" /> Apartado
-          </span>
-        )}
       </div>
 
       {/* Grid */}
@@ -89,7 +84,7 @@ export default function NumberGrid({
             <button
               key={n}
               onClick={() => {
-                if (status !== "vendido" && status !== "apartado") onToggle(n);
+                if (status !== "vendido") onToggle(n);
               }}
               className={`rounded text-xs font-bold py-2 px-1 transition-all ${STATUS_CLASSES[status]}`}
               title={`Número ${n} — ${status}`}

@@ -157,9 +157,51 @@ export default function AdminBoletosPage() {
 
   const rifaOptions = Array.from(rifas.values());
 
+  async function exportCSV() {
+    const { boletos: all } = await getBoletosPaginados({
+      status: filterStatus !== "todos" ? filterStatus : undefined,
+      rifaId: filterRifa || undefined,
+      pageSize: 9999,
+      loadAll: true,
+    });
+    const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+    const headers = ["Folio", "Rifa", "Nombre", "Apellidos", "Celular", "Estado MX", "Números", "Total (MXN)", "Status", "Fecha"];
+    const rows = all.map((b) => [
+      b.folio,
+      rifas.get(b.rifa_id)?.nombre ?? b.rifa_id,
+      b.nombre,
+      b.apellidos,
+      b.celular,
+      b.estado,
+      b.numeros.join(" | "),
+      String(b.precio_total),
+      b.status,
+      b.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? "",
+    ].map(escape).join(","));
+    const csv = "\uFEFF" + [headers.map(escape).join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `boletos${filterStatus !== "todos" ? `-${filterStatus}` : ""}${filterRifa ? `-${rifas.get(filterRifa)?.nombre ?? filterRifa}` : ""}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div>
-      <h1 className="text-2xl font-black mb-6">Boletos</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-black">Boletos</h1>
+        <button
+          onClick={exportCSV}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
+          </svg>
+          Exportar CSV
+        </button>
+      </div>
 
       {canceladosMsg && (
         <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3 mb-5 text-sm text-amber-800 dark:text-amber-300">

@@ -83,7 +83,16 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
         }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: Record<string, unknown>;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        alert(`Error del servidor (${res.status}). ${text.slice(0, 200)}`);
+        setLoading(false);
+        return;
+      }
+
       if (!res.ok) {
         alert(data.error ?? "Ocurrió un error. Intenta de nuevo.");
         setLoading(false);
@@ -91,8 +100,8 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
       }
 
       router.push(`/consulta?f=${data.folio}&act=1`);
-    } catch {
-      alert("Error de conexión. Intenta de nuevo.");
+    } catch (err) {
+      alert(`Error de conexión: ${err instanceof Error ? err.message : "Intenta de nuevo."}`);
     }
     setLoading(false);
   }

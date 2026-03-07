@@ -18,6 +18,7 @@ interface ApiBoleto {
   folio: string;
   rifa_id: string;
   numeros: number[];
+  numeros_completos?: number[];
   nombre: string;
   apellidos: string;
   celular: string;
@@ -249,7 +250,7 @@ function ResultsSummary({ results }: { results: Result[] }) {
   const pagados   = results.filter((r) => r.boleto.status === "pagado").length;
   const pendientes = results.filter((r) => r.boleto.status === "pendiente").length;
   const cancelados = results.filter((r) => r.boleto.status === "cancelado").length;
-  const totalNums  = results.reduce((s, r) => s + r.boleto.numeros.length, 0);
+  const totalNums  = results.reduce((s, r) => s + (r.boleto.numeros_completos ?? r.boleto.numeros).length, 0);
   const totalPago  = results
     .filter((r) => r.boleto.status !== "cancelado")
     .reduce((s, r) => s + r.boleto.precio_total, 0);
@@ -315,9 +316,10 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
       const fecha = boleto.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? new Date().toLocaleString("es-MX");
       const rifaNombre = rifa?.nombre ?? "Sorteos Jans";
+      const numsList = (boleto.numeros_completos ?? boleto.numeros);
       const message =
-        `👋 Hola, soy ${boleto.nombre} ${boleto.apellidos}\nSeleccione: ${boleto.numeros.length} numeros\n──────────────\n` +
-        `🎫 Numeros: ${boleto.numeros.join(", ")}\n🎯 Sorteo: ${rifaNombre}\n🏷️ Folio: ${boleto.folio}\n` +
+        `👋 Hola, soy ${boleto.nombre} ${boleto.apellidos}\nSeleccione: ${numsList.length} numeros\n──────────────\n` +
+        `🎫 Numeros: ${numsList.join(", ")}\n🎯 Sorteo: ${rifaNombre}\n🏷️ Folio: ${boleto.folio}\n` +
         `📅 Fecha: ${fecha}\n💰 Total: $${boleto.precio_total.toLocaleString("es-MX")}\n──────────────\n` +
         `💳 Metodos de pago: ${siteUrl}/tarjetas\n🏷️ Consulta: ${siteUrl}/consulta?f=${boleto.folio}&act=1`;
       window.open(buildWhatsAppUrl(numero, message), "_blank");
@@ -389,10 +391,9 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
           </div>
         </div>
 
-        {/* ── 4-stat grid ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
           <StatTile label="Total"       value={`$${boleto.precio_total.toLocaleString("es-MX")}`} />
-          <StatTile label="Boletos"     value={String(boleto.numeros.length)} />
+          <StatTile label="Boletos"     value={String((boleto.numeros_completos ?? boleto.numeros).length)} />
           <StatTile label="Apartado"    value={fecha} small />
           {fechaSorteo
             ? <StatTile label="Fecha sorteo" value={fechaSorteo} small />
@@ -461,11 +462,11 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
               Numeros seleccionados
             </p>
             <span className="text-xs font-bold bg-gray-800 text-gray-400 px-2 py-0.5 rounded-sm">
-              {boleto.numeros.length} {boleto.numeros.length === 1 ? "numero" : "numeros"}
+              {(boleto.numeros_completos ?? boleto.numeros).length} num{(boleto.numeros_completos ?? boleto.numeros).length === 1 ? "" : "s"}
             </span>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {[...boleto.numeros].sort((a, b) => a - b).map((n) => (
+            {[...(boleto.numeros_completos ?? boleto.numeros)].sort((a, b) => a - b).map((n) => (
               <span
                 key={n}
                 className={`inline-flex items-center justify-center min-w-[2.5rem] h-10 px-2 rounded-sm font-bold text-sm border ${numChipColor}`}
@@ -578,7 +579,7 @@ function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: ()
     ? `${results[0].boleto.nombre} ${results[0].boleto.apellidos}`
     : "";
   const folios = results.map((r) => r.boleto.folio);
-  const totalNums = results.reduce((s, r) => s + r.boleto.numeros.length, 0);
+  const totalNums = results.reduce((s, r) => s + (r.boleto.numeros_completos ?? r.boleto.numeros).length, 0);
   const montoTotal = results.reduce((s, r) => s + r.boleto.precio_total, 0);
 
   useEffect(() => {

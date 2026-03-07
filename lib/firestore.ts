@@ -43,6 +43,7 @@ export interface Rifa {
   num_fin: number;
   fecha_sorteo: string;
   activa: boolean;
+  oportunidades?: number;
   // Counters — derived from the `numeros` subcollection
   num_vendidos: number;
   num_apartados: number;
@@ -54,6 +55,7 @@ export interface Boleto {
   folio: string;
   rifa_id: string;
   numeros: number[];
+  numeros_completos?: number[]; // Almacena todos (principal + derivados)
   nombre: string;
   apellidos: string;
   celular: string;
@@ -120,17 +122,32 @@ export async function deleteRifa(id: string): Promise<void> {
  * guarda el ganador en el documento de la rifa y la marca como inactiva.
  * Lanza error si el número no corresponde a ningún boleto pagado.
  */
-export async function anunciarGanador(rifaId: string, numero: number): Promise<Ganador> {
+export async function anunciarGanador(rifaId: string, numero_ganador: number): Promise<Ganador> {
+  const rifaSnap = await getDoc(doc(db, "rifas", rifaId));
+  const rifa = rifaSnap.data() as Rifa;
+  
+  let p = numero_ganador;
+  if (rifa.oportunidades && rifa.oportunidades > 1) {
+    const rango_secundario = (rifa.num_fin - rifa.num_inicio) + 1;
+    p = numero_ganador % rango_secundario;
+    if (p < rifa.num_inicio) p += rango_secundario;
+    
+    const maxNumber = rifa.num_fin + ((rifa.oportunidades - 1) * rango_secundario);
+    if (numero_ganador < rifa.num_inicio || numero_ganador > maxNumber) {
+      throw new Error(`El número ${numero_ganador} ganador está fuera de rango para esta rifa (${rifa.num_inicio} – ${maxNumber}).`);
+    }
+  }
+
   const snap = await getDocs(
-    query(collection(db, "boletos"), where("rifa_id", "==", rifaId), where("numeros", "array-contains", numero))
+    query(collection(db, "boletos"), where("rifa_id", "==", rifaId), where("numeros", "array-contains", p))
   );
   const boletoPagado = snap.docs.find((d) => d.data().status === "pagado");
   if (!boletoPagado) {
-    throw new Error(`No se encontró un boleto pagado con el número ${numero}.`);
+    throw new Error(`No se encontró un boleto pagado con el número ganador asociado al ${p} principal.`);
   }
   const data = boletoPagado.data() as Boleto;
   const ganador: Ganador = {
-    numero,
+    numero: numero_ganador,
     nombre: data.nombre,
     apellidos: data.apellidos,
     folio: data.folio,

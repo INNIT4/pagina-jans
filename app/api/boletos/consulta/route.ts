@@ -33,6 +33,9 @@ export async function GET(req: NextRequest) {
     if (isNaN(n) || n < 0)
       return NextResponse.json({ error: "Número inválido." }, { status: 400 });
     snap = await db.collection("boletos").where("numeros", "array-contains", n).get();
+    if (snap.empty) {
+      snap = await db.collection("boletos").where("numeros_completos", "array-contains", n).get();
+    }
   } else {
     return NextResponse.json({ error: "Parámetro requerido: folio, celular o numero." }, { status: 400 });
   }
@@ -44,6 +47,7 @@ export async function GET(req: NextRequest) {
       folio: data.folio,
       rifa_id: data.rifa_id,
       numeros: data.numeros,
+      numeros_completos: data.numeros_completos,
       nombre: data.nombre,
       apellidos: data.apellidos,
       celular: data.celular,

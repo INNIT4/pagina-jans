@@ -142,10 +142,23 @@ export async function POST(req: NextRequest) {
         tx.update(db.doc(`rifas/${rifa_id}`), { num_apartados: FieldValue.increment(nuevos) });
 
       const boletoRef = db.collection("boletos").doc();
+      
+      let numeros_completos = nums;
+      if (rifa.oportunidades && rifa.oportunidades > 1) {
+        numeros_completos = [];
+        const rango_secundario = (rifa.num_fin - rifa.num_inicio) + 1;
+        nums.forEach((p) => {
+          for (let i = 0; i < rifa.oportunidades!; i++) {
+            numeros_completos.push(p + (i * rango_secundario));
+          }
+        });
+      }
+
       tx.set(boletoRef, {
         folio,
         rifa_id: rifa_id.trim(),
         numeros: nums,
+        numeros_completos,
         nombre: nombre.toString().trim(),
         apellidos: apellidos.toString().trim(),
         celular,

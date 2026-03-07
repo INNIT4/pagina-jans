@@ -17,6 +17,7 @@ const EMPTY_FORM: RifaForm = {
   num_fin: 99,
   fecha_sorteo: "",
   activa: true,
+  oportunidades: 1,
 };
 
 interface RifaFormModalProps {
@@ -39,6 +40,7 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
           num_fin: editRifa.num_fin,
           fecha_sorteo: editRifa.fecha_sorteo,
           activa: editRifa.activa,
+          oportunidades: editRifa.oportunidades ?? 1,
         }
       : EMPTY_FORM
   );
@@ -83,20 +85,25 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
               <textarea value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} rows={3}
                 className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm" />
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
+            <div className="grid grid-cols-4 gap-3">
+              <div className="col-span-1">
                 <label className="block text-sm font-medium mb-1">Precio boleto</label>
                 <input type="number" min={1} value={form.precio_boleto} onChange={(e) => setForm({ ...form, precio_boleto: Number(e.target.value) })} required
                   className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm" />
               </div>
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium mb-1">Num. inicio</label>
                 <input type="number" min={0} value={form.num_inicio} onChange={(e) => setForm({ ...form, num_inicio: Number(e.target.value) })} required
                   className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm" />
               </div>
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium mb-1">Num. fin</label>
                 <input type="number" min={0} value={form.num_fin} onChange={(e) => setForm({ ...form, num_fin: Number(e.target.value) })} required
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm" />
+              </div>
+              <div className="col-span-1">
+                <label className="block text-sm font-medium mb-1" title="Cuantos números tendrá cada boleto principal">Op. por boleto</label>
+                <input type="number" min={1} value={form.oportunidades} onChange={(e) => setForm({ ...form, oportunidades: Number(e.target.value) })} required
                   className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm" />
               </div>
             </div>

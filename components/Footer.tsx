@@ -39,9 +39,9 @@ export default function Footer() {
                 href="https://ibani.vercel.app" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="hover:text-brand-red transition-colors font-medium border-b border-transparent hover:border-brand-red"
+                className="text-white hover:text-brand-red font-bold transition-colors underline decoration-brand-red/50 decoration-2 underline-offset-4 hover:decoration-brand-red"
               >
-                ibani.vercel.app
+                IBANI Digital
               </a>
             </p>
           </div>

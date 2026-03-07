@@ -147,7 +147,7 @@ export async function downloadComprobante(boleto: Boleto, rifaNombre: string): P
 
   // ── Numbers section ─────────────────────────────────────────────────────────
   const CONTENT_BOTTOM = 255;
-  const sorted = [...boleto.numeros].sort((a, b) => a - b);
+  const sorted = [...(boleto.numeros_completos ?? boleto.numeros)].sort((a, b) => a - b);
 
   const CHIP_W    = 11;
   const CHIP_H    = 7;

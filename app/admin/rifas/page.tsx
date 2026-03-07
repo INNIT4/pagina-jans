@@ -37,7 +37,7 @@ function GanadorModal({ rifa, onClose, onDone }: { rifa: Rifa; onClose: () => vo
           <div className="text-center">
             <div className="text-5xl mb-3">🏆</div>
             <h2 className="text-xl font-black mb-1">¡Ganador anunciado!</h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">La rifa fue marcada como inactiva.</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">La rifa seguirá activa hasta que decidas marcarla como Inactiva.</p>
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4 mb-6 text-left">
               <p className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold mb-1">NÚMERO GANADOR</p>
               <p className="text-3xl font-black text-yellow-600 dark:text-yellow-400 mb-2">{resultado.numero}</p>
@@ -52,7 +52,7 @@ function GanadorModal({ rifa, onClose, onDone }: { rifa: Rifa; onClose: () => vo
           <>
             <h2 className="text-lg font-black mb-1">Anunciar ganador</h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-5">
-              Ingresa el número ganador de <span className="font-semibold">{rifa.nombre}</span>. La rifa se marcará como inactiva automáticamente.
+              Ingresa el número ganador de <span className="font-semibold">{rifa.nombre}</span>. El ganador será visible en la página principal inmediatamente.
             </p>
             <label className="block text-xs font-semibold text-slate-500 mb-1">Número ganador</label>
             <input

@@ -101,8 +101,8 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Fecha sorteo</label>
-              <input type="date" value={form.fecha_sorteo} onChange={(e) => setForm({ ...form, fecha_sorteo: e.target.value })} required
+              <label className="block text-sm font-medium mb-1">Fecha y hora del sorteo</label>
+              <input type="datetime-local" value={form.fecha_sorteo} onChange={(e) => setForm({ ...form, fecha_sorteo: e.target.value })} required
                 className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm" />
             </div>
 

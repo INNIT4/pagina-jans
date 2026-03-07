@@ -50,8 +50,8 @@ export default async function RifaDetailPage({ params }: { params: { id: string 
         <div className="mt-6">
           <div className="flex items-start gap-3 mb-2">
             <h1 className="text-3xl font-bold uppercase tracking-widest flex-1">{rifa.nombre}</h1>
-            <span className="flex-shrink-0 mt-1 bg-gray-800 text-gray-400 text-xs font-bold px-3 py-1.5 rounded-sm">
-              Finalizada
+            <span className={`flex-shrink-0 mt-1 text-xs font-bold px-3 py-1.5 rounded-sm ${rifa.activa ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-800 text-gray-400'}`}>
+              {rifa.activa ? "Ganador Anunciado" : "Finalizada"}
             </span>
           </div>
           <p className="text-gray-400 mb-6">{rifa.descripcion}</p>

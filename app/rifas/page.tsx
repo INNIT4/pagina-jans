@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getRifas, Rifa } from "@/lib/firestore";
+import CountdownTimer from "@/components/CountdownTimer";
 
 export const revalidate = 60;
 
@@ -44,6 +45,16 @@ export default async function RifasPage() {
                   </div>
                 )}
                 <div className="p-6">
+                  {rifa.ganador ? (
+                    <div className="mb-4 bg-yellow-900/30 border border-yellow-700 rounded hover:border-yellow-500 transition-colors p-3">
+                      <p className="text-xs text-yellow-500 font-bold uppercase tracking-wider flex items-center gap-1 mb-1">🏆 ¡Tenemos un Ganador!</p>
+                      <p className="font-bold text-white text-lg">#{rifa.ganador.numero} - {rifa.ganador.nombre} {rifa.ganador.apellidos.charAt(0)}.</p>
+                    </div>
+                  ) : (
+                    <div className="mb-4">
+                      <CountdownTimer targetDate={rifa.fecha_sorteo} />
+                    </div>
+                  )}
                   <h2 className="font-bold text-xl mb-1 text-white group-hover:text-brand-red transition-colors">{rifa.nombre}</h2>
                   <p className="text-gray-400 text-sm mb-4 line-clamp-2">{rifa.descripcion}</p>
 

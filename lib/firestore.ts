@@ -136,7 +136,7 @@ export async function anunciarGanador(rifaId: string, numero: number): Promise<G
     folio: data.folio,
     anunciado_at: new Date().toISOString(),
   };
-  await updateDoc(doc(db, "rifas", rifaId), { ganador, activa: false });
+  await updateDoc(doc(db, "rifas", rifaId), { ganador });
   return ganador;
 }
 

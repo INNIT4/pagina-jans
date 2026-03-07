@@ -33,10 +33,10 @@ async function getKey(): Promise<CryptoKey> {
   );
 }
 
-export async function signSession(uid: string): Promise<string> {
+export async function signSession(uid: string, role: string = "admin"): Promise<string> {
   const payload = b64url(
     new TextEncoder().encode(
-      JSON.stringify({ uid, exp: Date.now() + SESSION_DURATION_MS })
+      JSON.stringify({ uid, role, exp: Date.now() + SESSION_DURATION_MS })
     )
   );
   const key = await getKey();
@@ -44,7 +44,7 @@ export async function signSession(uid: string): Promise<string> {
   return `${payload}.${b64url(sig)}`;
 }
 
-export async function verifySession(cookie: string): Promise<{ uid: string } | null> {
+export async function verifySession(cookie: string): Promise<{ uid: string; role: string } | null> {
   try {
     const dot = cookie.lastIndexOf(".");
     if (dot < 1) return null;
@@ -60,7 +60,7 @@ export async function verifySession(cookie: string): Promise<{ uid: string } | n
     if (!valid) return null;
     const data = JSON.parse(new TextDecoder().decode(b64urlDecode(payload)));
     if (typeof data.exp !== "number" || data.exp < Date.now()) return null;
-    return { uid: data.uid };
+    return { uid: data.uid, role: data.role || "admin" };
   } catch {
     return null;
   }

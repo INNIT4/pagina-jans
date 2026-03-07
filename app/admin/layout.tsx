@@ -50,6 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [role, setRole] = useState("admin");
 
   useEffect(() => {
     if (pathname === "/admin/login") {
@@ -60,6 +61,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (!user) {
         router.push("/admin/login");
       } else {
+        // Parse role from cookie
+        const match = document.cookie.match(new RegExp('(^| )__role=([^;]+)'));
+        if (match) setRole(match[2]);
         setReady(true);
       }
     });
@@ -81,6 +85,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push("/admin/login");
   }
 
+  const STAFF_PATHS = ["/admin/boletos", "/admin/comprobantes", "/admin/servicios"];
+  const visibleNavGroups = NAV_GROUPS.map(group => ({
+    ...group,
+    items: group.items.filter(item => role === "admin" || STAFF_PATHS.includes(item.href))
+  })).filter(group => group.items.length > 0);
+
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100">
       {/* Sidebar */}
@@ -89,7 +99,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Logo size="sm" showText={true} />
         </div>
         <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
-          {NAV_GROUPS.map((group, gi) => (
+          {visibleNavGroups.map((group, gi) => (
             <div key={gi}>
               {group.label && (
                 <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">

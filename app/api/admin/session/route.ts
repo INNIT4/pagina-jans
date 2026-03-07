@@ -31,28 +31,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Token inválido." }, { status: 401 });
   }
 
-  const sessionValue = await signSession(uid);
+  // Verificar el rol del usuario en firestore
+  const { adminDb } = await import("@/lib/firebase-admin"); // Necesitamos importar la db localmente para evitar problemas de cold-start global
+  const db = adminDb();
+  const userDoc = await db.collection("usuarios_admin").doc(uid).get();
+  // Si no hay doc configurado, asumimos admin por defecto para no quebrar sistemas viejos
+  const role = userDoc.exists ? (userDoc.data()?.role || "admin") : "admin";
+
+  const sessionValue = await signSession(uid, role);
   const isProd = process.env.NODE_ENV === "production";
-  const cookieOptions = [
-    `${SESSION_COOKIE}=${sessionValue}`,
+  
+  const createCookie = (name: string, value: string, httpOnly = true) => [
+    `${name}=${value}`,
     "Path=/",
     `Max-Age=${MAX_AGE}`,
-    "HttpOnly",
+    httpOnly ? "HttpOnly" : "",
     "SameSite=Strict",
     ...(isProd ? ["Secure"] : []),
-  ].join("; ");
+  ].filter(Boolean).join("; ");
 
-  const res = NextResponse.json({ ok: true });
-  res.headers.set("Set-Cookie", cookieOptions);
+  const res = NextResponse.json({ ok: true, role });
+  res.headers.set("Set-Cookie", createCookie(SESSION_COOKIE, sessionValue, true));
+  res.headers.append("Set-Cookie", createCookie("__role", role, false)); // Visible para UI
   return res;
 }
 
 // DELETE /api/admin/session — clear session cookie
 export async function DELETE() {
   const res = NextResponse.json({ ok: true });
-  res.headers.set(
-    "Set-Cookie",
-    `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict`
-  );
+  res.headers.set("Set-Cookie", `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict`);
+  res.headers.append("Set-Cookie", `__role=; Path=/; Max-Age=0; SameSite=Strict`);
   return res;
 }

@@ -72,7 +72,10 @@ export async function POST(req: NextRequest) {
   try {
     const blob = await put(`rifas/${Date.now()}-${file.name}`, buffer, {
       access: "public",
+      allowOverwrite: false,
+      addRandomSuffix: true,
       contentType: file.type,
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
     return NextResponse.json({ url: blob.url });

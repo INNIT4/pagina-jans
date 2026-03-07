@@ -42,10 +42,10 @@ export default function AdminLoginPage() {
             <span className="text-3xl font-black text-white tracking-tight">SJ</span>
           </div>
           <Logo size="md" showText={true} />
-          <p className="text-slate-500 text-sm">Panel de administración</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Panel de administración</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-8">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-8 text-slate-900 dark:text-white">
           <h2 className="text-xl font-bold mb-6">Iniciar sesión</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

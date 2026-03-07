@@ -30,9 +30,22 @@ export default function Footer() {
             </ul>
           </div>
         </div>
-        <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <p>&copy; {new Date().getFullYear()} Sorteos Jans. Todos los derechos reservados.</p>
-          <Link href="/aviso-privacidad" className="hover:text-brand-red transition-colors">
+        <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+          <div className="flex flex-col gap-1 text-center sm:text-left">
+            <p>&copy; {new Date().getFullYear()} Sorteos Jans. Todos los derechos reservados.</p>
+            <p className="text-gray-500">
+              Desarrollada por{" "}
+              <a 
+                href="https://ibani.vercel.app" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="hover:text-brand-red transition-colors font-medium border-b border-transparent hover:border-brand-red"
+              >
+                ibani.vercel.app
+              </a>
+            </p>
+          </div>
+          <Link href="/aviso-privacidad" className="hover:text-brand-red transition-colors text-gray-500 hover:text-gray-300">
             Aviso de privacidad
           </Link>
         </div>

@@ -15,13 +15,17 @@ const ESTADOS_MX = new Set([
 ]);
 
 export async function POST(req: NextRequest) {
-  // Rate limiting
+  // Rate limiting — si falla Upstash, simplemente se omite
   const rl = getRatelimit();
   if (rl) {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
-    const { success } = await rl.limit(`crear_boleto:${ip}`);
-    if (!success) {
-      return NextResponse.json({ error: "Demasiadas solicitudes. Espera un momento." }, { status: 429 });
+    try {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
+      const { success } = await rl.limit(`crear_boleto:${ip}`);
+      if (!success) {
+        return NextResponse.json({ error: "Demasiadas solicitudes. Espera un momento." }, { status: 429 });
+      }
+    } catch (err) {
+      console.error("[crear boleto] Rate limit check failed (continuando sin límite):", err);
     }
   }
 
@@ -56,10 +60,26 @@ export async function POST(req: NextRequest) {
   if (typeof estado !== "string" || !ESTADOS_MX.has(estado))
     return NextResponse.json({ error: "Estado inválido." }, { status: 400 });
 
-  const db = adminDb();
+  // ── Inicializar Firebase Admin ─────────────────────────────────────────────
+  let db: ReturnType<typeof adminDb>;
+  try {
+    db = adminDb();
+  } catch (err) {
+    console.error("[crear boleto] Firebase Admin init error:", err);
+    const msg = err instanceof Error ? err.message : "Error de configuración del servidor.";
+    return NextResponse.json({ error: `Error de configuración: ${msg}` }, { status: 500 });
+  }
 
   // ── Obtener precio de la rifa en el servidor (no confiar en el cliente) ────
-  const rifaSnap = await db.collection("rifas").doc(rifa_id.trim()).get();
+  let rifaSnap: FirebaseFirestore.DocumentSnapshot;
+  try {
+    rifaSnap = await db.collection("rifas").doc(rifa_id.trim()).get();
+  } catch (err) {
+    console.error("[crear boleto] Error leyendo rifa:", err);
+    const msg = err instanceof Error ? err.message : "Error de base de datos.";
+    return NextResponse.json({ error: `Error al leer la rifa: ${msg}` }, { status: 500 });
+  }
+
   if (!rifaSnap.exists)
     return NextResponse.json({ error: "Rifa no encontrada." }, { status: 404 });
 

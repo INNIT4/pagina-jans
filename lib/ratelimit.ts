@@ -7,16 +7,21 @@ export function getRatelimit(): Ratelimit | null {
   if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
     return null;
   }
-  if (!_ratelimit) {
-    const redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    });
-    _ratelimit = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(20, "1 m"),
-      prefix: "rl",
-    });
+  try {
+    if (!_ratelimit) {
+      const redis = new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      });
+      _ratelimit = new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(20, "1 m"),
+        prefix: "rl",
+      });
+    }
+    return _ratelimit;
+  } catch (err) {
+    console.error("[ratelimit] Error inicializando Upstash Redis:", err);
+    return null; // Si falla, simplemente no se aplica rate limiting
   }
-  return _ratelimit;
 }

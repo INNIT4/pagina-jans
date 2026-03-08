@@ -13,7 +13,7 @@ export default function Footer() {
             </p>
           </div>
           <div>
-            <p className="text-brand-red font-bold mb-3 text-sm uppercase tracking-wider">Navegacion</p>
+            <p className="text-red-500 font-bold mb-3 text-sm uppercase tracking-wider">Navegacion</p>
             <ul className="space-y-2 text-sm">
               <li><Link href="/rifas" className="hover:text-brand-red transition-colors">Rifas activas</Link></li>
               <li><Link href="/rifas-previas" className="hover:text-brand-red transition-colors">Rifas previas</Link></li>
@@ -22,7 +22,7 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <p className="text-brand-red font-bold mb-3 text-sm uppercase tracking-wider">Informacion</p>
+            <p className="text-red-500 font-bold mb-3 text-sm uppercase tracking-wider">Informacion</p>
             <ul className="space-y-2 text-sm">
               <li><Link href="/faq" className="hover:text-brand-red transition-colors">Preguntas frecuentes</Link></li>
               <li><Link href="/sobre-nosotros" className="hover:text-brand-red transition-colors">Sobre nosotros</Link></li>
@@ -33,7 +33,7 @@ export default function Footer() {
         <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
           <div className="flex flex-col gap-1 text-center sm:text-left">
             <p>&copy; {new Date().getFullYear()} Sorteos Jans. Todos los derechos reservados.</p>
-            <p className="text-gray-500">
+            <p className="text-gray-400">
               Desarrollada por{" "}
               <a 
                 href="https://ibanidigital.com" 
@@ -45,7 +45,7 @@ export default function Footer() {
               </a>
             </p>
           </div>
-          <Link href="/aviso-privacidad" className="hover:text-brand-red transition-colors text-gray-500 hover:text-gray-300">
+          <Link href="/aviso-privacidad" className="hover:text-brand-red transition-colors text-gray-400 hover:text-gray-300">
             Aviso de privacidad
           </Link>
         </div>

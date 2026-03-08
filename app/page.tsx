@@ -132,7 +132,7 @@ export default async function HomePage() {
                 <h2 className="text-3xl font-bold uppercase tracking-widest">Rifas Disponibles</h2>
                 <span className="accent-bar" />
               </div>
-              <Link href="/rifas" className="text-brand-red hover:text-red-400 font-bold text-sm uppercase tracking-wider">
+              <Link href="/rifas" className="text-red-500 hover:text-red-400 font-bold text-sm uppercase tracking-wider">
                 Ver todas &rarr;
               </Link>
             </div>
@@ -166,10 +166,10 @@ export default async function HomePage() {
                     <h3 className="font-bold text-lg mb-1 text-white group-hover:text-brand-red transition-colors">{rifa.nombre}</h3>
                     <p className="text-gray-400 text-sm mb-3 line-clamp-2">{rifa.descripcion}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-brand-red font-bold text-lg">
+                      <span className="text-red-500 font-bold text-lg">
                         ${rifa.precio_boleto.toLocaleString("es-MX")} MXN
                       </span>
-                      <span className="text-xs text-gray-500">por boleto</span>
+                      <span className="text-xs text-gray-400">por boleto</span>
                     </div>
                   </div>
                 </Link>
@@ -200,7 +200,7 @@ export default async function HomePage() {
       <section className="bg-brand-red text-white py-20 px-4 clip-diagonal-top">
         <div className="max-w-2xl mx-auto text-center pt-8">
           {/* Chevrons decorativos */}
-          <p className="text-white/30 text-sm font-bold tracking-[0.3em] mb-6">{"// // //"}</p>
+          <p className="text-white/60 text-sm font-bold tracking-[0.3em] mb-6">{"// // //"}</p>
           <h2 className="text-3xl font-bold uppercase tracking-widest mb-4">¿Tienes dudas?</h2>
           <p className="text-red-100 mb-8">Consulta nuestras preguntas frecuentes o contactanos por WhatsApp.</p>
           <div className="flex gap-4 justify-center flex-wrap">

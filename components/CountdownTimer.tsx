@@ -62,7 +62,7 @@ function TimeUnit({ value, label }: { value: string | number; label: string }) {
       <span className="text-xl md:text-2xl font-black text-white font-racing leading-none text-shadow-glow">
         {value}
       </span>
-      <span className="text-[10px] md:text-xs font-bold text-brand-red mt-1 uppercase tracking-widest">
+      <span className="text-[10px] md:text-xs font-bold text-red-500 mt-1 uppercase tracking-widest">
         {label}
       </span>
     </div>

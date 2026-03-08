@@ -22,9 +22,8 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-brand-black/95 backdrop-blur-sm border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
-        {/* Logo */}
         <Link href="/">
-          <Logo size="sm" showText={true} />
+          <Logo size="sm" showText={true} lightText={true} />
         </Link>
 
         {/* Desktop links */}
@@ -54,6 +53,7 @@ export default function Navbar() {
         <button
           className="md:hidden p-2 rounded-sm hover:bg-gray-800 text-gray-400"
           onClick={() => setOpen(!open)}
+          aria-label={open ? "Cerrar menú" : "Abrir menú"}
         >
           <MenuIcon />
         </button>

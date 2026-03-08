@@ -3,6 +3,7 @@ import Image from "next/image";
 interface LogoProps {
   size?: "sm" | "md" | "lg" | "xl";
   showText?: boolean;
+  lightText?: boolean;
 }
 
 const SIZES = {
@@ -12,7 +13,7 @@ const SIZES = {
   xl: { circle: "w-28 h-28 text-4xl", text: "text-5xl" },
 };
 
-export default function Logo({ size = "md", showText = true }: LogoProps) {
+export default function Logo({ size = "md", showText = true, lightText = false }: LogoProps) {
   const s = SIZES[size];
 
   return (
@@ -24,10 +25,10 @@ export default function Logo({ size = "md", showText = true }: LogoProps) {
 
       {showText && (
         <div className="flex items-baseline gap-1 leading-none">
-          <span className={`${s.text} font-black text-slate-700 dark:text-slate-200 tracking-tight`}>
+          <span className={`${s.text} font-black tracking-tight ${lightText ? "text-slate-100" : "text-slate-700 dark:text-slate-200"}`}>
             Sorteos
           </span>
-          <span className={`${s.text} font-black text-red-600 dark:text-red-400 tracking-tight`}>
+          <span className={`${s.text} font-black tracking-tight ${lightText ? "text-red-500" : "text-red-600 dark:text-red-400"}`}>
             Jans
           </span>
         </div>

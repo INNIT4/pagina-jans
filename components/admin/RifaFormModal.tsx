@@ -181,6 +181,20 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
                         />
                       </div>
                     </div>
+                    
+                    {/* Prize Image */}
+                    <div className="mb-2">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Imagen del Premio</label>
+                      <ImageUploader 
+                        images={p.imagen_url ? [p.imagen_url] : []} 
+                        onChange={(urls) => {
+                          const newPremios = [...(form.premios || [])];
+                          newPremios[idx] = { ...p, imagen_url: urls[0] || "" };
+                          setForm({ ...form, premios: newPremios });
+                        }}
+                      />
+                    </div>
+
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
                         <input

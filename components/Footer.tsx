@@ -36,7 +36,7 @@ export default function Footer() {
             <p className="text-gray-500">
               Desarrollada por{" "}
               <a 
-                href="https://ibani.vercel.app" 
+                href="https://ibanidigital.com" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-white hover:text-brand-red font-bold transition-colors underline decoration-brand-red/50 decoration-2 underline-offset-4 hover:decoration-brand-red"

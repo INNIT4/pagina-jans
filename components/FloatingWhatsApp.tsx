@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { getActiveWhatsApp, getRotatedWhatsApp, buildWhatsAppUrl } from "@/lib/whatsapp";
 
 const CACHE_KEY = "wa_tiene_numeros";
@@ -8,6 +9,7 @@ const MSG = "Hola, me interesa participar en un sorteo de Sorteos Jans.";
 
 export default function FloatingWhatsApp() {
   const [visible, setVisible] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     getActiveWhatsApp()
@@ -28,7 +30,7 @@ export default function FloatingWhatsApp() {
     } catch {}
   }
 
-  if (!visible) return null;
+  if (!visible || pathname.startsWith("/admin")) return null;
 
   return (
     <button

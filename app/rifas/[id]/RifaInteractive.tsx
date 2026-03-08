@@ -85,21 +85,16 @@ export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApar
                           : 'bg-brand-dark border-gray-800'
                       }`}
                     >
-                      <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 rounded-sm flex items-center justify-center flex-shrink-0 text-2xl overflow-hidden relative ${
-                        p.es_principal 
-                          ? 'bg-yellow-500 text-yellow-950' 
-                          : isBonus 
-                          ? 'bg-brand-red text-white' 
-                          : 'bg-gray-800 text-gray-400'
-                      }`}>
-                        {p.imagen_url ? (
-                          /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={p.imagen_url} alt={p.nombre} className="w-full h-full object-cover" />
-                        ) : (
-                          p.es_principal ? '🏆' : isPlace ? '🥈' : isBonus ? '⚡' : '🎁'
-                        )}
-                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-sm flex items-center justify-center flex-shrink-0 text-2xl ${
+                          p.es_principal 
+                            ? 'bg-yellow-500 text-yellow-950' 
+                            : isBonus 
+                            ? 'bg-brand-red text-white' 
+                            : 'bg-gray-800 text-gray-400'
+                        }`}>
+                          {p.es_principal ? '🏆' : isPlace ? '🥈' : isBonus ? '⚡' : '🎁'}
+                        </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
                             <h3 className={`font-bold text-lg leading-tight uppercase ${p.es_principal ? 'text-yellow-400' : 'text-white'}`}>
@@ -124,6 +119,14 @@ export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApar
                             </div>
                           )}
                         </div>
+
+                        {/* Prize Image on the Right */}
+                        {p.imagen_url && (
+                          <div className="flex-shrink-0 w-24 h-24 sm:w-32 sm:h-20 ml-2 rounded-sm overflow-hidden border border-gray-700/50 shadow-lg">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={p.imagen_url} alt={p.nombre} className="w-full h-full object-cover" />
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

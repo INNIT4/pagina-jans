@@ -58,8 +58,56 @@ export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApar
           <p className="text-gray-400 mb-4 mt-4">{rifa.descripcion}</p>
 
           {rifa.texto_inferior && (
-            <div className="bg-brand-dark border border-gray-800 rounded-sm p-5 mb-4 whitespace-pre-wrap text-sm text-gray-300 leading-relaxed">
+            <div className="bg-brand-dark border border-gray-800 rounded-sm p-5 mb-4 whitespace-pre-wrap text-sm text-gray-300 leading-relaxed shadow-inner">
               {rifa.texto_inferior}
+            </div>
+          )}
+
+          {rifa.premios && rifa.premios.length > 0 && (
+            <div className="mb-8 mt-2 space-y-4">
+              <h2 className="text-xl font-bold uppercase tracking-wider flex items-center gap-2">
+                <span className="w-8 h-1 bg-brand-red rounded-full" />
+                Premios y Regalos
+              </h2>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {rifa.premios.map((p) => (
+                  <div 
+                    key={p.id} 
+                    className={`p-4 rounded-sm border transition-shadow ${
+                      p.es_principal 
+                        ? 'bg-gradient-to-br from-yellow-900/40 to-brand-dark border-yellow-700/50 shadow-[0_0_15px_rgba(234,179,8,0.1)]' 
+                        : 'bg-brand-dark border-gray-800'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-sm flex items-center justify-center flex-shrink-0 ${
+                        p.es_principal ? 'bg-yellow-500 text-yellow-950' : 'bg-gray-800 text-gray-400'
+                      }`}>
+                        {p.es_principal ? '🏆' : '🎁'}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h3 className="font-bold text-lg text-white leading-tight">{p.nombre}</h3>
+                          {p.es_principal && (
+                            <span className="text-[10px] bg-yellow-500 text-yellow-950 font-black px-1.5 py-0.5 rounded-sm uppercase tracking-tighter">
+                              Principal
+                            </span>
+                          )}
+                        </div>
+                        {p.descripcion && (
+                          <p className="text-sm text-gray-400 line-clamp-2 mb-2">{p.descripcion}</p>
+                        )}
+                        {p.condicion && (
+                          <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-brand-red/10 border border-brand-red/20 rounded-sm">
+                            <span className="text-brand-red text-[10px] font-black uppercase tracking-widest">Condición:</span>
+                            <span className="text-white text-xs font-medium italic">{p.condicion}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

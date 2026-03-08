@@ -31,6 +31,15 @@ export interface Ganador {
   anunciado_at: string; // ISO timestamp
 }
 
+export interface Premio {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  imagen_url?: string;
+  es_principal: boolean;
+  condicion?: string; // e.g. "Si compras más de 10 boletos"
+}
+
 export interface Rifa {
   id?: string;
   nombre: string;
@@ -47,6 +56,7 @@ export interface Rifa {
   // Counters — derived from the `numeros` subcollection
   num_vendidos: number;
   num_apartados: number;
+  premios?: Premio[];
   ganador?: Ganador;
 }
 

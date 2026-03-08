@@ -152,6 +152,16 @@ export default async function HomePage() {
                       <span className="text-5xl">🎟️</span>
                     </div>
                   )}
+
+                  {/* Prize Badge Overlay */}
+                  {rifa.premios && rifa.premios.find(p => p.es_principal) && (
+                    <div className="absolute top-4 right-4 z-10">
+                      <div className="bg-yellow-500 text-yellow-950 text-[10px] font-black px-2 py-1 rounded-sm uppercase tracking-tighter shadow-lg flex items-center gap-1">
+                        <span>🏆</span>
+                        <span>{rifa.premios.find(p => p.es_principal)?.nombre}</span>
+                      </div>
+                    </div>
+                  )}
                   <div className="p-5">
                     {rifa.ganador ? (
                       <div className="mb-4 bg-yellow-900/30 border border-yellow-700 rounded hover:border-yellow-500 transition-colors p-3">

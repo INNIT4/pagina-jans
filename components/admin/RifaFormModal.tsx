@@ -18,6 +18,7 @@ const EMPTY_FORM: RifaForm = {
   fecha_sorteo: "",
   activa: true,
   oportunidades: 1,
+  premios: [],
 };
 
 interface RifaFormModalProps {
@@ -41,6 +42,7 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
           fecha_sorteo: editRifa.fecha_sorteo,
           activa: editRifa.activa,
           oportunidades: editRifa.oportunidades ?? 1,
+          premios: editRifa.premios ?? [],
         }
       : EMPTY_FORM
   );
@@ -118,6 +120,102 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
               onChange={(urls) => setForm((f) => ({ ...f, imagenes_url: urls }))}
             />
 
+            {/* Prizes Section */}
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Premios</h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const id = Math.random().toString(36).substr(2, 9);
+                    setForm({
+                      ...form,
+                      premios: [...(form.premios || []), { id, nombre: "", es_principal: false }],
+                    });
+                  }}
+                  className="text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 px-2 py-1 rounded-lg font-bold transition-colors"
+                >
+                  + Agregar Premio
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {(form.premios || []).map((p, idx) => (
+                  <div key={p.id} className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 relative group">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newPremios = [...(form.premios || [])];
+                        newPremios.splice(idx, 1);
+                        setForm({ ...form, premios: newPremios });
+                      }}
+                      className="absolute top-2 right-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      &times;
+                    </button>
+                    <div className="grid grid-cols-2 gap-3 mb-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nombre</label>
+                        <input
+                          value={p.nombre}
+                          onChange={(e) => {
+                            const newPremios = [...(form.premios || [])];
+                            newPremios[idx] = { ...p, nombre: e.target.value };
+                            setForm({ ...form, premios: newPremios });
+                          }}
+                          placeholder="Ej: Auto 2024"
+                          className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Condición (opcional)</label>
+                        <input
+                          value={p.condicion || ""}
+                          onChange={(e) => {
+                            const newPremios = [...(form.premios || [])];
+                            newPremios[idx] = { ...p, condicion: e.target.value };
+                            setForm({ ...form, premios: newPremios });
+                          }}
+                          placeholder="Ej: Compra 5+ boletos"
+                          className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`principal-${p.id}`}
+                          checked={p.es_principal}
+                          onChange={(e) => {
+                            const newPremios = [...(form.premios || [])];
+                            newPremios[idx] = { ...p, es_principal: e.target.checked };
+                            setForm({ ...form, premios: newPremios });
+                          }}
+                        />
+                        <label htmlFor={`principal-${p.id}`} className="text-[10px] font-bold text-slate-500 uppercase">Premio Principal</label>
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          value={p.descripcion || ""}
+                          onChange={(e) => {
+                            const newPremios = [...(form.premios || [])];
+                            newPremios[idx] = { ...p, descripcion: e.target.value };
+                            setForm({ ...form, premios: newPremios });
+                          }}
+                          placeholder="Descripción breve..."
+                          className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {(form.premios || []).length === 0 && (
+                  <p className="text-center text-xs text-slate-400 py-2 italic">Sin premios específicos configurados.</p>
+                )}
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-1">
                 Texto debajo de la imagen
@@ -127,7 +225,7 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
                 value={form.texto_inferior}
                 onChange={(e) => setForm({ ...form, texto_inferior: e.target.value })}
                 rows={4}
-                placeholder="Ej: Premio: Auto 2024 seminuevo. Sorteo en vivo por Facebook..."
+                placeholder="Ej: Sorteo en vivo por Facebook..."
                 className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm resize-none"
               />
             </div>

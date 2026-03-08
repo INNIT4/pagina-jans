@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { getRifa, getComprobanteByFolio, Boleto, Rifa, Comprobante } from "@/lib/firestore";
+import { getRifa, getComprobanteByFolio, Boleto, Rifa, Comprobante, getBankAccounts, BankAccount } from "@/lib/firestore";
 import { downloadComprobante } from "@/lib/pdf";
 import { getRotatedWhatsApp, buildWhatsAppUrl } from "@/lib/whatsapp";
 import BankCards from "@/components/BankCards";
@@ -56,6 +56,11 @@ function ConsultaInner() {
   const [error, setError] = useState("");
   const [searchedByCelular, setSearchedByCelular] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
+
+  useEffect(() => {
+    getBankAccounts().then(data => setAccounts(data.filter(a => a.activo)));
+  }, []);
 
   const buscarFolio = useCallback(async (val: string) => {
     setLoading(true);
@@ -200,6 +205,7 @@ function ConsultaInner() {
             <ComprobanteModal
               results={results.filter((r) => r.boleto.status === "pendiente")}
               onClose={() => setShowModal(false)}
+              accounts={accounts}
             />
           )}
           {results.some((r) => r.boleto.status === "pendiente") && (
@@ -224,7 +230,7 @@ function ConsultaInner() {
               <p className="text-gray-400 text-sm mb-6 mt-4">
                 Transfiere el monto exacto a cualquiera de las siguientes cuentas e indica tu folio en el concepto.
               </p>
-              <BankCards />
+              <BankCards accounts={accounts} />
               <div className="mt-6 bg-amber-900/20 border border-amber-700 rounded-sm p-5">
                 <h3 className="font-bold text-amber-400 mb-2">Instrucciones de pago</h3>
                 <ol className="text-sm text-amber-400/80 space-y-1 list-decimal list-inside">
@@ -569,7 +575,7 @@ function InfoCell({ label, value, wide, mono }: { label: string; value: string; 
 
 // ─── Comprobante Modal ─────────────────────────────────────────────────────────
 
-function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: () => void }) {
+function ComprobanteModal({ results, onClose, accounts }: { results: Result[]; onClose: () => void; accounts: BankAccount[] }) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -821,7 +827,7 @@ function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: ()
                 </ol>
               </div>
 
-              <BankCards />
+              <BankCards accounts={accounts} />
             </>
           )}
         </div>

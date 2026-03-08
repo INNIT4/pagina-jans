@@ -1,7 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getBankAccounts, BankAccount } from "@/lib/firestore";
+import { useState } from "react";
+
+export interface SimpleBankAccount {
+  id?: string;
+  banco: string;
+  titular: string;
+  clabe: string;
+  num_cuenta?: string;
+  color?: string;
+}
 
 export const CARD_COLORS: Record<string, { label: string; gradient: string; accent: string; preview: string }> = {
   slate:   { label: "Gris",        gradient: "from-slate-700 via-slate-600 to-slate-400",    accent: "bg-slate-300/20",  preview: "bg-slate-600" },
@@ -21,15 +29,11 @@ function formatClabe(clabe: string) {
   return clabe.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
 }
 
-export default function BankCards() {
-  const [accounts, setAccounts] = useState<BankAccount[]>([]);
+export default function BankCards({ accounts }: { accounts: SimpleBankAccount[] }) {
   const [copied, setCopied] = useState<string | null>(null);
 
-  useEffect(() => {
-    getBankAccounts().then((data) => setAccounts(data.filter((a) => a.activo)));
-  }, []);
-
-  function copy(text: string, key: string) {
+  function copy(text: string | undefined, key: string) {
+    if (!text) return;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(key);
       setTimeout(() => setCopied(null), 2000);

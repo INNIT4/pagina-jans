@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getRifas, getSiteTexts, DEFAULT_SITE_TEXTS } from "@/lib/firestore";
+import { getRifas, getSiteTexts, DEFAULT_SITE_TEXTS, getBankAccounts, BankAccount } from "@/lib/firestore";
 import BankCards from "@/components/BankCards";
 import CountdownTimer from "@/components/CountdownTimer";
 
@@ -9,10 +9,12 @@ export const revalidate = 60;
 export default async function HomePage() {
   let rifasActivas: Awaited<ReturnType<typeof getRifas>> = [];
   let texts = DEFAULT_SITE_TEXTS;
+  let accounts: BankAccount[] = [];
   try {
-    const [all, t] = await Promise.all([getRifas(), getSiteTexts()]);
+    const [all, t, accs] = await Promise.all([getRifas(), getSiteTexts(), getBankAccounts()]);
     rifasActivas = all.filter((r) => r.activa).slice(0, 3);
     texts = t;
+    accounts = accs.filter(a => a.activo);
   } catch {
     // Firebase not configured yet
   }
@@ -28,6 +30,7 @@ export default async function HomePage() {
           fill
           className="object-cover object-center"
           priority
+          unoptimized={true}
         />
         {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-brand-black/95 via-brand-black/70 to-brand-red/40" />
@@ -186,7 +189,7 @@ export default async function HomePage() {
               Realiza tu pago por transferencia a cualquiera de estas cuentas.
             </p>
           </div>
-          <BankCards />
+          <BankCards accounts={accounts} />
           <p className="text-center text-sm text-gray-500 mt-6">
             Indica tu folio en el concepto de la transferencia para agilizar la confirmacion.
           </p>

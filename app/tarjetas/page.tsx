@@ -1,12 +1,14 @@
 import BankCards from "@/components/BankCards";
 import TarjetasActions from "@/components/TarjetasActions";
+import { getBankAccounts } from "@/lib/firestore";
 
-export default function TarjetasPage({
+export default async function TarjetasPage({
   searchParams,
 }: {
   searchParams: { folio?: string };
 }) {
   const folio = searchParams.folio;
+  const accounts = (await getBankAccounts()).filter((a) => a.activo);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
@@ -40,7 +42,7 @@ export default function TarjetasPage({
         </p>
       )}
 
-      <BankCards />
+      <BankCards accounts={accounts} />
 
       <div className="mt-8 bg-amber-900/20 border border-amber-700 rounded-sm p-5">
         <h3 className="font-bold text-amber-400 mb-2">Instrucciones de pago</h3>

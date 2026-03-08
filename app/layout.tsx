@@ -45,6 +45,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="es" suppressHydrationWarning className={rajdhani.variable}>
+      <head>
+        <link rel="preconnect" href="https://firestore.googleapis.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://apis.google.com" crossOrigin="anonymous" />
+      </head>
       <body className="font-racing antialiased min-h-screen flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <Navbar />
@@ -54,7 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </ThemeProvider>
         <Script
           id="microsoft-clarity"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `(function(c,l,a,r,i,t,y){

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Rajdhani } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -40,6 +41,8 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const nonce = headers().get("x-nonce") || undefined;
+
   return (
     <html lang="es" suppressHydrationWarning className={rajdhani.variable}>
       <body className="font-racing antialiased min-h-screen flex flex-col">
@@ -52,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script
           id="microsoft-clarity"
           strategy="afterInteractive"
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `(function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};

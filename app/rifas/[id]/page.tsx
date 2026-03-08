@@ -7,8 +7,9 @@ import ImageCarousel from "@/components/ImageCarousel";
 
 export const revalidate = 30;
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const rifa = await getRifa(params.id).catch(() => null);
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const rifa = await getRifa(resolvedParams.id).catch(() => null);
   if (!rifa) return {};
   return {
     title: rifa.nombre,
@@ -21,8 +22,9 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   };
 }
 
-export default async function RifaDetailPage({ params }: { params: { id: string } }) {
-  const rifa = await getRifa(params.id).catch(() => null);
+export default async function RifaDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const rifa = await getRifa(resolvedParams.id).catch(() => null);
   if (!rifa) notFound();
 
   // Rifa inactiva sin ganador → 404
@@ -83,7 +85,7 @@ export default async function RifaDetailPage({ params }: { params: { id: string 
   }
 
   const [{ vendidos, apartados }, settings] = await Promise.all([
-    getNumerosOcupados(params.id).catch(() => ({ vendidos: [], apartados: [] })),
+    getNumerosOcupados(resolvedParams.id).catch(() => ({ vendidos: [], apartados: [] })),
     getAppSettings().catch(() => ({ mostrar_apartados: true })),
   ]);
   return <RifaInteractive rifa={rifa} vendidos={vendidos} apartados={apartados} mostrarApartados={settings.mostrar_apartados} />;

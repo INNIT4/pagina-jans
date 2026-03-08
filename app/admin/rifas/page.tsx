@@ -148,6 +148,7 @@ export default function AdminRifasPage() {
               <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                 <td className="px-4 py-3">
                   {(r.imagenes_url?.[0] || r.imagen_url) ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={r.imagenes_url?.[0] ?? r.imagen_url}
                       alt={r.nombre}

@@ -287,6 +287,7 @@ function ComprobanteViewModal({ comprobante, onClose }: { comprobante: Comproban
               title="Comprobante PDF"
             />
           ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img src={comprobante.archivo_url} alt="Comprobante" className="max-w-full mx-auto rounded-lg shadow" />
           )}
         </div>

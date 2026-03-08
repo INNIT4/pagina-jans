@@ -5,6 +5,22 @@ import { onSnapshot, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Link from "next/link";
 import { setAppSettings, AppSettings, DEFAULT_SETTINGS } from "@/lib/firestore";
+import { 
+  Rocket, 
+  Settings2, 
+  Clock, 
+  Eye, 
+  EyeOff, 
+  Zap, 
+  Ticket, 
+  Users, 
+  Tag, 
+  MessageSquare, 
+  CreditCard,
+  ChevronRight,
+  TrendingUp,
+  Box
+} from "lucide-react";
 
 export default function AdminDashboard() {
   const [settings, setSettings] = useState<AppSettings>({
@@ -50,108 +66,184 @@ export default function AdminDashboard() {
     setSettings((s) => ({ ...s, cancelacion_activa: next }));
   }
 
+  const quickLinks = [
+    { href: "/admin/rifas", title: "Gestionar Rifas", desc: "Crear, editar y desactivar rifas.", icon: Ticket, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
+    { href: "/admin/boletos", title: "Gestionar Boletos", desc: "Verificar pagos y marcar boletos.", icon: Box, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+    { href: "/admin/clientes", title: "Base de Clientes", desc: "Ver y exportar datos de clientes.", icon: Users, color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-900/20" },
+    { href: "/admin/codigos", title: "Códigos de Descuento", desc: "CRUD de códigos y sus usos.", icon: Tag, color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-900/20" },
+    { href: "/admin/whatsapp", title: "Rotación WhatsApp", desc: "Configurar números y rotación.", icon: MessageSquare, color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20" },
+    { href: "/admin/tarjetas", title: "Datos Bancarios", desc: "Editar cuentas bancarias.", icon: CreditCard, color: "text-indigo-600", bg: "bg-indigo-50 dark:bg-indigo-900/20" },
+  ];
+
   return (
-    <div>
-      <h1 className="text-3xl font-black mb-8">Dashboard</h1>
-
-      {/* Settings panel */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-5 mb-8 space-y-5">
-        <h2 className="text-sm font-black text-slate-500 uppercase tracking-wide">Configuración</h2>
-
-        {/* Apartados toggle */}
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="font-bold text-sm">Mostrar apartados en la grid pública</p>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {settings.mostrar_apartados
-                ? "Los compradores ven los números apartados (amarillo)."
-                : "Los apartados aparecen como disponibles para los compradores."}
-            </p>
-          </div>
-          <button
-            onClick={toggleApartados}
-            disabled={togglingApartados}
-            className={`relative inline-flex h-7 w-12 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
-              settings.mostrar_apartados ? "bg-green-500" : "bg-slate-300 dark:bg-slate-600"
-            }`}
-          >
-            <span
-              className={`inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
-                settings.mostrar_apartados ? "translate-x-5" : "translate-x-0"
-              }`}
-            />
-          </button>
-        </div>
-
-        <div className="border-t border-slate-100 dark:border-slate-700" />
-
-        {/* Cancelación automática */}
+    <div className="space-y-10 animate-in fade-in duration-500">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center justify-between gap-4 mb-3">
-            <div>
-              <p className="font-bold text-sm">Cancelación automática de boletos pendientes</p>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {settings.cancelacion_activa
-                  ? `Los boletos pendientes se cancelan tras ${settings.cancelacion_horas} h sin pago, al entrar a la sección Boletos.`
-                  : "Sin cancelación automática. El admin cancela manualmente."}
-              </p>
-            </div>
-            <button
-              onClick={toggleCancelacion}
-              className={`relative inline-flex h-7 w-12 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-                settings.cancelacion_activa ? "bg-green-500" : "bg-slate-300 dark:bg-slate-600"
-              }`}
-            >
-              <span
-                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
-                  settings.cancelacion_activa ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-          {settings.cancelacion_activa && (
-            <div className="flex items-center gap-3 mt-2">
-              <label className="text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">Tiempo límite:</label>
-              <input
-                type="number"
-                min={1}
-                max={720}
-                value={horasInput}
-                onChange={(e) => setHorasInput(e.target.value)}
-                className="w-24 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-              <span className="text-sm text-slate-500">horas</span>
-              <button
-                onClick={saveCancelacion}
-                disabled={savingCancelacion}
-                className="px-4 py-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition-colors"
-              >
-                {savingCancelacion ? "Guardando..." : "Guardar"}
-              </button>
-            </div>
-          )}
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Dashboard</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Bienvenido al panel de control de Pagina Jans.</p>
         </div>
+        <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sistema Activo</span>
+        </div>
+      </header>
+
+      {/* Stats Overview (Static placeholders for now) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { label: "Ventas Hoy", value: "---", icon: TrendingUp, delta: "+0%", color: "text-blue-600" },
+          { label: "Rifas Activas", value: "---", icon: Rocket, delta: "Live", color: "text-red-600" },
+          { label: "Clientes", value: "---", icon: Users, delta: "Total", color: "text-indigo-600" },
+          { label: "Conversión", value: "0%", icon: Zap, delta: "Avg", color: "text-yellow-600" },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className={`p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 ${stat.color}`}>
+                <stat.icon size={20} />
+              </div>
+              <span className="text-[10px] font-bold px-2 py-1 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-500">
+                {stat.delta}
+              </span>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Quick links */}
-      <div className="grid md:grid-cols-2 gap-4">
-        {[
-          { href: "/admin/rifas", title: "Gestionar Rifas", desc: "Crear, editar y desactivar rifas." },
-          { href: "/admin/boletos", title: "Gestionar Boletos", desc: "Verificar pagos y marcar boletos." },
-          { href: "/admin/clientes", title: "Base de Clientes", desc: "Ver y exportar datos de clientes." },
-          { href: "/admin/codigos", title: "Códigos de Descuento", desc: "CRUD de códigos y sus usos." },
-          { href: "/admin/whatsapp", title: "Rotación WhatsApp", desc: "Configurar números y rotación." },
-          { href: "/admin/tarjetas", title: "Datos Bancarios", desc: "Editar cuentas bancarias." },
-        ].map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-red-200 dark:hover:border-red-700 transition-all"
-          >
-            <h2 className="font-bold text-lg mb-1">{item.title}</h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm">{item.desc}</p>
-          </Link>
-        ))}
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Settings panel */}
+        <section className="lg:col-span-2 space-y-6">
+          <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 p-8 overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-8 opacity-5">
+              <Settings2 size={120} />
+            </div>
+            
+            <div className="flex items-center gap-3 mb-8">
+              <div className="p-2 bg-red-50 dark:bg-red-950/30 rounded-lg text-red-600 dark:text-red-400">
+                <Settings2 size={20} />
+              </div>
+              <h2 className="text-xl font-bold">Configuración General</h2>
+            </div>
+
+            <div className="space-y-8">
+              {/* Apartados toggle */}
+              <div className="flex items-center justify-between group">
+                <div className="flex gap-4">
+                  <div className={`p-3 rounded-2xl h-fit transition-colors ${settings.mostrar_apartados ? 'bg-green-50 dark:bg-green-950/30 text-green-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400'}`}>
+                    {settings.mostrar_apartados ? <Eye size={24} /> : <EyeOff size={24} />}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 dark:text-white">Grid Pública</h3>
+                    <p className="text-sm text-slate-400 max-w-xs">
+                      {settings.mostrar_apartados
+                        ? "Los compradores pueden ver los números apartados en amarillo."
+                        : "Los apartados se muestran como disponibles para los compradores."}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={toggleApartados}
+                  disabled={togglingApartados}
+                  className={`relative inline-flex h-8 w-14 flex-shrink-0 rounded-full border-4 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+                    settings.mostrar_apartados ? "bg-green-500" : "bg-slate-200 dark:bg-slate-700"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      settings.mostrar_apartados ? "translate-x-6" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="h-px bg-slate-50 dark:bg-slate-800" />
+
+              {/* Cancelación automática */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between group">
+                  <div className="flex gap-4">
+                    <div className={`p-3 rounded-2xl h-fit transition-colors ${settings.cancelacion_activa ? 'bg-red-50 dark:bg-red-950/30 text-red-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400'}`}>
+                      <Clock size={24} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900 dark:text-white">Cancelación Automática</h3>
+                      <p className="text-sm text-slate-400 max-w-xs">
+                        Libera los boletos apartados que no han reportado pago tras el tiempo límite.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={toggleCancelacion}
+                    className={`relative inline-flex h-8 w-14 flex-shrink-0 rounded-full border-4 border-transparent transition-colors duration-200 focus:outline-none ${
+                      settings.cancelacion_activa ? "bg-red-500" : "bg-slate-200 dark:bg-slate-700"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                        settings.cancelacion_activa ? "translate-x-6" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {settings.cancelacion_activa && (
+                  <div className="ml-[60px] flex flex-wrap items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 animate-in slide-in-from-top-4 duration-300">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Tiempo límite (Horas)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={720}
+                        value={horasInput}
+                        onChange={(e) => setHorasInput(e.target.value)}
+                        className="w-24 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-lg font-bold focus:ring-2 focus:ring-red-500 outline-none transition-all"
+                      />
+                    </div>
+                    <button
+                      onClick={saveCancelacion}
+                      disabled={savingCancelacion}
+                      className="ml-auto px-8 py-3 bg-slate-900 dark:bg-red-600 hover:bg-slate-800 dark:hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-2xl transition-all shadow-lg shadow-slate-200 dark:shadow-none"
+                    >
+                      {savingCancelacion ? "Guardando..." : "Guardar"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Quick links */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+              <Zap size={20} />
+            </div>
+            <h2 className="text-xl font-bold">Accesos Rápidos</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-4">
+            {quickLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group bg-white dark:bg-slate-900 rounded-[1.5rem] p-5 shadow-sm border border-slate-100 dark:border-slate-800 hover:border-red-500 dark:hover:border-red-500 transition-all duration-300 flex items-center gap-4"
+              >
+                <div className={`p-3 rounded-2xl ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-300`}>
+                  <item.icon size={20} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-slate-900 dark:text-white group-hover:text-red-600 transition-colors">{item.title}</h3>
+                  <p className="text-slate-400 text-xs">{item.desc}</p>
+                </div>
+                <ChevronRight size={18} className="text-slate-300 group-hover:text-red-500 group-hover:translate-x-1 transition-all" />
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );

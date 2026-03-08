@@ -2,6 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { getWhatsAppConfig, setWhatsAppConfig } from "@/lib/firestore";
+import { 
+  MessageSquare, 
+  Plus, 
+  Trash2, 
+  CheckCircle2, 
+  AlertCircle,
+  HelpCircle,
+  RefreshCw,
+  Phone
+} from "lucide-react";
 
 export default function AdminWhatsAppPage() {
   const [numeros, setNumeros] = useState<string[]>([]);
@@ -45,7 +55,6 @@ export default function AdminWhatsAppPage() {
 
   async function eliminar(idx: number) {
     const nuevos = numeros.filter((_, i) => i !== idx);
-    // Ajustar índice si quedó fuera de rango
     const nuevoIndice = nuevos.length === 0 ? 0 : indiceActual % nuevos.length;
     await save(nuevos, nuevoIndice);
   }
@@ -54,107 +63,166 @@ export default function AdminWhatsAppPage() {
     await save(numeros, idx);
   }
 
-  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full" /></div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <div className="animate-spin w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full" />
+        <p className="text-slate-500 font-medium animate-pulse">Cargando configuración...</p>
+      </div>
+    );
+  }
 
   const indiceVivo = numeros.length ? indiceActual % numeros.length : 0;
 
   return (
-    <div className="max-w-lg">
-      <h1 className="text-2xl font-black mb-2">WhatsApp</h1>
-      <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-        Los números rotan automáticamente en round-robin cada vez que un usuario hace click.
-      </p>
-
-      {/* Lista de números */}
-      {numeros.length > 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 mb-5">
-          {numeros.map((n, i) => (
-            <div key={n} className="flex items-center gap-3 px-4 py-3">
-              <span
-                className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${i === indiceVivo ? "bg-green-500" : "bg-slate-300 dark:bg-slate-600"}`}
-                title={i === indiceVivo ? "Siguiente en usarse" : ""}
-              />
-              <span className="flex-1 font-mono text-sm">{n}</span>
-              {i === indiceVivo && (
-                <span className="text-xs font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
-                  Siguiente
-                </span>
-              )}
-              <button
-                onClick={() => setActivo(i)}
-                disabled={saving || i === indiceVivo}
-                className="text-xs text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-30 disabled:no-underline"
-              >
-                Usar ahora
-              </button>
-              <button
-                onClick={() => eliminar(i)}
-                disabled={saving}
-                className="text-slate-400 hover:text-red-500 disabled:opacity-30 transition-colors"
-                title="Eliminar"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          ))}
+    <div className="max-w-2xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-green-50 dark:bg-green-950/30 rounded-xl text-green-600 dark:text-green-400">
+            <MessageSquare size={24} />
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight">WhatsApp</h1>
         </div>
-      ) : (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-2xl p-4 mb-5 text-sm text-amber-700 dark:text-amber-400">
-          No hay números configurados. Agrega al menos uno para que el botón de WhatsApp aparezca en el sitio.
-        </div>
-      )}
-
-      {/* Agregar número */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-5 mb-5">
-        <label className="block text-sm font-semibold mb-2">Agregar número de compra (10 dígitos)</label>
-        <div className="flex gap-2">
-          <input
-            value={nuevo}
-            onChange={(e) => setNuevo(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && agregar()}
-            placeholder="5512345678"
-            maxLength={10}
-            className="flex-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm font-mono"
-          />
-          <button
-            onClick={agregar}
-            disabled={saving}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-lg text-sm transition-colors"
-          >
-            {saving ? "..." : "Agregar"}
-          </button>
-        </div>
+        <p className="text-slate-500 dark:text-slate-400">
+          Gestiona la rotación de números para atención a clientes. El sistema usa un método de &quot;round-robin&quot; automático.
+        </p>
       </div>
 
-      {/* Número de Ayuda */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-5">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
+      <div className="grid gap-6">
+        {/* Lista de números */}
+        <section className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+          <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
+            <h2 className="font-bold flex items-center gap-2">
+              <Phone size={18} className="text-slate-400" />
+              Números en Rotación
+            </h2>
+            <span className="text-xs font-bold px-2.5 py-1 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-500">
+              {numeros.length} total
+            </span>
           </div>
-          <label className="text-sm font-semibold">Número de Ayuda / Soporte</label>
-        </div>
-        <p className="text-xs text-slate-500 mb-4">Este número se usará en los botones de &quot;Contactar Soporte&quot; de todo el sitio.</p>
-        <div className="flex gap-2">
-          <input
-            value={ayudaNumero}
-            onChange={(e) => setAyudaNumero(e.target.value.replace(/\D/g, ""))}
-            placeholder="5512345678"
-            maxLength={10}
-            className="flex-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm font-mono"
-          />
-          <button
-            onClick={() => save(numeros, indiceActual, ayudaNumero)}
-            disabled={saving}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg text-sm transition-colors"
-          >
-            {saving ? "..." : "Guardar"}
-          </button>
-        </div>
+
+          <div className="divide-y divide-slate-50 dark:divide-slate-800">
+            {numeros.length > 0 ? (
+              numeros.map((n, i) => (
+                <div key={n} className={`group flex items-center gap-4 px-6 py-4 transition-colors ${i === indiceVivo ? 'bg-red-50/30 dark:bg-red-950/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${i === indiceVivo ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 scale-110 shadow-sm shadow-red-100 dark:shadow-none' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                    <Phone size={18} />
+                  </div>
+                  
+                  <div className="flex-1">
+                    <span className="font-mono text-lg tracking-tight font-medium">{n}</span>
+                    {i === indiceVivo && (
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <CheckCircle2 size={12} className="text-green-500" />
+                        <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider">Activo para el siguiente click</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => setActivo(i)}
+                      disabled={saving || i === indiceVivo}
+                      className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 disabled:hidden"
+                    >
+                      Activar
+                    </button>
+                    <button
+                      onClick={() => eliminar(i)}
+                      disabled={saving}
+                      className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-all"
+                      title="Eliminar"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-10 text-center space-y-3">
+                <div className="w-16 h-16 bg-amber-50 dark:bg-amber-950/30 text-amber-500 rounded-3xl flex items-center justify-center mx-auto">
+                  <AlertCircle size={32} />
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 text-sm max-w-[240px] mx-auto">
+                  No hay números configurados. El botón de WhatsApp no aparecerá en el sitio.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Agregar número */}
+        <section className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-xl text-blue-600 dark:text-blue-400">
+              <Plus size={20} />
+            </div>
+            <h2 className="font-bold">Agregar Nuevo Número</h2>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                <Phone size={16} />
+              </div>
+              <input
+                value={nuevo}
+                onChange={(e) => setNuevo(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && agregar()}
+                placeholder="Ej. 5512345678"
+                maxLength={10}
+                className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl font-mono focus:ring-2 focus:ring-red-500 outline-none transition-all"
+              />
+            </div>
+            <button
+              onClick={agregar}
+              disabled={saving}
+              className="px-8 py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-2xl transition-all shadow-lg shadow-red-100 dark:shadow-none flex items-center justify-center gap-2"
+            >
+              <Plus size={18} />
+              {saving ? "Guardando..." : "Agregar"}
+            </button>
+          </div>
+          <p className="mt-4 text-xs text-slate-400 flex items-center gap-1.5 ml-2">
+            <RefreshCw size={12} />
+            Solo ingresa los 10 dígitos sin espacios ni guiones.
+          </p>
+        </section>
+
+        {/* Número de Ayuda */}
+        <section className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 p-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl text-indigo-600 dark:text-indigo-400">
+              <HelpCircle size={20} />
+            </div>
+            <h2 className="font-bold">Número de Soporte Técnico</h2>
+          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+            Este número se usa globalmente para el botón de &quot;Ayuda&quot; y consultas técnicas.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                <Phone size={16} />
+              </div>
+              <input
+                value={ayudaNumero}
+                onChange={(e) => setAyudaNumero(e.target.value.replace(/\D/g, ""))}
+                placeholder="Ej. 5512345678"
+                maxLength={10}
+                className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl font-mono focus:ring-2 focus:ring-red-500 outline-none transition-all"
+              />
+            </div>
+            <button
+              onClick={() => save(numeros, indiceActual, ayudaNumero)}
+              disabled={saving}
+              className="px-10 py-3 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-50 text-white font-bold rounded-2xl transition-all shadow-lg shadow-slate-200 dark:shadow-none"
+            >
+              {saving ? "..." : "Guardar Cambios"}
+            </button>
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -69,7 +69,7 @@ export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApar
                 <span className="w-8 h-1 bg-brand-red rounded-full" />
                 Premios y Regalos
               </h2>
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-4">
                 {rifa.premios.map((p) => (
                   <div 
                     key={p.id} 

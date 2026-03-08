@@ -15,8 +15,7 @@ interface NumberGridProps {
   onToggle: (n: number) => void;
 }
 
-// Initial size, but we'll calculate it dynamically
-const DEFAULT_PAGE_SIZE = 1000;
+
 
 const STATUS_CLASSES: Record<NumberStatus, string> = {
   disponible:  "bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800 cursor-pointer",

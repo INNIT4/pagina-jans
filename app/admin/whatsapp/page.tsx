@@ -138,7 +138,7 @@ export default function AdminWhatsAppPage() {
           </div>
           <label className="text-sm font-semibold">Número de Ayuda / Soporte</label>
         </div>
-        <p className="text-xs text-slate-500 mb-4">Este número se usará en los botones de "Contactar Soporte" de todo el sitio.</p>
+        <p className="text-xs text-slate-500 mb-4">Este número se usará en los botones de &quot;Contactar Soporte&quot; de todo el sitio.</p>
         <div className="flex gap-2">
           <input
             value={ayudaNumero}

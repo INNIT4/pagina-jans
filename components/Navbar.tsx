@@ -32,10 +32,10 @@ export default function Navbar() {
             <Link
               key={l.href}
               href={l.href}
-              className={`text-sm font-medium uppercase tracking-wider transition-colors hover:text-brand-red ${
+              className={`text-sm font-medium uppercase tracking-wider transition-colors hover:text-red-500 ${
                 pathname === l.href
-                  ? "text-brand-red"
-                  : "text-gray-400"
+                  ? "text-red-500"
+                  : "text-gray-200"
               }`}
             >
               {l.label}
@@ -67,8 +67,8 @@ export default function Navbar() {
               key={l.href}
               href={l.href}
               onClick={() => setOpen(false)}
-              className={`block px-4 py-3 text-sm font-medium uppercase tracking-wider transition-colors hover:text-brand-red hover:bg-brand-dark ${
-                pathname === l.href ? "text-brand-red" : "text-gray-400"
+              className={`block px-4 py-3 text-sm font-medium uppercase tracking-wider transition-colors hover:text-red-500 hover:bg-brand-dark ${
+                pathname === l.href ? "text-red-500" : "text-gray-200"
               }`}
             >
               {l.label}

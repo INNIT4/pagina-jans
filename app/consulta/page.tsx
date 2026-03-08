@@ -618,12 +618,27 @@ function ComprobanteModal({ results, onClose }: { results: Result[]; onClose: ()
       fd.append("nombre", nombre);
       fd.append("folios", JSON.stringify(folios));
       fd.append("monto_total", String(montoTotal));
+      
       const res = await fetch("/api/comprobantes/upload", { method: "POST", body: fd });
+      
+      // Prevent crash if Vercel router returns an HTML error page (e.g., 413 Payload Too Large)
+      const isJson = res.headers.get("content-type")?.includes("application/json");
+      if (!isJson) {
+        if (res.status === 413) {
+          setErr("El archivo es demasiado grande para el servidor (Max 4.5MB).");
+        } else {
+          setErr(`Error del servidor (${res.status}). Intenta mas tarde o contactanos.`);
+        }
+        setUploading(false);
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok) { setErr(data.error ?? "Error al subir."); return; }
       setSuccess(true);
-    } catch {
-      setErr("Error de conexion. Intenta de nuevo.");
+    } catch (e) {
+      console.error(e);
+      setErr("Error de conexion o servidor inalcanzable. Intenta de nuevo.");
     } finally {
       setUploading(false);
     }

@@ -3,8 +3,8 @@ import type { NextRequest } from "next/server";
 import { verifySession } from "@/lib/session";
 
 export async function middleware(request: NextRequest) {
-  // 1. Generate Nonce for CSP
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  // 1. Generate Nonce for CSP without Buffer (Edge compatible)
+  const nonce = crypto.randomUUID().replace(/-/g, '');
   
   // 2. Define CSP without 'unsafe-inline' for scripts (strict-dynamic + nonce)
   // Need to allow Next.js dev server if not in production

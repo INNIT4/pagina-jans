@@ -11,7 +11,10 @@ export async function GET() {
     if (!snap.exists) return NextResponse.json({ activo: false });
     const data = snap.data()!;
     const numeros: string[] = data.numeros ?? (data.numero ? [data.numero] : []);
-    return NextResponse.json({ activo: numeros.length > 0 });
+    return NextResponse.json({ 
+      activo: numeros.length > 0,
+      ayuda_activo: !!data.ayuda_numero 
+    });
   } catch {
     return NextResponse.json({ activo: false });
   }

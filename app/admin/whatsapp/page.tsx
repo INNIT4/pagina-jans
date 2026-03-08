@@ -9,22 +9,29 @@ export default function AdminWhatsAppPage() {
   const [nuevo, setNuevo] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [ayudaNumero, setAyudaNumero] = useState("");
 
   useEffect(() => {
     getWhatsAppConfig().then((c) => {
       if (c) {
         setNumeros(c.numeros ?? []);
         setIndiceActual(c.indice_actual ?? 0);
+        setAyudaNumero(c.ayuda_numero ?? "");
       }
       setLoading(false);
     });
   }, []);
 
-  async function save(nuevosNumeros: string[], nuevoIndice: number) {
+  async function save(nuevosNumeros: string[], nuevoIndice: number, nuevoAyuda?: string) {
     setSaving(true);
-    await setWhatsAppConfig({ numeros: nuevosNumeros, indice_actual: nuevoIndice });
+    await setWhatsAppConfig({ 
+      numeros: nuevosNumeros, 
+      indice_actual: nuevoIndice,
+      ayuda_numero: nuevoAyuda !== undefined ? nuevoAyuda : ayudaNumero
+    });
     setNumeros(nuevosNumeros);
     setIndiceActual(nuevoIndice);
+    if (nuevoAyuda !== undefined) setAyudaNumero(nuevoAyuda);
     setSaving(false);
   }
 
@@ -100,8 +107,8 @@ export default function AdminWhatsAppPage() {
       )}
 
       {/* Agregar número */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-5">
-        <label className="block text-sm font-semibold mb-2">Agregar número (10 dígitos)</label>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-5 mb-5">
+        <label className="block text-sm font-semibold mb-2">Agregar número de compra (10 dígitos)</label>
         <div className="flex gap-2">
           <input
             value={nuevo}
@@ -117,6 +124,35 @@ export default function AdminWhatsAppPage() {
             className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-lg text-sm transition-colors"
           >
             {saving ? "..." : "Agregar"}
+          </button>
+        </div>
+      </div>
+
+      {/* Número de Ayuda */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-5">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+          <label className="text-sm font-semibold">Número de Ayuda / Soporte</label>
+        </div>
+        <p className="text-xs text-slate-500 mb-4">Este número se usará en los botones de "Contactar Soporte" de todo el sitio.</p>
+        <div className="flex gap-2">
+          <input
+            value={ayudaNumero}
+            onChange={(e) => setAyudaNumero(e.target.value.replace(/\D/g, ""))}
+            placeholder="5512345678"
+            maxLength={10}
+            className="flex-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm font-mono"
+          />
+          <button
+            onClick={() => save(numeros, indiceActual, ayudaNumero)}
+            disabled={saving}
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg text-sm transition-colors"
+          >
+            {saving ? "..." : "Guardar"}
           </button>
         </div>
       </div>

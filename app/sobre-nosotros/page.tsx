@@ -1,5 +1,6 @@
 import { getSiteTexts } from "@/lib/firestore";
 import Image from "next/image";
+import SupportButton from "@/components/ui/SupportButton";
 
 export const revalidate = 300;
 
@@ -12,7 +13,7 @@ export default async function SobreNosotrosPage() {
       <span className="accent-bar" />
       <p className="text-gray-400 mb-10 mt-4">Conoce mas sobre Sorteos Jans.</p>
 
-      <div className="relative rounded-sm overflow-hidden mb-10">
+      <div className="relative rounded-sm overflow-hidden mb-10 flex-shrink-0 min-h-[400px]">
         <Image src="/images/2.jpeg" alt="Sorteos Jans" fill className="object-cover object-center" priority />
         <div className="absolute inset-0 bg-brand-black/60 flex flex-col justify-end p-8">
           <h2 className="text-3xl font-bold text-white mb-2 uppercase tracking-wider">{texts.about_mission_title}</h2>
@@ -31,6 +32,12 @@ export default async function SobreNosotrosPage() {
             <p className="text-gray-400 text-sm">{item.desc}</p>
           </div>
         ))}
+      </div>
+
+      <div className="bg-brand-dark border border-gray-800 rounded-sm p-8 mb-10 text-center">
+        <h2 className="text-2xl font-bold uppercase tracking-wider mb-2 text-white">¿Necesitas ayuda personalizada?</h2>
+        <p className="text-gray-400 mb-6 font-medium italic">Si tienes alguna pregunta sobre nosotros o nuestros sorteos, contáctanos directamente.</p>
+        <SupportButton variant="primary" label="Hablar con un asesor" message="Hola, vengo de la página 'Sobre Nosotros' y me gustaría pedir información." />
       </div>
 
       <div className="bg-brand-dark border border-gray-800 rounded-sm p-8">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { FaqItem } from "@/lib/firestore";
+import SupportButton from "@/components/ui/SupportButton";
 
 export default function FaqAccordion({ items }: { items: FaqItem[] }) {
   const [open, setOpen] = useState<number | null>(null);
@@ -31,6 +32,12 @@ export default function FaqAccordion({ items }: { items: FaqItem[] }) {
           )}
         </div>
       ))}
+
+      <div className="mt-12 text-center bg-brand-dark border border-gray-800 rounded-sm p-8">
+        <h3 className="text-xl font-bold text-white mb-2 uppercase">¿Aún tienes dudas?</h3>
+        <p className="text-gray-400 mb-6 italic">Nuestro equipo de soporte está listo para ayudarte personalmente.</p>
+        <SupportButton variant="whatsapp" label="Chatear con Soporte" message="Hola, tengo una duda que no encontré en las FAQ." />
+      </div>
     </div>
   );
 }

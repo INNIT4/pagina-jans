@@ -19,6 +19,14 @@ export async function getRotatedWhatsApp(): Promise<string> {
   return data.numero ?? "";
 }
 
+/** Lee el número de ayuda/soporte global. */
+export async function getHelpWhatsApp(): Promise<string> {
+  const res = await fetch("/api/whatsapp/support");
+  if (!res.ok) return "";
+  const data = (await res.json()) as { numero?: string };
+  return data.numero ?? "";
+}
+
 export function buildWhatsAppUrl(numero: string, message: string): string {
   return `https://wa.me/52${numero}?text=${encodeURIComponent(message)}`;
 }

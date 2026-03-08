@@ -90,6 +90,7 @@ export interface DiscountCode {
 export interface WhatsAppConfig {
   numeros: string[];
   indice_actual: number;
+  ayuda_numero?: string; // Global support number
 }
 
 export interface BankAccount {

@@ -20,10 +20,10 @@ export async function middleware(request: NextRequest) {
 
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'nonce-${nonce}' 'strict-dynamic' ${isDev ? "'unsafe-eval'" : ""} https://www.clarity.ms https://c.clarity.ms;
+    script-src 'self' 'unsafe-inline' 'nonce-${nonce}' 'strict-dynamic' 'sha256-CpJq3WQ5Pnyvcq4cP7FLg8XJ/MGoorHk5pDtc66gXgI=' ${isDev ? "'unsafe-eval'" : ""} https://*.clarity.ms;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data: blob: https://firebasestorage.googleapis.com https://*.googleusercontent.com https://*.public.blob.vercel-storage.com https://c.clarity.ms;
+    img-src 'self' data: blob: https://firebasestorage.googleapis.com https://*.googleusercontent.com https://*.public.blob.vercel-storage.com https://*.clarity.ms https://*.bing.com;
     connect-src 'self' ${firebaseHosts} https://www.clarity.ms https://*.clarity.ms;
     frame-src 'self' https://firebasestorage.googleapis.com https://*.public.blob.vercel-storage.com;
     object-src 'self' https://firebasestorage.googleapis.com https://*.public.blob.vercel-storage.com;

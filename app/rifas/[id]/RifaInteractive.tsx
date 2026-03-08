@@ -67,46 +67,62 @@ export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApar
             <div className="mb-8 mt-2 space-y-4">
               <h2 className="text-xl font-bold uppercase tracking-wider flex items-center gap-2">
                 <span className="w-8 h-1 bg-brand-red rounded-full" />
-                Premios y Regalos
+                Premios y Beneficios
               </h2>
-              <div className="flex flex-col gap-4">
-                {rifa.premios.map((p) => (
-                  <div 
-                    key={p.id} 
-                    className={`p-4 rounded-sm border transition-shadow ${
-                      p.es_principal 
-                        ? 'bg-gradient-to-br from-yellow-900/40 to-brand-dark border-yellow-700/50 shadow-[0_0_15px_rgba(234,179,8,0.1)]' 
-                        : 'bg-brand-dark border-gray-800'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-sm flex items-center justify-center flex-shrink-0 ${
-                        p.es_principal ? 'bg-yellow-500 text-yellow-950' : 'bg-gray-800 text-gray-400'
-                      }`}>
-                        {p.es_principal ? '🏆' : '🎁'}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <h3 className="font-bold text-lg text-white leading-tight">{p.nombre}</h3>
-                          {p.es_principal && (
-                            <span className="text-[10px] bg-yellow-500 text-yellow-950 font-black px-1.5 py-0.5 rounded-sm uppercase tracking-tighter">
-                              Principal
-                            </span>
+              <div className="flex flex-col gap-3">
+                {rifa.premios.map((p) => {
+                  const isPlace = /^[0-9]/.test(p.nombre); // Detection for 2DO, 3ER, etc.
+                  const isBonus = p.condicion || p.nombre.toLowerCase().includes('bono');
+                  
+                  return (
+                    <div 
+                      key={p.id} 
+                      className={`p-4 rounded-sm border transition-shadow ${
+                        p.es_principal 
+                          ? 'bg-gradient-to-br from-yellow-900/40 to-brand-dark border-yellow-700/50 shadow-[0_0_15px_rgba(234,179,8,0.1)]' 
+                          : isBonus 
+                          ? 'bg-brand-red/5 border-brand-red/20'
+                          : 'bg-brand-dark border-gray-800'
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className={`w-12 h-12 rounded-sm flex items-center justify-center flex-shrink-0 text-2xl ${
+                          p.es_principal 
+                            ? 'bg-yellow-500 text-yellow-950' 
+                            : isBonus 
+                            ? 'bg-brand-red text-white' 
+                            : 'bg-gray-800 text-gray-400'
+                        }`}>
+                          {p.es_principal ? '🏆' : isPlace ? '🥈' : isBonus ? '⚡' : '🎁'}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <h3 className={`font-bold text-lg leading-tight uppercase ${p.es_principal ? 'text-yellow-400' : 'text-white'}`}>
+                              {p.nombre}
+                            </h3>
+                            {p.es_principal && (
+                              <span className="text-[10px] bg-yellow-500 text-yellow-950 font-black px-1.5 py-0.5 rounded-sm uppercase tracking-tighter">
+                                Principal
+                              </span>
+                            )}
+                          </div>
+                          {p.descripcion && (
+                            <p className="text-sm text-gray-400 leading-relaxed mb-2">{p.descripcion}</p>
+                          )}
+                          {p.condicion && (
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-red/20 border border-brand-red/30 rounded-sm mt-1 animate-pulse">
+                              <span className="text-brand-red text-[11px] font-black uppercase tracking-widest flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2a8 8 0 100-16 8 8 0 000 16zm-1-5h2v2h-2v-2zm0-8h2v6h-2V7z"/></svg>
+                                Condición
+                              </span>
+                              <span className="text-white text-xs font-bold uppercase">{p.condicion}</span>
+                            </div>
                           )}
                         </div>
-                        {p.descripcion && (
-                          <p className="text-sm text-gray-400 line-clamp-2 mb-2">{p.descripcion}</p>
-                        )}
-                        {p.condicion && (
-                          <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-brand-red/10 border border-brand-red/20 rounded-sm">
-                            <span className="text-brand-red text-[10px] font-black uppercase tracking-widest">Condición:</span>
-                            <span className="text-white text-xs font-medium italic">{p.condicion}</span>
-                          </div>
-                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

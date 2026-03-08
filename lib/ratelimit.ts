@@ -10,8 +10,8 @@ export function getRatelimit(): Ratelimit | null {
   try {
     if (!_ratelimit) {
       const redis = new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL,
-        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+        url: process.env.UPSTASH_REDIS_REST_URL.replace(/^"|"$/g, ""),
+        token: process.env.UPSTASH_REDIS_REST_TOKEN.replace(/^"|"$/g, ""),
       });
       _ratelimit = new Ratelimit({
         redis,

@@ -16,7 +16,10 @@ let _rl: Ratelimit | null = null;
 function getRl() {
   if (!process.env.UPSTASH_REDIS_REST_URL) return null;
   if (!_rl) _rl = new Ratelimit({
-    redis: new Redis({ url: process.env.UPSTASH_REDIS_REST_URL!, token: process.env.UPSTASH_REDIS_REST_TOKEN! }),
+    redis: new Redis({ 
+      url: process.env.UPSTASH_REDIS_REST_URL!.replace(/^"|"$/g, ""), 
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!.replace(/^"|"$/g, "") 
+    }),
     limiter: Ratelimit.slidingWindow(5, "1 h"),
     prefix: "rl_comprobante",
   });

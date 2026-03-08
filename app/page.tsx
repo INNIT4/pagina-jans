@@ -200,7 +200,7 @@ export default async function HomePage() {
       <section className="bg-brand-red text-white py-20 px-4 clip-diagonal-top">
         <div className="max-w-2xl mx-auto text-center pt-8">
           {/* Chevrons decorativos */}
-          <p className="text-white/60 text-sm font-bold tracking-[0.3em] mb-6">{"// // //"}</p>
+          <p className="text-white/90 text-sm font-bold tracking-[0.3em] mb-6">{"// // //"}</p>
           <h2 className="text-3xl font-bold uppercase tracking-widest mb-4">¿Tienes dudas?</h2>
           <p className="text-red-100 mb-8">Consulta nuestras preguntas frecuentes o contactanos por WhatsApp.</p>
           <div className="flex gap-4 justify-center flex-wrap">

@@ -20,11 +20,11 @@ export async function middleware(request: NextRequest) {
 
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isDev ? "'unsafe-eval'" : ""} https://www.clarity.ms https://c.clarity.ms;
+    script-src 'self' 'unsafe-inline' 'nonce-${nonce}' 'strict-dynamic' ${isDev ? "'unsafe-eval'" : ""} https://www.clarity.ms https://c.clarity.ms;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data: blob: https://firebasestorage.googleapis.com https://*.googleusercontent.com https://*.public.blob.vercel-storage.com;
-    connect-src 'self' ${firebaseHosts} https://www.clarity.ms https://c.clarity.ms;
+    img-src 'self' data: blob: https://firebasestorage.googleapis.com https://*.googleusercontent.com https://*.public.blob.vercel-storage.com https://c.clarity.ms;
+    connect-src 'self' ${firebaseHosts} https://www.clarity.ms https://*.clarity.ms;
     frame-src 'self' https://firebasestorage.googleapis.com https://*.public.blob.vercel-storage.com;
     object-src 'self' https://firebasestorage.googleapis.com https://*.public.blob.vercel-storage.com;
     base-uri 'self';
@@ -80,6 +80,7 @@ export async function middleware(request: NextRequest) {
 
   // 5. Append CSP headers to normal response
   response.headers.set('Content-Security-Policy', cspHeader);
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
   // Optional: Also add Next.js dev x-nonce if needed
   response.headers.set('x-nonce', nonce);
 

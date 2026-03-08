@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 interface LogoProps {
   size?: "sm" | "md" | "lg" | "xl";
   showText?: boolean;
@@ -16,9 +18,8 @@ export default function Logo({ size = "md", showText = true }: LogoProps) {
   return (
     <div className="flex items-center gap-3">
       {/* Circular logo */}
-      <div className={`${s.circle} rounded-full overflow-hidden shadow-lg ring-2 ring-red-400/30 flex-shrink-0`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/3.jpeg" alt="Sorteos Jans" className="w-full h-full object-cover" />
+      <div className={`${s.circle} rounded-full overflow-hidden shadow-lg ring-2 ring-red-400/30 flex-shrink-0 relative`}>
+        <Image src="/images/3.jpeg" alt="Sorteos Jans" fill className="object-cover" sizes="120px" priority />
       </div>
 
       {showText && (

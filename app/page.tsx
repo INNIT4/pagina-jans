@@ -22,12 +22,12 @@ export default async function HomePage() {
       {/* Hero */}
       <section className="relative text-white py-28 px-4 overflow-hidden clip-diagonal-bottom">
         {/* Background image */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src="/images/1.jpeg"
           alt=""
-          className="absolute inset-0 w-full h-full object-cover object-center"
-          aria-hidden="true"
+          fill
+          className="object-cover object-center"
+          priority
         />
         {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-brand-black/95 via-brand-black/70 to-brand-red/40" />
@@ -38,11 +38,9 @@ export default async function HomePage() {
             {"// SORTEOS JANS //"}
           </p>
 
-          {/* Logo con bordes angulares */}
           <div className="flex justify-center mb-8">
-            <div className="w-32 h-32 overflow-hidden ring-4 ring-brand-red/50 shadow-2xl rounded-sm">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/3.jpeg" alt="Sorteos Jans" className="w-full h-full object-cover" />
+            <div className="w-32 h-32 overflow-hidden ring-4 ring-brand-red/50 shadow-2xl rounded-sm relative">
+              <Image src="/images/3.jpeg" alt="Sorteos Jans" fill className="object-cover" priority sizes="128px" />
             </div>
           </div>
 

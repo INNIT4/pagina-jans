@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -6,8 +7,7 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 mb-8">
           <div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/4.jpeg" alt="Sorteos Jans" className="h-14 w-auto mb-3 rounded-sm" />
+            <Image src="/images/4.jpeg" alt="Sorteos Jans" width={180} height={56} className="h-14 w-auto mb-3 rounded-sm object-contain" />
             <p className="text-sm leading-relaxed">
               Plataforma de rifas en linea. Participa de forma segura, sencilla y transparente.
             </p>

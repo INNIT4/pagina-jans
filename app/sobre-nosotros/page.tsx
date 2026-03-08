@@ -1,4 +1,5 @@
 import { getSiteTexts } from "@/lib/firestore";
+import Image from "next/image";
 
 export const revalidate = 300;
 
@@ -12,8 +13,7 @@ export default async function SobreNosotrosPage() {
       <p className="text-gray-400 mb-10 mt-4">Conoce mas sobre Sorteos Jans.</p>
 
       <div className="relative rounded-sm overflow-hidden mb-10">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/2.jpeg" alt="Sorteos Jans" className="w-full h-48 object-cover object-center" />
+        <Image src="/images/2.jpeg" alt="Sorteos Jans" fill className="object-cover object-center" priority />
         <div className="absolute inset-0 bg-brand-black/60 flex flex-col justify-end p-8">
           <h2 className="text-3xl font-bold text-white mb-2 uppercase tracking-wider">{texts.about_mission_title}</h2>
           <p className="text-gray-300 text-base leading-relaxed max-w-2xl">{texts.about_mission_text}</p>

@@ -15,12 +15,13 @@ import {
   MessageSquare, 
   CreditCard, 
   FileText, 
-  BarChart3, 
-  Gift, 
-  Tag, 
+  BarChart3,
+  Gift,
+  Tag,
   Wrench,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Trophy
 } from "lucide-react";
 
 const NAV_GROUPS: { 
@@ -37,6 +38,7 @@ const NAV_GROUPS: {
       { href: "/admin/rifas", label: "Rifas", icon: Ticket },
       { href: "/admin/boletos", label: "Boletos", icon: CheckSquare },
       { href: "/admin/comprobantes", label: "Comprobantes", icon: FileText },
+      { href: "/admin/ganador", label: "Ganador", icon: Trophy },
       { href: "/admin/servicios", label: "Servicios", icon: Wrench },
     ],
   },

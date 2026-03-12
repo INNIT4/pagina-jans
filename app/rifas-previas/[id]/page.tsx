@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getRifa, getNumerosOcupados, Rifa } from "@/lib/firestore";
+import { getRifa, Rifa } from "@/lib/firestore";
 import ImageCarousel from "@/components/ImageCarousel";
 import Link from "next/link";
 
@@ -10,18 +10,13 @@ export default function RifaPreviaDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [rifa, setRifa] = useState<Rifa | null>(null);
-  const [vendidosArr, setVendidosArr] = useState<number[]>([]);
-  const [apartadosArr, setApartadosArr] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getRifa(id)
-      .then(async (r) => {
+      .then((r) => {
         if (!r) { router.push("/rifas-previas"); return; }
         setRifa(r);
-        const { vendidos, apartados } = await getNumerosOcupados(id);
-        setVendidosArr(vendidos);
-        setApartadosArr(apartados);
       })
       .finally(() => setLoading(false));
   }, [id, router]);
@@ -37,9 +32,6 @@ export default function RifaPreviaDetailPage() {
   if (!rifa) return null;
 
   const total = rifa.num_fin - rifa.num_inicio + 1;
-
-  const vendidosSet = new Set(vendidosArr);
-  const apartadosSet = new Set(apartadosArr);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -111,52 +103,6 @@ export default function RifaPreviaDetailPage() {
             <p className="text-xs text-gray-500">Numeros totales</p>
             <p className="font-bold text-white">{total}</p>
           </div>
-        </div>
-      </div>
-
-      {/* Number grid — read only */}
-      <div>
-        <h2 className="text-lg font-bold uppercase tracking-wider mb-2">Numeros</h2>
-        <div className="flex flex-wrap gap-1.5 mb-4 text-xs text-gray-500">
-          {rifa.ganador && (
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-yellow-400 inline-block" /> Ganador
-            </span>
-          )}
-          <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded bg-gray-500 inline-block" /> Vendido
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded bg-amber-400 inline-block" /> Apartado
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded bg-gray-800 inline-block" /> Disponible
-          </span>
-        </div>
-
-        <div className="flex flex-wrap gap-1.5">
-          {Array.from({ length: total }, (_, i) => rifa.num_inicio + i).map((n) => {
-            const isVendido = vendidosSet.has(n);
-            const isApartado = apartadosSet.has(n);
-            const isGanador = rifa.ganador?.numero === n;
-            return (
-              <div
-                key={n}
-                className={`flex items-center justify-center rounded-sm text-xs font-bold select-none
-                  ${total <= 100 ? "w-10 h-10" : total <= 500 ? "w-8 h-8 text-[10px]" : "w-6 h-6 text-[9px]"}
-                  ${isGanador
-                    ? "bg-yellow-400 text-black ring-2 ring-yellow-500"
-                    : isVendido
-                    ? "bg-gray-500 text-white"
-                    : isApartado
-                    ? "bg-amber-400 text-black"
-                    : "bg-gray-800 text-gray-500"
-                  }`}
-              >
-                {n}
-              </div>
-            );
-          })}
         </div>
       </div>
     </div>

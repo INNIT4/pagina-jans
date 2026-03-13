@@ -27,7 +27,6 @@ export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApar
   }
 
   const total = rifa.num_fin - rifa.num_inicio + 1;
-  const disponibles = total - vendidos.length - (mostrarApartados ? apartados.length : 0);
 
   const vendidosSet = new Set(vendidos);
   const apartadosSet = new Set(apartados);

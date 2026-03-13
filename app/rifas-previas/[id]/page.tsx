@@ -31,8 +31,6 @@ export default function RifaPreviaDetailPage() {
 
   if (!rifa) return null;
 
-  const total = rifa.num_fin - rifa.num_inicio + 1;
-
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       {/* Back link */}
@@ -72,14 +70,8 @@ export default function RifaPreviaDetailPage() {
         {/* Ganador banner */}
         {rifa.ganador && (
           <div className="bg-yellow-900/20 border border-yellow-700 rounded-sm p-5 mb-6">
-            <p className="text-xs font-bold text-yellow-400 uppercase tracking-widest mb-1">Ganador</p>
-            <div className="flex items-baseline gap-3">
-              <span className="text-4xl font-bold text-yellow-400">#{rifa.ganador.numero}</span>
-              <div>
-                <p className="font-bold text-lg leading-tight text-white">{rifa.ganador.nombre} {rifa.ganador.apellidos}</p>
-                <p className="text-xs text-gray-400">Folio: {rifa.ganador.folio}</p>
-              </div>
-            </div>
+            <p className="text-xs font-bold text-yellow-400 uppercase tracking-widest mb-1">Boleto Ganador</p>
+            <span className="text-4xl font-bold text-yellow-400">#{rifa.ganador.numero}</span>
           </div>
         )}
 
@@ -98,10 +90,6 @@ export default function RifaPreviaDetailPage() {
           <div className="bg-brand-dark border border-gray-800 rounded-sm px-4 py-2">
             <p className="text-xs text-gray-500">Fecha sorteo</p>
             <p className="font-bold text-white">{new Date(rifa.fecha_sorteo).toLocaleDateString("es-MX")}</p>
-          </div>
-          <div className="bg-brand-dark border border-gray-800 rounded-sm px-4 py-2">
-            <p className="text-xs text-gray-500">Numeros totales</p>
-            <p className="font-bold text-white">{total}</p>
           </div>
         </div>
       </div>

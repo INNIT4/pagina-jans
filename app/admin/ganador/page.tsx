@@ -5,10 +5,13 @@ import { getBoletoByFolio, getBoletosByNumero, getRifas, Boleto, Rifa } from "@/
 import { toPng } from "html-to-image";
 import { Search, Download, Trophy, ChevronDown } from "lucide-react";
 
-const STATUS_LABEL: Record<string, string> = {
-  pagado: "PAGADO",
-  pendiente: "PENDIENTE",
-  cancelado: "CANCELADO",
+type CardStatus = "pagado" | "pendiente" | "cancelado" | "no_vendido";
+
+const STATUS_CONFIG: Record<CardStatus, { label: string; color: string; bg: string }> = {
+  pagado:    { label: "PAGADO",     color: "#16a34a", bg: "#dcfce7" },
+  pendiente: { label: "PENDIENTE",  color: "#d97706", bg: "#fef3c7" },
+  cancelado: { label: "CANCELADO",  color: "#6b7280", bg: "#f3f4f6" },
+  no_vendido:{ label: "NO VENDIDO", color: "#6b7280", bg: "#f3f4f6" },
 };
 
 function fmtDate(ts: import("firebase/firestore").Timestamp | undefined): string {
@@ -44,7 +47,8 @@ export default function GanadorPage() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [boleto, setBoleto] = useState<Boleto | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  const [searchedNum, setSearchedNum] = useState<number | null>(null); // the number searched
+  const [showCard, setShowCard] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -61,16 +65,13 @@ export default function GanadorPage() {
     setSelectedRifa(rifa);
     setPrizeImg("");
     setBoleto(null);
-    setNotFound(false);
+    setSearchedNum(null);
+    setShowCard(false);
     if (rifa) {
       const imgUrl = rifa.imagenes_url?.[0] ?? rifa.imagen_url ?? "";
       if (imgUrl) {
-        try {
-          const b64 = await toBase64(imgUrl);
-          setPrizeImg(b64);
-        } catch {
-          setPrizeImg(imgUrl);
-        }
+        try { setPrizeImg(await toBase64(imgUrl)); }
+        catch { setPrizeImg(imgUrl); }
       }
     }
   }
@@ -79,32 +80,27 @@ export default function GanadorPage() {
     const q = query.trim();
     if (!q || !selectedRifa) return;
     setLoading(true);
-    setNotFound(false);
     setBoleto(null);
+    setSearchedNum(null);
+    setShowCard(false);
 
     try {
       let found: Boleto | null = null;
 
       if (q.toUpperCase().startsWith("JNS-")) {
+        setSearchedNum(null);
         found = await getBoletoByFolio(q.toUpperCase());
       } else {
         const num = parseInt(q);
         if (!isNaN(num)) {
+          setSearchedNum(num);
           const results = await getBoletosByNumero(num);
-          found =
-            results.find((b) => b.status === "pagado" && b.rifa_id === selectedRifa.id) ??
-            results.find((b) => b.rifa_id === selectedRifa.id) ??
-            results.find((b) => b.status === "pagado") ??
-            results[0] ??
-            null;
+          found = results.find((b) => b.rifa_id === selectedRifa.id) ?? null;
         }
       }
 
-      if (found) {
-        setBoleto(found);
-      } else {
-        setNotFound(true);
-      }
+      if (found) setBoleto(found);
+      setShowCard(true);
     } finally {
       setLoading(false);
     }
@@ -117,14 +113,20 @@ export default function GanadorPage() {
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 3, skipFonts: false });
       const a = document.createElement("a");
       a.href = dataUrl;
-      a.download = `ganador-${boleto?.folio ?? "jans"}.png`;
+      a.download = `ganador-${boleto?.folio ?? searchedNum ?? "jans"}.png`;
       a.click();
     } finally {
       setDownloading(false);
     }
   }
 
-  const numero = boleto?.numeros?.[0] ?? null;
+  const cardStatus: CardStatus = boleto
+    ? (boleto.status as CardStatus)
+    : "no_vendido";
+
+  const statusCfg = STATUS_CONFIG[cardStatus];
+  // If searched by number use that; if searched by folio use first number of boleto
+  const numero = searchedNum ?? boleto?.numeros?.[0] ?? null;
   const sorteoNombre = (selectedRifa?.nombre ?? "SORTEO JANS").toUpperCase();
 
   return (
@@ -140,7 +142,7 @@ export default function GanadorPage() {
       </header>
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm space-y-5">
-        {/* Step 1 — pick sorteo */}
+        {/* Step 1 */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
             1. Sorteo
@@ -158,14 +160,11 @@ export default function GanadorPage() {
                 </option>
               ))}
             </select>
-            <ChevronDown
-              size={16}
-              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
+            <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
           </div>
         </div>
 
-        {/* Step 2 — search boleto */}
+        {/* Step 2 */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
             2. Boleto ganador
@@ -189,16 +188,11 @@ export default function GanadorPage() {
               {loading ? "Buscando..." : "Buscar"}
             </button>
           </div>
-          {notFound && (
-            <p className="mt-3 text-sm text-red-500 font-medium">
-              No se encontró ningún boleto con ese folio o número.
-            </p>
-          )}
         </div>
       </div>
 
-      {/* Card preview */}
-      {boleto && selectedRifa && (
+      {/* Card */}
+      {showCard && selectedRifa && (
         <div className="space-y-6">
           <div className="overflow-x-auto">
             <div
@@ -214,147 +208,107 @@ export default function GanadorPage() {
                 boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
               }}
             >
-              {/* Left red bar */}
-              <div
-                style={{
-                  width: "36px",
-                  background: "#dc2626",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <span
-                  style={{
-                    color: "#ffffff",
-                    fontSize: "11px",
-                    fontWeight: 800,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    writingMode: "vertical-rl",
-                    transform: "rotate(180deg)",
-                    whiteSpace: "nowrap",
-                  }}
-                >
+              {/* Left bar */}
+              <div style={{ width: "36px", background: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ color: "#ffffff", fontSize: "11px", fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", writingMode: "vertical-rl", transform: "rotate(180deg)", whiteSpace: "nowrap" }}>
                   {sorteoNombre}
                 </span>
               </div>
 
-              {/* Center content */}
+              {/* Center */}
               <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                 {/* Header */}
-                <div
-                  style={{
-                    padding: "18px 20px 14px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    borderBottom: "2px dashed #e5e7eb",
-                  }}
-                >
+                <div style={{ padding: "18px 20px 14px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "2px dashed #e5e7eb" }}>
                   {logoB64 && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={logoB64}
-                      alt="Sorteos Jans"
-                      style={{ width: "52px", height: "52px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-                    />
+                    <img src={logoB64} alt="Sorteos Jans" style={{ width: "52px", height: "52px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                   )}
                   <p style={{ margin: 0, fontSize: "18px", fontWeight: 900, color: "#111827", letterSpacing: "0.05em" }}>
                     SORTEOS JANS
                   </p>
                 </div>
 
-                {/* Boleto number */}
+                {/* Boleto number + status badge */}
                 <div style={{ padding: "14px 20px", borderBottom: "2px dashed #e5e7eb" }}>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
-                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#374151" }}>Boleto:</span>
-                    <span style={{ fontSize: "36px", fontWeight: 900, color: "#dc2626", lineHeight: 1 }}>
-                      {numero !== null ? String(numero) : "—"}
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
+                    <div>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#374151" }}>Boleto: </span>
+                      <span style={{ fontSize: "36px", fontWeight: 900, color: "#dc2626", lineHeight: 1 }}>
+                        {numero !== null ? String(numero) : "—"}
+                      </span>
+                    </div>
+                    {/* Status badge */}
+                    <span style={{
+                      fontSize: "11px",
+                      fontWeight: 800,
+                      letterSpacing: "0.1em",
+                      padding: "4px 10px",
+                      borderRadius: "6px",
+                      background: statusCfg.bg,
+                      color: statusCfg.color,
+                      border: `1px solid ${statusCfg.color}55`,
+                    }}>
+                      {statusCfg.label}
                     </span>
                   </div>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#dc2626", fontWeight: 600, fontFamily: "monospace" }}>
-                    {boleto.folio}
-                  </p>
                 </div>
 
                 {/* Data rows */}
                 <div style={{ padding: "14px 20px 4px", borderBottom: "2px dashed #e5e7eb" }}>
-                  {[
-                    { label: "SORTEO:", value: sorteoNombre },
-                    { label: "NOMBRE:", value: boleto.nombre.toUpperCase() },
-                    { label: "APELLIDO:", value: boleto.apellidos.toUpperCase() },
-                    { label: "PAGADO:", value: STATUS_LABEL[boleto.status] ?? boleto.status.toUpperCase() },
-                    { label: "COMPRA:", value: fmtDate(boleto.created_at) },
-                  ].map(({ label, value }) => (
-                    <div
-                      key={label}
-                      style={{ display: "flex", gap: "10px", marginBottom: "10px", alignItems: "baseline" }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: 900,
-                          color: "#111827",
-                          letterSpacing: "0.06em",
-                          minWidth: "76px",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {label}
-                      </span>
-                      <span style={{ fontSize: "11px", fontWeight: 800, color: "#dc2626", letterSpacing: "0.04em" }}>
-                        {value}
-                      </span>
+                  {boleto ? (
+                    [
+                      { label: "SORTEO:",   value: sorteoNombre },
+                      { label: "NOMBRE:",   value: boleto.nombre.toUpperCase() },
+                      { label: "APELLIDO:", value: boleto.apellidos.toUpperCase() },
+                      { label: "PAGADO:",   value: STATUS_CONFIG[boleto.status as CardStatus]?.label ?? boleto.status.toUpperCase() },
+                      { label: "COMPRA:",   value: fmtDate(boleto.created_at) },
+                    ].map(({ label, value }) => (
+                      <div key={label} style={{ display: "flex", gap: "10px", marginBottom: "10px", alignItems: "baseline" }}>
+                        <span style={{ fontSize: "11px", fontWeight: 900, color: "#111827", letterSpacing: "0.06em", minWidth: "76px", flexShrink: 0 }}>
+                          {label}
+                        </span>
+                        <span style={{ fontSize: "11px", fontWeight: 800, color: "#dc2626", letterSpacing: "0.04em" }}>
+                          {value}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: "8px 0 4px" }}>
+                      <div style={{ display: "flex", gap: "10px", marginBottom: "10px", alignItems: "baseline" }}>
+                        <span style={{ fontSize: "11px", fontWeight: 900, color: "#111827", letterSpacing: "0.06em", minWidth: "76px" }}>SORTEO:</span>
+                        <span style={{ fontSize: "11px", fontWeight: 800, color: "#dc2626" }}>{sorteoNombre}</span>
+                      </div>
+                      <p style={{ fontSize: "12px", color: "#9ca3af", fontStyle: "italic", marginBottom: "10px" }}>
+                        Este número no fue seleccionado por ningún participante.
+                      </p>
                     </div>
-                  ))}
+                  )}
                 </div>
 
                 {/* Prize image */}
                 {prizeImg ? (
                   <div style={{ width: "100%", background: "#000000", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={prizeImg}
-                      alt="Premio"
-                      style={{ width: "100%", height: "auto", display: "block" }}
-                    />
+                    <img src={prizeImg} alt="Premio" style={{ width: "100%", height: "auto", display: "block", opacity: cardStatus === "no_vendido" ? 0.5 : 1 }} />
                   </div>
                 ) : (
                   <div style={{ height: "20px" }} />
                 )}
 
-                {/* Footer */}
-                <div style={{ background: "#dc2626", padding: "12px 20px", textAlign: "center" }}>
+                {/* Footer — color by status */}
+                <div style={{ background: statusCfg.color, padding: "12px 20px", textAlign: "center" }}>
                   <p style={{ margin: 0, color: "#ffffff", fontSize: "15px", fontWeight: 900, letterSpacing: "0.1em" }}>
-                    ¡FELICIDADES!
+                    {cardStatus === "pagado"     ? "¡FELICIDADES!" :
+                     cardStatus === "pendiente"  ? "PAGO PENDIENTE" :
+                     cardStatus === "cancelado"  ? "BOLETO CANCELADO" :
+                                                   "NO VENDIDO"}
                   </p>
                 </div>
               </div>
 
-              {/* Right red bar */}
-              <div
-                style={{
-                  width: "36px",
-                  background: "#dc2626",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <span
-                  style={{
-                    color: "#ffffff",
-                    fontSize: "11px",
-                    fontWeight: 800,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    writingMode: "vertical-lr",
-                    whiteSpace: "nowrap",
-                  }}
-                >
+              {/* Right bar */}
+              <div style={{ width: "36px", background: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ color: "#ffffff", fontSize: "11px", fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", writingMode: "vertical-lr", whiteSpace: "nowrap" }}>
                   {sorteoNombre}
                 </span>
               </div>

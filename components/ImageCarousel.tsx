@@ -41,7 +41,7 @@ export default function ImageCarousel({ images, alt }: ImageCarouselProps) {
             key={i}
             src={src}
             alt={`${alt} ${i + 1}`}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+            className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${
               i === current ? "opacity-100" : "opacity-0"
             }`}
             onError={(e) => (e.currentTarget.style.display = "none")}
@@ -101,7 +101,7 @@ export default function ImageCarousel({ images, alt }: ImageCarouselProps) {
               src={src}
               alt={`${alt} ${i + 1}`}
               onClick={() => setCurrent(i)}
-              className={`h-14 w-20 object-cover rounded-lg cursor-pointer flex-shrink-0 transition-all ${
+              className={`h-14 w-20 object-contain bg-black rounded-lg cursor-pointer flex-shrink-0 transition-all ${
                 i === current
                   ? "ring-2 ring-red-500 opacity-100"
                   : "opacity-50 hover:opacity-80"

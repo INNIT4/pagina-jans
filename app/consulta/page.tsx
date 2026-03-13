@@ -95,14 +95,22 @@ function ConsultaInner() {
       if (rawBoletos.length === 0) {
         setError("No encontramos ningun boleto con ese dato. Verifica el folio, celular o numero de boleto.");
       } else {
-        const results: Result[] = await Promise.all(
+        const all: Result[] = await Promise.all(
           rawBoletos.map(async (b) => {
             let rifa: Rifa | null = null;
             try { rifa = await getRifa(b.rifa_id); } catch {}
             return { boleto: adaptBoleto(b), rifa };
           })
         );
-        setResults(results);
+
+        // Bloquear consulta de rifas finalizadas (inactivas o con ganador)
+        const activos = all.filter((r) => r.rifa?.activa && !r.rifa?.ganador);
+
+        if (activos.length === 0) {
+          setError("Este sorteo ya finalizo. No es posible consultar boletos de rifas pasadas.");
+        } else {
+          setResults(activos);
+        }
       }
     } catch {
       setError("Ocurrio un error al buscar. Intenta de nuevo.");

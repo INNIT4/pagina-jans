@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     url: SITE_URL,
     images: [
       {
-        url: "/images/og-default.jpg",
+        url: "/images/og-default.jpeg",
         width: 1200,
         height: 630,
         alt: "Sorteos Jans — Rifas en Línea en México",
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Sorteos Jans — Rifas en Línea en México",
     description: "Participa en rifas en línea de forma segura en México.",
-    images: ["/images/og-default.jpg"],
+    images: ["/images/og-default.jpeg"],
   },
 };
 

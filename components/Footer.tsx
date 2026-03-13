@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Facebook, Instagram } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -11,6 +12,14 @@ export default function Footer() {
             <p className="text-sm leading-relaxed">
               Plataforma de rifas en linea. Participa de forma segura, sencilla y transparente.
             </p>
+            <div className="flex gap-3 mt-4">
+              <a href="https://www.facebook.com/sorteosjansn" target="_blank" rel="noopener noreferrer" aria-label="Facebook de Sorteos Jans" className="text-gray-400 hover:text-brand-red transition-colors">
+                <Facebook size={20} />
+              </a>
+              <a href="https://www.instagram.com/sorteosjansn/" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Sorteos Jans" className="text-gray-400 hover:text-brand-red transition-colors">
+                <Instagram size={20} />
+              </a>
+            </div>
           </div>
           <div>
             <p className="text-red-500 font-bold mb-3 text-sm uppercase tracking-wider">Navegacion</p>

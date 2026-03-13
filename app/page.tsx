@@ -30,7 +30,7 @@ export default async function HomePage() {
           fill
           className="object-cover object-center"
           priority
-          unoptimized={true}
+          sizes="100vw"
         />
         {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-brand-black/95 via-brand-black/70 to-brand-red/40" />

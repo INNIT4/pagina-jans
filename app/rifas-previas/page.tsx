@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getRifas } from "@/lib/firestore";
 
 export const revalidate = 300;
+
+export const metadata: Metadata = {
+  title: "Rifas Previas",
+  description:
+    "Historial de rifas realizadas por Sorteos Jans. Conoce los ganadores y los premios entregados.",
+  alternates: { canonical: "https://www.sorteosjans.com.mx/rifas-previas" },
+};
 
 export default async function RifasPreviasPage() {
   let rifas: Awaited<ReturnType<typeof getRifas>> = [];

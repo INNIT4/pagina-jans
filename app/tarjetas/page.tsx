@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import BankCards from "@/components/BankCards";
 import TarjetasActions from "@/components/TarjetasActions";
 import { getBankAccounts } from "@/lib/firestore";
+
+export const metadata: Metadata = {
+  title: "Métodos de Pago",
+  description:
+    "Consulta las cuentas bancarias para pagar tu boleto de rifa. Transferencia bancaria disponible en Sorteos Jans.",
+  alternates: { canonical: "https://www.sorteosjans.com.mx/tarjetas" },
+};
 
 export default async function TarjetasPage({
   searchParams,

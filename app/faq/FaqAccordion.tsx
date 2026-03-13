@@ -17,19 +17,19 @@ export default function FaqAccordion({ items }: { items: FaqItem[] }) {
           <button
             className="w-full text-left px-6 py-4 flex items-center justify-between font-semibold text-white hover:bg-gray-800/50 transition-colors"
             onClick={() => setOpen(open === i ? null : i)}
+            aria-expanded={open === i}
           >
             {item.q}
-            <span className={`text-brand-red transition-transform ${open === i ? "rotate-180" : ""}`}>
+            <span className={`text-brand-red transition-transform flex-shrink-0 ml-4 ${open === i ? "rotate-180" : ""}`}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </span>
           </button>
-          {open === i && (
-            <div className="px-6 pb-4 text-gray-400 text-sm leading-relaxed">
-              {item.a}
-            </div>
-          )}
+          {/* Siempre en el DOM para que Google y AI crawlers puedan indexar las respuestas */}
+          <div className={`px-6 text-gray-400 text-sm leading-relaxed overflow-hidden transition-all ${open === i ? "pb-4 max-h-96" : "max-h-0"}`}>
+            {item.a}
+          </div>
         </div>
       ))}
 

@@ -1,18 +1,20 @@
 import { MetadataRoute } from "next";
 import { adminDb } from "@/lib/firebase-admin";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sorteosjans.com.mx";
+const BASE_URL = "https://www.sorteosjans.com.mx";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const now = new Date();
+
   const staticPages: MetadataRoute.Sitemap = [
-    { url: BASE_URL, priority: 1.0, changeFrequency: "daily" },
-    { url: `${BASE_URL}/rifas`, priority: 0.9, changeFrequency: "daily" },
-    { url: `${BASE_URL}/rifas-previas`, priority: 0.6, changeFrequency: "weekly" },
-    { url: `${BASE_URL}/consulta`, priority: 0.7, changeFrequency: "monthly" },
-    { url: `${BASE_URL}/tarjetas`, priority: 0.5, changeFrequency: "monthly" },
-    { url: `${BASE_URL}/faq`, priority: 0.5, changeFrequency: "monthly" },
-    { url: `${BASE_URL}/sobre-nosotros`, priority: 0.4, changeFrequency: "monthly" },
-    { url: `${BASE_URL}/aviso-privacidad`, priority: 0.3, changeFrequency: "yearly" },
+    { url: `${BASE_URL}/`, lastModified: now },
+    { url: `${BASE_URL}/rifas`, lastModified: now },
+    { url: `${BASE_URL}/rifas-previas`, lastModified: now },
+    { url: `${BASE_URL}/consulta`, lastModified: now },
+    { url: `${BASE_URL}/tarjetas`, lastModified: now },
+    { url: `${BASE_URL}/faq`, lastModified: now },
+    { url: `${BASE_URL}/sobre-nosotros`, lastModified: now },
+    { url: `${BASE_URL}/aviso-privacidad`, lastModified: new Date("2026-03-01") },
   ];
 
   try {
@@ -26,8 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const rifasActivas: MetadataRoute.Sitemap = activas.docs.map((doc) => ({
       url: `${BASE_URL}/rifas/${doc.id}`,
-      priority: 0.8,
-      changeFrequency: "hourly" as const,
+      lastModified: doc.data().updatedAt?.toDate?.() ?? now,
     }));
 
     // Rifas finalizadas (con ganador)
@@ -40,8 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((doc) => doc.data().ganador)
       .map((doc) => ({
         url: `${BASE_URL}/rifas-previas/${doc.id}`,
-        priority: 0.5,
-        changeFrequency: "yearly" as const,
+        lastModified: doc.data().updatedAt?.toDate?.() ?? now,
       }));
 
     return [...staticPages, ...rifasActivas, ...rifasFinalizadas];

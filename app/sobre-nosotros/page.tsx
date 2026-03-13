@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import { getSiteTexts } from "@/lib/firestore";
 import Image from "next/image";
 import SupportButton from "@/components/ui/SupportButton";
 
 export const revalidate = 300;
+
+export const metadata: Metadata = {
+  title: "Sobre Nosotros",
+  description:
+    "Conoce a Sorteos Jans: plataforma de rifas en línea en México con transparencia, seguridad y soporte personalizado.",
+  alternates: { canonical: "https://www.sorteosjans.com.mx/sobre-nosotros" },
+};
 
 export default async function SobreNosotrosPage() {
   const texts = await getSiteTexts();

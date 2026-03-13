@@ -27,6 +27,11 @@ export default function Footer() {
               <li><Link href="/faq" className="hover:text-brand-red transition-colors">Preguntas frecuentes</Link></li>
               <li><Link href="/sobre-nosotros" className="hover:text-brand-red transition-colors">Sobre nosotros</Link></li>
               <li><Link href="/aviso-privacidad" className="hover:text-brand-red transition-colors">Aviso de privacidad</Link></li>
+              <li>
+                <a href="mailto:contacto@sorteosjans.com.mx" className="hover:text-brand-red transition-colors">
+                  contacto@sorteosjans.com.mx
+                </a>
+              </li>
             </ul>
           </div>
         </div>

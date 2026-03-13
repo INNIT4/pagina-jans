@@ -1,9 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { getRifas, Rifa } from "@/lib/firestore";
 import CountdownTimer from "@/components/CountdownTimer";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: "Rifas Activas",
+  description:
+    "Explora todas las rifas en línea activas de Sorteos Jans. Elige tus números y gana increíbles premios en México.",
+  alternates: { canonical: "https://www.sorteosjans.com.mx/rifas" },
+};
 
 export default async function RifasPage() {
   let rifas: Rifa[] = [];

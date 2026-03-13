@@ -7,6 +7,8 @@ import ImageCarousel from "@/components/ImageCarousel";
 
 export const revalidate = 30;
 
+const SITE_URL = "https://www.sorteosjans.com.mx";
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
   const rifa = await getRifa(resolvedParams.id).catch(() => null);
@@ -14,10 +16,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return {
     title: rifa.nombre,
     description: rifa.descripcion,
+    alternates: { canonical: `${SITE_URL}/rifas/${resolvedParams.id}` },
     openGraph: {
       title: rifa.nombre,
       description: rifa.descripcion,
       images: rifa.imagen_url ? [rifa.imagen_url] : undefined,
+      type: "website",
     },
   };
 }
@@ -30,10 +34,72 @@ export default async function RifaDetailPage({ params }: { params: Promise<{ id:
   // Rifa inactiva sin ganador → 404
   if (!rifa.activa && !rifa.ganador) notFound();
 
+  const rifaUrl = `${SITE_URL}/rifas/${resolvedParams.id}`;
+  const premioPrincipal = rifa.premios?.find((p) => p.es_principal);
+
+  const eventSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Event",
+        "@id": `${rifaUrl}#event`,
+        name: rifa.nombre,
+        description: rifa.descripcion,
+        startDate: rifa.fecha_sorteo,
+        eventStatus: rifa.ganador
+          ? "https://schema.org/EventCompleted"
+          : "https://schema.org/EventScheduled",
+        eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
+        location: {
+          "@type": "VirtualLocation",
+          url: rifaUrl,
+        },
+        organizer: {
+          "@id": `${SITE_URL}/#organization`,
+        },
+        ...(rifa.imagen_url ? { image: rifa.imagen_url } : {}),
+        url: rifaUrl,
+        offers: {
+          "@type": "Offer",
+          name: "Boleto de rifa",
+          price: String(rifa.precio_boleto),
+          priceCurrency: "MXN",
+          availability: rifa.ganador
+            ? "https://schema.org/SoldOut"
+            : "https://schema.org/InStock",
+          url: rifaUrl,
+        },
+      },
+      {
+        "@type": "Product",
+        "@id": `${rifaUrl}#product`,
+        name: `Boleto — ${rifa.nombre}`,
+        description: rifa.descripcion,
+        ...(rifa.imagen_url ? { image: rifa.imagen_url } : {}),
+        url: rifaUrl,
+        brand: { "@id": `${SITE_URL}/#organization` },
+        offers: {
+          "@type": "Offer",
+          price: String(rifa.precio_boleto),
+          priceCurrency: "MXN",
+          availability: rifa.ganador
+            ? "https://schema.org/SoldOut"
+            : "https://schema.org/InStock",
+          url: rifaUrl,
+          seller: { "@id": `${SITE_URL}/#organization` },
+        },
+      },
+    ],
+  };
+
   // Rifa con ganador → pagina de resultado
   if (rifa.ganador) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-8">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(eventSchema) }}
+        />
         <Link
           href="/rifas"
           className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand-red mb-6 transition-colors"
@@ -57,6 +123,12 @@ export default async function RifaDetailPage({ params }: { params: Promise<{ id:
             </span>
           </div>
           <p className="text-gray-400 mb-6">{rifa.descripcion}</p>
+
+          {premioPrincipal && (
+            <p className="text-sm text-gray-500 mb-4">
+              Premio principal: <strong className="text-white">{premioPrincipal.nombre}</strong>
+            </p>
+          )}
 
           {/* Ganador banner */}
           <div className="bg-yellow-900/20 border border-yellow-700 rounded-sm p-6 mb-6">
@@ -88,5 +160,14 @@ export default async function RifaDetailPage({ params }: { params: Promise<{ id:
     getNumerosOcupados(resolvedParams.id).catch(() => ({ vendidos: [], apartados: [] })),
     getAppSettings().catch(() => ({ mostrar_apartados: true })),
   ]);
-  return <RifaInteractive rifa={rifa} vendidos={vendidos} apartados={apartados} mostrarApartados={settings.mostrar_apartados} />;
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventSchema) }}
+      />
+      <RifaInteractive rifa={rifa} vendidos={vendidos} apartados={apartados} mostrarApartados={settings.mostrar_apartados} />
+    </>
+  );
 }

@@ -43,10 +43,10 @@ export default function NumberGrid({
   const numbers = useMemo(() => {
     const all = [];
     for (let i = numInicio; i <= numFin; i++) {
-      if (!vendidosSet.has(i)) all.push(i);
+      if (!vendidosSet.has(i) && !apartadosSet.has(i)) all.push(i);
     }
     return all;
-  }, [numInicio, numFin, vendidosSet]);
+  }, [numInicio, numFin, vendidosSet, apartadosSet]);
 
   // When searching (visibles != null) show all results; otherwise paginate
   const toShow = visibles ?? numbers;
@@ -87,11 +87,6 @@ export default function NumberGrid({
         <span className="flex items-center gap-1.5">
           <span className="w-4 h-4 rounded bg-blue-500 inline-block" /> Seleccionado
         </span>
-        {mostrarApartados && (
-          <span className="flex items-center gap-1.5">
-            <span className="w-4 h-4 rounded bg-amber-200 dark:bg-amber-900 inline-block" /> Apartado
-          </span>
-        )}
       </div>
 
       {/* Grid */}

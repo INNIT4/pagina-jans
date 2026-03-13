@@ -195,13 +195,13 @@ export async function reservarNumeros(rifaId: string, numeros: number[]): Promis
     const refs = numeros.map((n) => doc(db, "rifas", rifaId, "numeros", String(n)));
     const snaps = await Promise.all(refs.map((ref) => transaction.get(ref)));
 
-    // Solo bloquear números ya vendidos (pagados); los apartados se pueden tomar
-    const conflicto = numeros.find((_, i) => snaps[i].exists() && snaps[i].data()?.status === "vendido");
+    // Bloquear números vendidos O apartados (reserva exclusiva)
+    const conflicto = numeros.find((_, i) => snaps[i].exists() && (snaps[i].data()?.status === "vendido" || snaps[i].data()?.status === "apartado"));
     if (conflicto !== undefined) {
       throw new Error(`El número ${conflicto} ya no está disponible. Elige otro.`);
     }
 
-    // Solo incrementar el contador por números que aún no están apartados
+    // Todos son nuevos ya que no puede haber apartados previos
     const nuevos = numeros.filter((_, i) => !snaps[i].exists()).length;
     refs.forEach((ref) => transaction.set(ref, { status: "apartado" }));
     if (nuevos > 0) {

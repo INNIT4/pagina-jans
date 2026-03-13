@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
       const numRefs = nums.map((n) => db.doc(`rifas/${rifa_id}/numeros/${n}`));
       const numSnaps = await Promise.all(numRefs.map((ref) => tx.get(ref)));
 
-      const conflicto = nums.find((_, i) => numSnaps[i].exists && numSnaps[i].data()?.status === "vendido");
+      const conflicto = nums.find((_, i) => numSnaps[i].exists && (numSnaps[i].data()?.status === "vendido" || numSnaps[i].data()?.status === "apartado"));
       if (conflicto !== undefined)
         throw new Error(`El número ${conflicto} ya no está disponible. Elige otro.`);
 

@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const rl = getRatelimit();
   if (rl) {
     try {
-      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
+      const ip = req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
       const { success } = await rl.limit(`crear_boleto:${ip}`);
       if (!success) {
         return NextResponse.json({ error: "Demasiadas solicitudes. Espera un momento." }, { status: 429 });

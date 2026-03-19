@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   // Rate limiting — evita abuso del endpoint para rotar/exponer números
   const rl = getRatelimit();
   if (rl) {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
+    const ip = req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
     const { success } = await rl.limit(`wa_rotate:${ip}`);
     if (!success)
       return NextResponse.json({ numero: "" }, { status: 429 });

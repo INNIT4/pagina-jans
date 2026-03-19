@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "El contenido del archivo no coincide con su tipo." }, { status: 400 });
 
   try {
-    const blob = await put(`rifas/${Date.now()}-${file.name}`, buffer, {
+    const blob = await put(`rifas/${crypto.randomUUID()}`, buffer, {
       access: "public",
       allowOverwrite: false,
       addRandomSuffix: true,

@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   // Rate limiting — evita enumeración de clientes
   const rl = getRatelimit();
   if (rl) {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
+    const ip = req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
     const { success } = await rl.limit(`consulta:${ip}`);
     if (!success)
       return NextResponse.json({ error: "Demasiadas solicitudes. Espera un momento." }, { status: 429 });
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
       numeros_completos: data.numeros_completos,
       nombre: data.nombre,
       apellidos: data.apellidos,
-      celular: data.celular,
+      celular: data.celular ? `${data.celular.slice(0, 2)}******${data.celular.slice(-2)}` : "",
       estado: data.estado ?? "",
       status: data.status,
       precio_total: data.precio_total,

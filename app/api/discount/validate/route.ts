@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   const rl = getRatelimit();
   if (rl) {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
+    const ip = req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
     const { success } = await rl.limit(`discount_validate:${ip}`);
     if (!success)
       return NextResponse.json({ error: "Demasiados intentos." }, { status: 429 });

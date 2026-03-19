@@ -45,7 +45,7 @@ function checkMagicBytes(buf: Buffer, mimeType: string): boolean {
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
+    const ip = req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
     const rl = getRl();
     if (rl) {
       const { success } = await rl.limit(ip);

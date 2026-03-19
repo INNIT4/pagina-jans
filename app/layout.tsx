@@ -1,5 +1,4 @@
-import type { Metadata } from "next";
-import { headers } from "next/headers";
+import type { Metadata, Viewport } from "next";
 import { Rajdhani } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -12,8 +11,15 @@ const rajdhani = Rajdhani({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-racing",
-  display: "swap",
+  display: "optional",
 });
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
 
 const SITE_URL = "https://www.sorteosjans.com.mx";
 
@@ -25,6 +31,10 @@ export const metadata: Metadata = {
   },
   description:
     "Participa en rifas en línea de forma segura en México. Elige tus números de la suerte y gana increíbles premios. Boletos desde $200 MXN.",
+  manifest: "/site.webmanifest",
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
   alternates: {
     canonical: SITE_URL,
   },
@@ -71,6 +81,10 @@ const organizationSchema = {
         "@type": "PostalAddress",
         addressCountry: "MX",
       },
+      sameAs: [
+        "https://www.facebook.com/sorteosjans",
+        "https://www.instagram.com/sorteosjans"
+      ],
       contactPoint: {
         "@type": "ContactPoint",
         email: "contacto@sorteosjans.com.mx",
@@ -102,10 +116,18 @@ const organizationSchema = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const nonce = headers().get("x-nonce") || undefined;
-
   return (
     <html lang="es" suppressHydrationWarning className={rajdhani.variable}>
+      <head>
+        <link rel="preconnect" href="https://u0qlqi6owu46oklm.public.blob.vercel-storage.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://www.clarity.ms" />
+        <noscript>
+          <style>{`
+            .js-only { display: none !important; }
+          `}</style>
+        </noscript>
+      </head>
       <body className="font-racing antialiased min-h-screen flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <Navbar />
@@ -121,7 +143,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script
           id="microsoft-clarity"
           strategy="lazyOnload"
-          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `(function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};

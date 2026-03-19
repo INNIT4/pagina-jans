@@ -1,7 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getRifas, updateRifa, deleteRifa, anunciarGanador, Rifa, Ganador } from "@/lib/firestore";
+import { getRifas, Rifa, Ganador } from "@/lib/firestore";
+
+async function patchRifa(body: Record<string, unknown>) {
+  const res = await fetch("/api/admin/rifas", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Error.");
+  }
+  return res.json();
+}
 import RifaFormModal from "@/components/admin/RifaFormModal";
 import RifaToggleGrid from "@/components/admin/RifaToggleGrid";
 
@@ -20,7 +33,7 @@ function GanadorModal({ rifa, onClose, onDone }: { rifa: Rifa; onClose: () => vo
     setLoading(true);
     setError("");
     try {
-      const g = await anunciarGanador(rifa.id!, n);
+      const { ganador: g } = await patchRifa({ action: "anunciarGanador", id: rifa.id!, numero_ganador: n });
       setResultado(g);
       onDone();
     } catch (e: unknown) {
@@ -96,12 +109,12 @@ export default function AdminRifasPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("¿Eliminar esta rifa?")) return;
-    await deleteRifa(id);
+    await patchRifa({ action: "delete", id });
     await load();
   }
 
   async function toggleActiva(r: Rifa) {
-    await updateRifa(r.id!, { activa: !r.activa });
+    await patchRifa({ action: "update", id: r.id!, data: { activa: !r.activa } });
     await load();
   }
 

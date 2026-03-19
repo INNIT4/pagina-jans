@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getRifas, createBoleto, getNumerosOcupados, registrarNumerosVendidos, getBoletoByFolio, Rifa } from "@/lib/firestore";
-import { generateFolio } from "@/lib/folio";
-import { Timestamp } from "firebase/firestore";
+import { getRifas, getNumerosOcupados, Rifa } from "@/lib/firestore";
 import NumberGrid from "@/components/NumberGrid";
 
 export default function RegalosPage() {
@@ -48,30 +46,23 @@ export default function RegalosPage() {
     setSaving(true);
     setSuccess(null);
     try {
-      let folio = generateFolio();
-      for (let i = 0; i < 5; i++) {
-        const exists = await getBoletoByFolio(folio);
-        if (!exists) break;
-        folio = generateFolio();
-      }
-
-      await createBoleto({
-        folio,
-        rifa_id: rifa.id!,
-        numeros: seleccionados,
-        nombre: form.nombre || "Regalo",
-        apellidos: form.apellidos,
-        celular: form.celular,
-        estado: "",
-        codigo_descuento: "REGALO",
-        descuento_aplicado: 100,
-        precio_total: 0,
-        status: "pagado",
-        created_at: Timestamp.now(),
+      const res = await fetch("/api/admin/regalos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rifa_id: rifa.id!,
+          numeros: seleccionados,
+          nombre: form.nombre || "Regalo",
+          apellidos: form.apellidos,
+          celular: form.celular,
+          precio_total: 0,
+        }),
       });
-
-      // Mark numbers directly as vendido in subcollection
-      await registrarNumerosVendidos(rifa.id!, seleccionados);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Error al registrar el regalo.");
+      }
+      const { folio } = await res.json();
 
       // Refresh grid
       const { vendidos, apartados } = await getNumerosOcupados(rifa.id!);
@@ -81,8 +72,8 @@ export default function RegalosPage() {
       setSuccess({ folio, count: seleccionados.length });
       setSeleccionados([]);
       setForm({ nombre: "", apellidos: "", celular: "" });
-    } catch {
-      alert("Error al registrar el regalo. Intenta de nuevo.");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al registrar el regalo. Intenta de nuevo.");
     }
     setSaving(false);
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createRifa, updateRifa, Rifa } from "@/lib/firestore";
+import { Rifa } from "@/lib/firestore";
 import ImageUploader from "./ImageUploader";
 
 type RifaForm = Omit<Rifa, "id" | "num_vendidos" | "num_apartados">;
@@ -56,14 +56,21 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
       imagen_url: form.imagenes_url[0] ?? form.imagen_url,
     };
     try {
-      if (editRifa?.id) {
-        await updateRifa(editRifa.id, savedForm);
-      } else {
-        await createRifa({ ...savedForm, num_vendidos: 0, num_apartados: 0 });
+      const body = editRifa?.id
+        ? { action: "update", id: editRifa.id, data: savedForm }
+        : { action: "create", id: "_", data: savedForm };
+      const res = await fetch("/api/admin/rifas", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error ?? "Error al guardar.");
       }
       onSaved();
-    } catch {
-      alert("Error al guardar la rifa.");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al guardar la rifa.");
     }
     setSaving(false);
   }

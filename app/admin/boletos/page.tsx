@@ -2,10 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  getBoletosPaginados, markBoletoPagadoConNumeros, getRifas,
-  cancelApartado, cancelPagado, cancelarBoletosExpirados,
-  revertPagadoToApartado, getAppSettings, Boleto, Rifa,
+  getBoletosPaginados, getRifas,
+  cancelarBoletosExpirados,
+  getAppSettings, Boleto, Rifa,
 } from "@/lib/firestore";
+
+async function adminBoletoAction(action: string, boleto: { id: string; rifa_id: string; numeros: number[] }) {
+  const res = await fetch("/api/admin/boletos", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, id: boleto.id, rifa_id: boleto.rifa_id, numeros: boleto.numeros }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Error al actualizar.");
+  }
+}
 import { DocumentSnapshot } from "firebase/firestore";
 
 const PAGE_SIZE = 25;
@@ -113,7 +125,7 @@ export default function AdminBoletosPage() {
   async function handleMarkPagado(boleto: Boleto) {
     if (!confirm(`¿Marcar boleto ${boleto.folio} como pagado?`)) return;
     setMarking(boleto.id!);
-    await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+    await adminBoletoAction("markPagado", { id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
     setMarking(null);
     await reloadCurrentPage();
   }
@@ -121,11 +133,8 @@ export default function AdminBoletosPage() {
   async function handleCancel(boleto: Boleto) {
     if (!confirm(`¿Cancelar boleto ${boleto.folio}?`)) return;
     setMarking(boleto.id!);
-    if (boleto.status === "pendiente") {
-      await cancelApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
-    } else {
-      await cancelPagado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
-    }
+    const action = boleto.status === "pendiente" ? "cancelApartado" : "cancelPagado";
+    await adminBoletoAction(action, { id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
     setMarking(null);
     await reloadCurrentPage();
   }
@@ -133,7 +142,7 @@ export default function AdminBoletosPage() {
   async function handleRevertir(boleto: Boleto) {
     if (!confirm(`¿Revertir boleto ${boleto.folio} a "pendiente"? Los números volverán a estado apartado.`)) return;
     setMarking(boleto.id!);
-    await revertPagadoToApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+    await adminBoletoAction("revertPagado", { id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
     setMarking(null);
     await reloadCurrentPage();
   }

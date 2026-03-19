@@ -2,62 +2,76 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Rifas — público lee, admin escribe
+    // Helper: verifica que el usuario autenticado exista en usuarios_admin
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/usuarios_admin/$(request.auth.uid));
+    }
+
+    // Rifas — público lee, solo admin registrado escribe
     match /rifas/{rifaId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
 
       // Números — Admin SDK reserva/vende via /api/boletos/crear (bypasses rules).
       // Solo lectura pública para mostrar la grid de números.
       match /numeros/{numero} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isAdmin();
       }
     }
 
-    // Boletos — solo admin lee/escribe. Creación y consulta pública van por API server-side
-    // (/api/boletos/crear y /api/boletos/consulta) con Admin SDK + rate limiting.
+    // Boletos — solo admin lee/escribe vía cliente.
+    // Creación y consulta pública van por API server-side
+    // (/api/boletos/crear y /api/boletos/consulta) con Admin SDK.
     match /boletos/{boletoId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isAdmin();
     }
 
     // Códigos de descuento — solo admin gestiona.
     // Validación pública va por /api/discount/validate (Admin SDK + rate limiting).
     match /discount_codes/{codeId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isAdmin();
     }
 
     // WhatsApp config — solo admin gestiona.
     // Rotación pública va por /api/whatsapp/rotate (Admin SDK).
-    // Disponibilidad pública va por /api/whatsapp/active (solo devuelve booleano).
+    // Disponibilidad pública va por /api/whatsapp/active.
     match /whatsapp_config/{doc} {
-      allow read, write: if request.auth != null;
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // Cuentas bancarias — público lee (para mostrar las tarjetas de pago), admin gestiona
+    // Cuentas bancarias — público lee, solo admin gestiona
     match /bank_accounts/{accountId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
 
-    // Configuración de la app — admin gestiona, lectura pública para settings no sensibles
+    // Configuración de la app — lectura pública para settings no sensibles, solo admin escribe
     match /settings/{doc} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
 
-    // Contenido del sitio (CMS) — público lee, admin edita
+    // Contenido del sitio (CMS) — público lee, solo admin edita
     match /site_content/{doc} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     // Comprobantes de pago — creación pública via /api/comprobantes/upload (Admin SDK).
-    // Lectura pública solo del comprobante propio (el admin ve todos vía Admin SDK).
+    // Lectura pública para consultar el propio comprobante.
+    // Solo admin actualiza (revisar/comentar).
     match /comprobantes/{comprobanteId} {
       allow read: if true;
       allow create: if false;   // Solo via /api/comprobantes/upload (Admin SDK)
-      allow update: if request.auth != null;
+      allow update: if isAdmin();
+    }
+
+    // Usuarios admin — solo admins pueden leer/gestionar roles
+    match /usuarios_admin/{uid} {
+      allow read, write: if isAdmin();
     }
   }
 }

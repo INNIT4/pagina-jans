@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 export default async function TarjetasPage({
   searchParams,
 }: {
-  searchParams: { folio?: string };
+  searchParams: Promise<{ folio?: string }>;
 }) {
-  const folio = searchParams.folio;
+  const { folio } = await searchParams;
   const accounts = (await getBankAccounts()).filter((a) => a.activo);
 
   return (

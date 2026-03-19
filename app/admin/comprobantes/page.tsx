@@ -2,9 +2,20 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  getComprobantesPaginados, updateComprobanteStatus, updateComprobanteComentario,
-  getBoletoByFolio, markBoletoPagadoConNumeros, Comprobante,
+  getComprobantesPaginados, Comprobante,
 } from "@/lib/firestore";
+
+async function patchComprobante(body: Record<string, unknown>) {
+  const res = await fetch("/api/admin/comprobantes", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Error al actualizar.");
+  }
+}
 import { DocumentSnapshot } from "firebase/firestore";
 
 const PAGE_SIZE = 20;
@@ -78,13 +89,7 @@ export default function AdminComprobantesPage() {
     if (!confirm(`¿Marcar boletos ${c.folios.join(", ")} como PAGADOS?`)) return;
     setMarking(c.id!);
     try {
-      for (const folio of c.folios) {
-        const boleto = await getBoletoByFolio(folio);
-        if (boleto && boleto.status === "pendiente") {
-          await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
-        }
-      }
-      await updateComprobanteStatus(c.id!, "revisado");
+      await patchComprobante({ action: "aprobar", id: c.id! });
       await loadPage(pageIdx, cursorStack.current);
     } catch (e) {
       console.error(e);
@@ -95,7 +100,7 @@ export default function AdminComprobantesPage() {
 
   async function handleMarcarRevisado(c: Comprobante) {
     setMarking(c.id!);
-    await updateComprobanteStatus(c.id!, "revisado");
+    await patchComprobante({ action: "updateStatus", id: c.id!, status: "revisado" });
     setMarking(null);
     await loadPage(pageIdx, cursorStack.current);
   }
@@ -319,7 +324,7 @@ function ComentarioModal({
   async function handleSave() {
     if (!texto.trim()) return;
     setSaving(true);
-    await updateComprobanteComentario(comprobante.id!, texto.trim());
+    await patchComprobante({ action: "updateComentario", id: comprobante.id!, texto: texto.trim() });
     await onSaved();
   }
 

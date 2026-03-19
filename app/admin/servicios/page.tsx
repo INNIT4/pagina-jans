@@ -3,8 +3,19 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import {
   getBoletosPaginados, getRifas, Boleto, Rifa,
-  cancelApartado, revertPagadoToApartado, cancelPagado, markBoletoPagadoConNumeros,
 } from "@/lib/firestore";
+
+async function adminBoletoAction(action: string, boleto: { id: string; rifa_id: string; numeros: number[] }) {
+  const res = await fetch("/api/admin/boletos", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, id: boleto.id, rifa_id: boleto.rifa_id, numeros: boleto.numeros }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Error al procesar.");
+  }
+}
 
 type ServiceType = "apartado-pagado" | "apartado-disponible" | "pagado-apartado" | "pagado-disponible";
 
@@ -121,15 +132,13 @@ export default function ServiciosPage() {
 
     setProcessing(boleto.id!);
     try {
-      if (activeTab === "apartado-pagado") {
-        await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
-      } else if (activeTab === "apartado-disponible") {
-        await cancelApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
-      } else if (activeTab === "pagado-apartado") {
-        await revertPagadoToApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
-      } else {
-        await cancelPagado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
-      }
+      const actionMap: Record<string, string> = {
+        "apartado-pagado": "markPagado",
+        "apartado-disponible": "cancelApartado",
+        "pagado-apartado": "revertPagado",
+        "pagado-disponible": "cancelPagado",
+      };
+      await adminBoletoAction(actionMap[activeTab], { id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
       await loadForStatus(service.filterStatus);
     } catch {
       alert("Error al procesar la acción. Intenta de nuevo.");

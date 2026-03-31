@@ -132,6 +132,7 @@ export default function AdminBoletosPage() {
       }
     } catch (e) {
       if (waWindow) waWindow.close();
+      console.error(e);
       alert("Error al marcar como pagado.");
     }
     setMarking(null);

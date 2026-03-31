@@ -23,6 +23,8 @@ export default function AdminBoletosPage() {
   const [limitHoras, setLimitHoras] = useState(24);
   const [cancelacionActiva, setCancelacionActiva] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [reminderBoleto, setReminderBoleto] = useState<Boleto | null>(null);
+  const [reminderText, setReminderText] = useState("");
 
   // Cursor stack: index 0 = null (primera página), index N = cursor para llegar a la página N
   const cursorStack = useRef<(DocumentSnapshot | null)[]>([null]);
@@ -352,10 +354,20 @@ export default function AdminBoletosPage() {
                   <td className="px-4 py-3">
                     <div className="flex gap-1.5 flex-wrap">
                       {b.status === "pendiente" && (
-                        <button onClick={() => handleMarkPagado(b)} disabled={marking === b.id}
-                          className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors">
-                          {marking === b.id ? "..." : "Marcar pagado"}
-                        </button>
+                        <>
+                          <button onClick={() => handleMarkPagado(b)} disabled={marking === b.id}
+                            className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors">
+                            {marking === b.id ? "..." : "Marcar pagado"}
+                          </button>
+                          <button onClick={() => {
+                            const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+                            setReminderText(`👋 Hola ${b.nombre}, te recordamos que tienes el folio ${b.folio} pendiente de pago.\n\nPara no perder tus números, por favor realiza el pago lo antes posible y envía tu comprobante.\n\n💳 Puedes depositar a nuestras cuentas aquí:\n${baseUrl}/tarjetas\n\n🔍 Consulta el estado de tu boleto en:\n${baseUrl}/consulta?f=${b.folio}&act=1`);
+                            setReminderBoleto(b);
+                          }} disabled={marking === b.id}
+                            className="text-xs px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:text-blue-300 font-bold rounded-lg transition-colors">
+                            Recordatorio
+                          </button>
+                        </>
                       )}
                       {b.status === "pagado" && (
                         <button onClick={() => handleRevertir(b)} disabled={marking === b.id}
@@ -394,6 +406,45 @@ export default function AdminBoletosPage() {
               className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-600 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700">
               Siguiente
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Recordatorio */}
+      {reminderBoleto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={(e) => { if (e.target === e.currentTarget) setReminderBoleto(null); }}>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+              <div>
+                <p className="font-black text-slate-900 dark:text-slate-100">Enviar Recordatorio</p>
+                <p className="text-xs text-slate-400 font-mono">Folio: {reminderBoleto.folio} — {reminderBoleto.celular}</p>
+              </div>
+              <button onClick={() => setReminderBoleto(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition-colors">✕</button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-slate-500 dark:text-slate-400">Edita el mensaje antes de enviarlo por WhatsApp:</p>
+              <textarea
+                value={reminderText}
+                onChange={(e) => setReminderText(e.target.value)}
+                rows={10}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+              <div className="flex justify-end gap-2 mt-2">
+                <button onClick={() => setReminderBoleto(null)} className="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    const url = `https://wa.me/52${reminderBoleto.celular.replace(/\D/g,"")}?text=${encodeURIComponent(reminderText)}`;
+                    window.open(url, "_blank");
+                    setReminderBoleto(null);
+                  }}
+                  className="px-5 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors"
+                >
+                  Enviar WhatsApp
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

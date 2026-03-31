@@ -103,7 +103,7 @@ export default function AdminComprobantesPage() {
         const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
         const folioText = c.folios.length > 1 ? `de tus folios ${c.folios.join(", ")} han` : `de tu folio ${c.folios[0]} ha`;
         const linkFolio = c.folios[0]; 
-        const msg = `El pago ${folioText} sido confirmado exitosamente.\nVerifica el estado de tu boleto: ${baseUrl}/consulta?f=${linkFolio}`;
+        const msg = `El pago ${folioText} sido confirmado exitosamente.\nVerifica el estado de tu boleto: ${baseUrl}/consulta?f=${linkFolio}&act=1`;
         waWindow.location.href = `https://wa.me/52${celular.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
       } else if (waWindow) {
         waWindow.close();

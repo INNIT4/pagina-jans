@@ -137,7 +137,7 @@ export default function ServiciosPage() {
         await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
         if (notifyWhatsApp && waWindow) {
           const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-          const msg = `El pago de tu folio ${boleto.folio} ha sido confirmado exitosamente.\nVerifica el estado de tu boleto: ${baseUrl}/consulta?f=${boleto.folio}`;
+          const msg = `El pago de tu folio ${boleto.folio} ha sido confirmado exitosamente.\nVerifica el estado de tu boleto: ${baseUrl}/consulta?f=${boleto.folio}&act=1`;
           waWindow.location.href = `https://wa.me/52${boleto.celular.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
         }
       } else if (activeTab === "apartado-disponible") {

@@ -108,21 +108,38 @@ export default function ServiciosPage() {
   }, [boletos, service.filterStatus, filterRifa, search]);
 
   async function handleAction(boleto: Boleto) {
-    const confirmMsg =
-      activeTab === "apartado-pagado"
-        ? `¿Confirmar pago del folio ${boleto.folio} recibido por WhatsApp?`
-        : activeTab === "apartado-disponible"
-        ? `¿Cancelar apartado del folio ${boleto.folio} y liberar sus números?`
-        : activeTab === "pagado-apartado"
-        ? `¿Revertir el folio ${boleto.folio} de Pagado a Apartado?`
-        : `¿Cancelar completamente el folio ${boleto.folio} y liberar sus números como disponibles?`;
+    let notifyWhatsApp = false;
+    let waWindow: Window | null = null;
+    let confirmMsg = "";
+
+    if (activeTab === "apartado-pagado") {
+      confirmMsg = `¿Confirmar pago del folio ${boleto.folio}?`;
+    } else if (activeTab === "apartado-disponible") {
+      confirmMsg = `¿Cancelar apartado del folio ${boleto.folio} y liberar sus números?`;
+    } else if (activeTab === "pagado-apartado") {
+      confirmMsg = `¿Revertir el folio ${boleto.folio} de Pagado a Apartado?`;
+    } else {
+      confirmMsg = `¿Cancelar completamente el folio ${boleto.folio} y liberar sus números como disponibles?`;
+    }
 
     if (!confirm(confirmMsg)) return;
+
+    if (activeTab === "apartado-pagado") {
+      if (confirm(`¿Deseas enviar un mensaje de confirmación por WhatsApp al numero ${boleto.celular}?`)) {
+        notifyWhatsApp = true;
+        waWindow = window.open("", "_blank");
+      }
+    }
 
     setProcessing(boleto.id!);
     try {
       if (activeTab === "apartado-pagado") {
         await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+        if (notifyWhatsApp && waWindow) {
+          const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+          const msg = `El pago de tu folio ${boleto.folio} ha sido confirmado exitosamente.\nVerifica el estado de tu boleto: ${baseUrl}/consulta?f=${boleto.folio}`;
+          waWindow.location.href = `https://wa.me/52${boleto.celular.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
+        }
       } else if (activeTab === "apartado-disponible") {
         await cancelApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
       } else if (activeTab === "pagado-apartado") {
@@ -132,6 +149,7 @@ export default function ServiciosPage() {
       }
       await loadForStatus(service.filterStatus);
     } catch {
+      if (waWindow) waWindow.close();
       alert("Error al procesar la acción. Intenta de nuevo.");
     }
     setProcessing(null);

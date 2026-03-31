@@ -76,17 +76,40 @@ export default function AdminComprobantesPage() {
 
   async function handleMarcarPagado(c: Comprobante) {
     if (!confirm(`¿Marcar boletos ${c.folios.join(", ")} como PAGADOS?`)) return;
+    
+    let notifyWhatsApp = false;
+    let waWindow: Window | null = null;
+    if (confirm(`¿Deseas enviar un mensaje de confirmación por WhatsApp al cliente?`)) {
+      notifyWhatsApp = true;
+      waWindow = window.open("", "_blank");
+    }
+
     setMarking(c.id!);
     try {
+      let celular = "";
       for (const folio of c.folios) {
         const boleto = await getBoletoByFolio(folio);
-        if (boleto && boleto.status === "pendiente") {
-          await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+        if (boleto) {
+          if (!celular) celular = boleto.celular; // Tomar celular del primer boleto
+          if (boleto.status === "pendiente") {
+            await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+          }
         }
       }
       await updateComprobanteStatus(c.id!, "revisado");
       await loadPage(pageIdx, cursorStack.current);
+
+      if (notifyWhatsApp && waWindow && celular) {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+        const folioText = c.folios.length > 1 ? `de tus folios ${c.folios.join(", ")} han` : `de tu folio ${c.folios[0]} ha`;
+        const linkFolio = c.folios[0]; 
+        const msg = `El pago ${folioText} sido confirmado exitosamente.\nVerifica el estado de tu boleto: ${baseUrl}/consulta?f=${linkFolio}`;
+        waWindow.location.href = `https://wa.me/52${celular.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
+      } else if (waWindow) {
+        waWindow.close();
+      }
     } catch (e) {
+      if (waWindow) waWindow.close();
       console.error(e);
       alert("Error al marcar como pagado.");
     }

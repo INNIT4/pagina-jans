@@ -23,8 +23,10 @@ export default function AdminBoletosPage() {
   const [limitHoras, setLimitHoras] = useState(24);
   const [cancelacionActiva, setCancelacionActiva] = useState(false);
   const [now, setNow] = useState(() => Date.now());
-  const [reminderBoleto, setReminderBoleto] = useState<Boleto | null>(null);
-  const [reminderText, setReminderText] = useState("");
+  const [showReminderEditor, setShowReminderEditor] = useState(false);
+  const [reminderTemplate, setReminderTemplate] = useState(
+    `👋 Hola {nombre}, te recordamos que tienes el folio {folio} pendiente de pago.\n\nPara no perder tus números, por favor realiza el pago lo antes posible y envía tu comprobante.\n\n💳 Puedes depositar a nuestras cuentas aquí:\n{url}/tarjetas\n\n🔍 Consulta el estado de tu boleto en:\n{url}/consulta?f={folio}&act=1`
+  );
 
   // Cursor stack: index 0 = null (primera página), index N = cursor para llegar a la página N
   const cursorStack = useRef<(DocumentSnapshot | null)[]>([null]);
@@ -215,16 +217,41 @@ export default function AdminBoletosPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-black">Boletos</h1>
-        <button
-          onClick={exportCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
-          </svg>
-          Exportar CSV
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowReminderEditor((v) => !v)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold rounded-xl text-sm transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 11l6-6 3 3-6 6H9v-3z" />
+            </svg>
+            {showReminderEditor ? "Cerrar editor" : "Editor de recordatorio"}
+          </button>
+          <button
+            onClick={exportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
+            </svg>
+            Exportar CSV
+          </button>
+        </div>
       </div>
+
+      {/* Reminder editor */}
+      {showReminderEditor && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-2xl p-5 mb-6">
+          <p className="font-bold text-blue-800 dark:text-blue-300 mb-1">Plantilla de recordatorio</p>
+          <p className="text-xs text-blue-600 dark:text-blue-400 mb-3">Usa <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">{'{'+'nombre}'}</code>, <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">{'{'+'folio}'}</code> y <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">{'{'+'url}'}</code> como variables.</p>
+          <textarea
+            value={reminderTemplate}
+            onChange={(e) => setReminderTemplate(e.target.value)}
+            rows={10}
+            className="w-full rounded-xl border border-blue-200 dark:border-blue-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+      )}
 
       {canceladosMsg && (
         <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3 mb-5 text-sm text-amber-800 dark:text-amber-300">
@@ -361,8 +388,13 @@ export default function AdminBoletosPage() {
                           </button>
                           <button onClick={() => {
                             const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-                            setReminderText(`👋 Hola ${b.nombre}, te recordamos que tienes el folio ${b.folio} pendiente de pago.\n\nPara no perder tus números, por favor realiza el pago lo antes posible y envía tu comprobante.\n\n💳 Puedes depositar a nuestras cuentas aquí:\n${baseUrl}/tarjetas\n\n🔍 Consulta el estado de tu boleto en:\n${baseUrl}/consulta?f=${b.folio}&act=1`);
-                            setReminderBoleto(b);
+                            const msg = reminderTemplate
+                              .replace(/{nombre}/g, b.nombre)
+                              .replace(/{folio}/g, b.folio)
+                              .replace(/{url}/g, baseUrl);
+                            const waWindow = window.open("", "_blank");
+                            if (waWindow) waWindow.location.href = `https://wa.me/52${b.celular.replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`;
+                            else window.location.href = `https://wa.me/52${b.celular.replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`;
                           }} disabled={marking === b.id}
                             className="text-xs px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:text-blue-300 font-bold rounded-lg transition-colors">
                             Recordatorio
@@ -410,44 +442,6 @@ export default function AdminBoletosPage() {
         </div>
       )}
 
-      {/* Modal Recordatorio */}
-      {reminderBoleto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={(e) => { if (e.target === e.currentTarget) setReminderBoleto(null); }}>
-          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
-              <div>
-                <p className="font-black text-slate-900 dark:text-slate-100">Enviar Recordatorio</p>
-                <p className="text-xs text-slate-400 font-mono">Folio: {reminderBoleto.folio} — {reminderBoleto.celular}</p>
-              </div>
-              <button onClick={() => setReminderBoleto(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition-colors">✕</button>
-            </div>
-            <div className="p-5 space-y-4">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Edita el mensaje antes de enviarlo por WhatsApp:</p>
-              <textarea
-                value={reminderText}
-                onChange={(e) => setReminderText(e.target.value)}
-                rows={10}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <div className="flex justify-end gap-2 mt-2">
-                <button onClick={() => setReminderBoleto(null)} className="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => {
-                    const url = `https://wa.me/52${reminderBoleto.celular.replace(/\D/g,"")}?text=${encodeURIComponent(reminderText)}`;
-                    window.open(url, "_blank");
-                    setReminderBoleto(null);
-                  }}
-                  className="px-5 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors"
-                >
-                  Enviar WhatsApp
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

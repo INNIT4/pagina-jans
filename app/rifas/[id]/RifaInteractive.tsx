@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Rifa } from "@/lib/firestore";
+import { Rifa, calcularSubtotal } from "@/lib/firestore";
 import NumberGrid from "@/components/NumberGrid";
 import NumberSearch from "@/components/NumberSearch";
 import ApartadoForm from "@/components/ApartadoForm";
@@ -144,6 +144,23 @@ export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApar
               <p className="font-bold text-white">{new Date(rifa.fecha_sorteo).toLocaleDateString("es-MX")}</p>
             </div>
           </div>
+
+          {rifa.ofertas && rifa.ofertas.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-3">
+              <div className="w-full">
+                 <h2 className="text-sm font-bold uppercase tracking-wider text-green-500 flex items-center gap-2 mb-2">
+                   <span className="text-lg">💰</span> Ofertas Especiales
+                 </h2>
+              </div>
+              {rifa.ofertas.sort((a,b)=>a.cantidad-b.cantidad).map((of, idx) => (
+                <div key={idx} className="bg-green-900/20 border border-green-500/30 rounded-sm px-4 py-2 flex items-center gap-2 shadow-sm">
+                  <span className="font-black text-green-400 text-lg">{of.cantidad}</span>
+                  <span className="text-xs text-green-500/80 uppercase mt-1 tracking-widest leading-none">boletos por</span>
+                  <span className="font-bold text-white text-lg">${of.precio.toLocaleString("es-MX")}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -194,7 +211,7 @@ export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApar
             <div>
               <p className="text-sm font-medium text-white">{seleccionados.length} boleto(s) seleccionado(s)</p>
               <p className="text-xs text-gray-500">
-                Total: ${(seleccionados.length * rifa.precio_boleto).toLocaleString("es-MX")} MXN
+                Total: ${calcularSubtotal(seleccionados.length, rifa.precio_boleto, rifa.ofertas).toLocaleString("es-MX")} MXN
               </p>
             </div>
             <div className="flex gap-2">

@@ -40,6 +40,11 @@ export interface Premio {
   condicion?: string; // e.g. "Si compras más de 10 boletos"
 }
 
+export interface Oferta {
+  cantidad: number;
+  precio: number;
+}
+
 export interface Rifa {
   id?: string;
   nombre: string;
@@ -57,7 +62,28 @@ export interface Rifa {
   num_vendidos: number;
   num_apartados: number;
   premios?: Premio[];
+  ofertas?: Oferta[];
   ganador?: Ganador;
+}
+
+export function calcularSubtotal(cantidad: number, precioBoleto: number, ofertas?: Oferta[]): number {
+  if (!ofertas || ofertas.length === 0) return cantidad * precioBoleto;
+  
+  // Ordenar ofertas de mayor cantidad a menor
+  const sortedOfertas = [...ofertas].sort((a, b) => b.cantidad - a.cantidad);
+  
+  let restante = cantidad;
+  let total = 0;
+  
+  for (const oferta of sortedOfertas) {
+    if (oferta.cantidad <= 0) continue;
+    const packs = Math.floor(restante / oferta.cantidad);
+    total += packs * oferta.precio;
+    restante %= oferta.cantidad;
+  }
+  
+  total += restante * precioBoleto;
+  return total;
 }
 
 export interface Boleto {

@@ -19,6 +19,7 @@ const EMPTY_FORM: RifaForm = {
   activa: true,
   oportunidades: 1,
   premios: [],
+  ofertas: [],
 };
 
 interface RifaFormModalProps {
@@ -43,6 +44,7 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
           activa: editRifa.activa,
           oportunidades: editRifa.oportunidades ?? 1,
           premios: editRifa.premios ?? [],
+          ofertas: editRifa.ofertas ?? [],
         }
       : EMPTY_FORM
   );
@@ -226,6 +228,72 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
                 ))}
                 {(form.premios || []).length === 0 && (
                   <p className="text-center text-xs text-slate-400 py-2 italic">Sin premios específicos configurados.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Ofertas Section */}
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Ofertas Especiales</h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForm({
+                      ...form,
+                      ofertas: [...(form.ofertas || []), { cantidad: 0, precio: 0 }],
+                    });
+                  }}
+                  className="text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 px-2 py-1 rounded-lg font-bold transition-colors"
+                >
+                  + Agregar Oferta
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {(form.ofertas || []).map((o, idx) => (
+                  <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 relative flex items-center gap-3">
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cantidad de Boletos</label>
+                      <input
+                        type="number" min={1}
+                        value={o.cantidad}
+                        onChange={(e) => {
+                          const newOfertas = [...(form.ofertas || [])];
+                          newOfertas[idx] = { ...o, cantidad: Number(e.target.value) };
+                          setForm({ ...form, ofertas: newOfertas });
+                        }}
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-xs"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Precio Total (MXN)</label>
+                      <input
+                        type="number" min={1}
+                        value={o.precio}
+                        onChange={(e) => {
+                          const newOfertas = [...(form.ofertas || [])];
+                          newOfertas[idx] = { ...o, precio: Number(e.target.value) };
+                          setForm({ ...form, ofertas: newOfertas });
+                        }}
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-xs"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newOfertas = [...(form.ofertas || [])];
+                        newOfertas.splice(idx, 1);
+                        setForm({ ...form, ofertas: newOfertas });
+                      }}
+                      className="mt-4 text-slate-400 hover:text-red-500 font-bold transition-colors"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+                {(form.ofertas || []).length === 0 && (
+                  <p className="text-center text-xs text-slate-400 py-2 italic">Sin ofertas específicas configuradas.</p>
                 )}
               </div>
             </div>

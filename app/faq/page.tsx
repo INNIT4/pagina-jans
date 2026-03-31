@@ -9,6 +9,12 @@ export const metadata: Metadata = {
   description:
     "Resuelve tus dudas sobre rifas en línea en México. Cómo participar, cómo pagar, cómo saber si ganaste y más.",
   alternates: { canonical: "https://www.sorteosjans.com.mx/faq" },
+  openGraph: {
+    title: "Preguntas Frecuentes | Sorteos Jans",
+    description: "Resuelve tus dudas sobre rifas en línea en México. Cómo participar, cómo pagar, cómo saber si ganaste y más.",
+    url: "https://www.sorteosjans.com.mx/faq",
+    type: "website",
+  },
 };
 
 export default async function FAQPage() {

@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SEO Audit — sorteosjans.com.mx</title>
+<style>
+  :root {
+    --red: #e02020;
+    --red-dark: #b01010;
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --border: #2e2e2e;
+    --text: #e8e8e8;
+    --muted: #888;
+    --green: #22c55e;
+    --yellow: #f59e0b;
+    --orange: #f97316;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.6; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Layout */
+  .wrapper { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  header { border-bottom: 1px solid var(--border); padding-bottom: 32px; margin-bottom: 40px; }
+  header .meta { color: var(--muted); font-size: 12px; margin-top: 8px; display: flex; gap: 20px; flex-wrap: wrap; }
+  h1.report-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  h1.report-title span { color: var(--red); }
+
+  /* Score card */
+  .score-grid { display: grid; grid-template-columns: auto 1fr; gap: 32px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 40px; }
+  .score-circle { width: 120px; height: 120px; border-radius: 50%; background: conic-gradient(var(--yellow) 0% 53%, var(--surface2) 53% 100%); display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; }
+  .score-circle::after { content: ''; position: absolute; width: 90px; height: 90px; border-radius: 50%; background: var(--surface); }
+  .score-number { position: relative; z-index: 1; font-size: 32px; font-weight: 800; color: var(--yellow); }
+  .score-label { font-size: 11px; color: var(--muted); }
+  .score-breakdown { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .score-item { background: var(--surface2); border-radius: 8px; padding: 12px 14px; }
+  .score-item .cat { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .score-item .bar { height: 4px; border-radius: 2px; background: var(--border); margin-top: 6px; }
+  .score-item .bar-fill { height: 100%; border-radius: 2px; }
+  .score-item .val { font-size: 18px; font-weight: 700; }
+
+  /* Sections */
+  section { margin-bottom: 40px; }
+  h2.section-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  h2.section-title .icon { font-size: 16px; }
+
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+  .badge-critical { background: #3d0f0f; color: #ff6b6b; border: 1px solid #7a1f1f; }
+  .badge-high     { background: #3d2a0a; color: #fbbf24; border: 1px solid #7a5510; }
+  .badge-medium   { background: #1e2d3d; color: #60a5fa; border: 1px solid #1e4a7a; }
+  .badge-low      { background: #1a2a1a; color: #86efac; border: 1px solid #1f4d1f; }
+  .badge-pass     { background: #0f2e1a; color: #4ade80; border: 1px solid #166534; }
+  .badge-info     { background: #2a1e3d; color: #c084fc; border: 1px solid #6b21a8; }
+
+  /* Issues list */
+  .issues { display: flex; flex-direction: column; gap: 10px; }
+  .issue { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; border-left: 3px solid; }
+  .issue.critical { border-left-color: #ff6b6b; }
+  .issue.high     { border-left-color: #fbbf24; }
+  .issue.medium   { border-left-color: #60a5fa; }
+  .issue.low      { border-left-color: #4ade80; }
+  .issue-header   { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+  .issue-title    { font-weight: 600; font-size: 13px; flex: 1; }
+  .issue-body     { font-size: 12px; color: #aaa; line-height: 1.6; }
+  .issue-fix      { margin-top: 8px; font-size: 12px; background: var(--surface2); border-radius: 6px; padding: 8px 12px; border-left: 2px solid var(--blue); color: #cce0ff; }
+  .issue-fix strong { color: var(--blue); }
+
+  /* Code blocks */
+  pre { background: #111; border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; font-family: 'Cascadia Code', 'Fira Mono', monospace; font-size: 11px; overflow-x: auto; color: #ccc; margin: 8px 0; line-height: 1.5; }
+  code { font-family: 'Cascadia Code', 'Fira Mono', monospace; font-size: 11px; background: #1e1e1e; padding: 1px 5px; border-radius: 3px; color: #e0a0a0; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; padding: 8px 12px; background: var(--surface2); color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 16px 0; }
+
+  /* Visual screenshots */
+  .screenshots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0; }
+  .screenshot-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .screenshot-card img { width: 100%; display: block; }
+  .screenshot-label { padding: 8px 12px; font-size: 11px; color: var(--muted); text-align: center; border-top: 1px solid var(--border); }
+
+  /* Callout */
+  .callout { border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 12px; display: flex; gap: 10px; }
+  .callout.warn  { background: #2a1a00; border: 1px solid #7a4d00; color: #fcd34d; }
+  .callout.info  { background: #0d1f35; border: 1px solid #1e4a7a; color: #93c5fd; }
+  .callout.good  { background: #0a1f12; border: 1px solid #14532d; color: #86efac; }
+  .callout .icon { font-size: 16px; flex-shrink: 0; }
+
+  /* Good findings */
+  .good-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  .good-chip { background: #0a1f12; border: 1px solid #14532d; color: #86efac; border-radius: 100px; padding: 4px 12px; font-size: 11px; display: flex; align-items: center; gap: 5px; }
+
+  /* Priority table */
+  .priority-table td:first-child { font-weight: 600; white-space: nowrap; }
+
+  /* Summary boxes */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin: 16px 0; }
+  .summary-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .summary-box .box-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 8px; }
+  .summary-box .box-val { font-size: 22px; font-weight: 800; }
+  .summary-box .box-desc { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .score-grid { grid-template-columns: 1fr; }
+    .screenshots { grid-template-columns: 1fr; }
+  }
+  @media print {
+    body { background: white; color: #111; }
+    :root { --bg: white; --surface: #f8f8f8; --surface2: #efefef; --border: #ddd; --text: #111; --muted: #555; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <h1 class="report-title">SEO Audit — <span>sorteosjans.com.mx</span></h1>
+    <div class="meta">
+      <span>📅 2026-03-13</span>
+      <span>🔍 7 agentes especializados en paralelo</span>
+      <span>🏭 Next.js 14 App Router · Vercel · Firebase</span>
+      <span>🏷️ E-commerce / Rifas online · México</span>
+    </div>
+  </header>
+
+  <!-- Score -->
+  <div class="score-grid">
+    <div>
+      <div class="score-circle">
+        <div style="display:flex;flex-direction:column;align-items:center;z-index:1;position:relative;">
+          <span class="score-number">53</span>
+          <span class="score-label">/ 100</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:16px;font-weight:700;color:var(--yellow);">Necesita trabajo</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;">Fundación técnica sólida — brechas principalmente en contenido, caché e IA</div>
+      </div>
+      <div class="score-breakdown">
+        <div class="score-item">
+          <div class="cat">Technical SEO</div>
+          <div class="val" style="color:#fbbf24">55<span style="font-size:12px;color:var(--muted)">/100</span></div>
+          <div class="bar"><div class="bar-fill" style="width:55%;background:#fbbf24"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="cat">Content Quality (E-E-A-T)</div>
+          <div class="val" style="color:#f97316">48<span style="font-size:12px;color:var(--muted)">/100</span></div>
+          <div class="bar"><div class="bar-fill" style="width:48%;background:#f97316"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="cat">On-Page SEO</div>
+          <div class="val" style="color:#fbbf24">62<span style="font-size:12px;color:var(--muted)">/100</span></div>
+          <div class="bar"><div class="bar-fill" style="width:62%;background:#fbbf24"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="cat">Schema / Structured Data</div>
+          <div class="val" style="color:#fbbf24">65<span style="font-size:12px;color:var(--muted)">/100</span></div>
+          <div class="bar"><div class="bar-fill" style="width:65%;background:#fbbf24"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="cat">Performance (CWV)</div>
+          <div class="val" style="color:#f97316">45<span style="font-size:12px;color:var(--muted)">/100</span></div>
+          <div class="bar"><div class="bar-fill" style="width:45%;background:#f97316"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="cat">AI Search Readiness (GEO)</div>
+          <div class="val" style="color:#f97316">38<span style="font-size:12px;color:var(--muted)">/100</span></div>
+          <div class="bar"><div class="bar-fill" style="width:38%;background:#f97316"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="cat">Images</div>
+          <div class="val" style="color:#fbbf24">55<span style="font-size:12px;color:var(--muted)">/100</span></div>
+          <div class="bar"><div class="bar-fill" style="width:55%;background:#fbbf24"></div></div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:11px;color:var(--muted);">
+        Corregir los 4 críticos → ~62/100 &nbsp;·&nbsp; Corregir todo → ~78/100
+      </div>
+    </div>
+  </div>
+
+  <!-- Visual -->
+  <section>
+    <h2 class="section-title"><span class="icon">🖼️</span> Análisis Visual</h2>
+    <div class="screenshots">
+      <div class="screenshot-card">
+        <img src="screenshots/desktop_home.png" alt="Desktop homepage" />
+        <div class="screenshot-label">Desktop 1280×800 — Homepage</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/mobile_home.png" alt="Mobile homepage" />
+        <div class="screenshot-label">Mobile 390×844 — Homepage</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/mobile_rifas.png" alt="Mobile rifas" />
+        <div class="screenshot-label">Mobile 390×844 — /rifas</div>
+      </div>
+    </div>
+    <div class="summary-grid">
+      <div class="summary-box">
+        <div class="box-title">Desktop</div>
+        <div class="box-val" style="color:var(--green);font-size:14px;margin-top:4px;">✓ CTAs visibles sobre el pliegue</div>
+        <div class="box-desc">Logo, "Ver rifas activas" + "Consultar boleto" sin scroll. Navbar limpia con CTA rojo.</div>
+      </div>
+      <div class="summary-box">
+        <div class="box-title">Mobile homepage</div>
+        <div class="box-val" style="color:var(--green);font-size:14px;margin-top:4px;">✓ Excelente layout responsive</div>
+        <div class="box-desc">Ambos CTAs y copy visible. Hamburger nav. Texto decorativo se desborda levemente a la derecha (riesgo CLS menor).</div>
+      </div>
+      <div class="summary-box">
+        <div class="box-title">Mobile /rifas</div>
+        <div class="box-val" style="color:var(--green);font-size:14px;margin-top:4px;">✓ Listing claro y funcional</div>
+        <div class="box-desc">Timer, premio, precio ($200 MXN) y fecha visibles sin scroll. Buena densidad de información.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Critical -->
+  <section>
+    <h2 class="section-title"><span class="icon">🚨</span> Issues Críticos — Corregir inmediatamente</h2>
+    <div class="issues">
+
+      <div class="issue critical">
+        <div class="issue-header">
+          <span class="badge badge-critical">Crítico</span>
+          <span class="badge" style="background:#1a1a1a;color:#888;border:1px solid #333;font-size:10px;">Contenido</span>
+          <span class="issue-title">Datos de prueba en producción en /rifas</span>
+        </div>
+        <div class="issue-body">
+          El listing de rifas activas muestra una rifa con <code>nombre: "1"</code> y <code>descripcion: "1"</code>, y otra con <code>descripcion: "123"</code>. Cualquier crawler o quality rater que visite el sitio verá esto. Activa los clasificadores de spam de Google y destruye la confianza de usuarios reales.
+        </div>
+        <div class="issue-fix"><strong>Fix:</strong> Eliminar o completar estas entradas desde el panel admin de Firestore. 5 minutos.</div>
+      </div>
+
+      <div class="issue critical">
+        <div class="issue-header">
+          <span class="badge badge-critical">Crítico</span>
+          <span class="badge" style="background:#1a1a1a;color:#888;border:1px solid #333;font-size:10px;">Performance</span>
+          <span class="issue-title">ISR roto — cada request llega al origen (TTFB ~560ms)</span>
+        </div>
+        <div class="issue-body">
+          La llamada a <code>headers()</code> en <code>app/layout.tsx</code> (para generar el nonce CSP) opta el árbol de rutas completo en <em>dynamic rendering</em>, sobreescribiendo <code>export const revalidate = 60</code>. Todas las páginas retornan <code>Cache-Control: private, no-cache, no-store</code> y <code>X-Vercel-Cache: MISS</code> en cada request. El TTFB debería ser ~50ms desde edge cache; actualmente es ~560ms desde origen para cada visita.
+        </div>
+        <div class="issue-fix">
+          <strong>Fix:</strong> Mover la generación del nonce de <code>layout.tsx</code> a un Server Component que no llame a <code>headers()</code>, o leer el nonce desde <code>request.headers</code> en el middleware y pasarlo como response header, en vez de llamar <code>headers()</code> en el componente.
+        </div>
+      </div>
+
+      <div class="issue critical">
+        <div class="issue-header">
+          <span class="badge badge-critical">Crítico</span>
+          <span class="badge" style="background:#1a1a1a;color:#888;border:1px solid #333;font-size:10px;">Schema</span>
+          <span class="issue-title">Event schema sin endDate — Google rich results bloqueados</span>
+        </div>
+        <div class="issue-body">
+          En <code>app/rifas/[id]/page.tsx</code>, el schema <code>Event</code> tiene tres errores: (1) falta <code>endDate</code> — requerido por Google para Event rich results, (2) <code>price: String(rifa.precio_boleto)</code> debe ser número no string, (3) falta <code>seller</code> en <code>Event &gt; offers</code>.
+        </div>
+        <div class="issue-fix">
+          <strong>Fix (3 cambios de una línea):</strong>
+          <pre>endDate: rifa.fecha_sorteo,          // agregar
+price: rifa.precio_boleto,           // quitar String()
+seller: { "@id": `${BASE_URL}/#organization` }  // agregar en Event offers</pre>
+        </div>
+      </div>
+
+      <div class="issue critical">
+        <div class="issue-header">
+          <span class="badge badge-critical">Crítico</span>
+          <span class="badge" style="background:#1a1a1a;color:#888;border:1px solid #333;font-size:10px;">Indexabilidad</span>
+          <span class="issue-title">Redirect 307 Temporal en dominio apex — no transfiere PageRank</span>
+        </div>
+        <div class="issue-body">
+          <code>https://sorteosjans.com.mx</code> → <code>https://www.sorteosjans.com.mx</code> usa HTTP <strong>307 Temporary Redirect</strong>. Google no consolida link equity en redirects 307. Cualquier enlace externo o compartido en WhatsApp que use el dominio sin www no transfiere autoridad.
+        </div>
+        <div class="issue-fix"><strong>Fix:</strong> En Vercel Dashboard → Project → Domains, configurar el apex domain como redirect permanente (301) hacia www. También aplicable para <code>/cuentas → /tarjetas</code> que también usa 307.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- High -->
+  <section>
+    <h2 class="section-title"><span class="icon">⚠️</span> Prioridad Alta — Corregir esta semana</h2>
+    <div class="issues">
+
+      <div class="issue high">
+        <div class="issue-header">
+          <span class="badge badge-high">Alto</span>
+          <span class="issue-title">og:url apunta al homepage en todas las sub-páginas</span>
+        </div>
+        <div class="issue-body">
+          /rifas, /faq, /sobre-nosotros, /consulta retornan <code>og:url = https://www.sorteosjans.com.mx</code> y el og:title/description del homepage. Las tarjetas de WhatsApp/Facebook de cualquier sub-página muestran el contenido del homepage. También confunde a sistemas de IA que atribuyen el contenido a la URL incorrecta.
+        </div>
+        <div class="issue-fix"><strong>Fix:</strong> En cada página agregar <code>openGraph: &#123; url: "https://www.sorteosjans.com.mx/rifas", title: "...", description: "..." &#125;</code> al export de metadata.</div>
+      </div>
+
+      <div class="issue high">
+        <div class="issue-header">
+          <span class="badge badge-high">Alto</span>
+          <span class="issue-title">LCP en /rifas: primera imagen usa loading="lazy"</span>
+        </div>
+        <div class="issue-body">
+          La primera card de rifa es el elemento LCP de la página /rifas pero tiene <code>loading="lazy"</code>, retrasando su fetch hasta detección in-viewport. Esto probablemente resulta en LCP "Needs Improvement" o "Poor" en móvil.
+        </div>
+        <div class="issue-fix">
+          <strong>Fix en app/rifas/page.tsx:</strong>
+          <pre>&lt;Image ... priority=&#123;index === 0&#125; /&gt;</pre>
+        </div>
+      </div>
+
+      <div class="issue high">
+        <div class="issue-header">
+          <span class="badge badge-high">Alto</span>
+          <span class="issue-title">sizes="100vw" en imágenes de grid — 3-4× datos innecesarios</span>
+        </div>
+        <div class="issue-body">
+          Las imágenes de las cards de rifa (en grid de 3 columnas en desktop) usan <code>sizes="100vw"</code>. El browser solicita imágenes de ~1920px para un contenedor de ~400px. Transfiere 3-4× más datos de imagen de los necesarios.
+        </div>
+        <div class="issue-fix">
+          <strong>Fix:</strong>
+          <pre>sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"</pre>
+        </div>
+      </div>
+
+      <div class="issue high">
+        <div class="issue-header">
+          <span class="badge badge-high">Alto</span>
+          <span class="issue-title">Organization schema sin sameAs — no hay disambiguation de entidad</span>
+        </div>
+        <div class="issue-body">
+          El nodo <code>Organization</code> en <code>app/layout.tsx</code> no tiene array <code>sameAs</code>. Google no puede vincular la entidad de marca con perfiles sociales, lo que dificulta el Knowledge Panel.
+        </div>
+        <div class="issue-fix">
+          <strong>Fix en app/layout.tsx:</strong>
+          <pre>"sameAs": [
+  "https://www.facebook.com/sorteosjansn",
+  "https://www.instagram.com/sorteosjansn"
+]</pre>
+        </div>
+      </div>
+
+      <div class="issue high">
+        <div class="issue-header">
+          <span class="badge badge-high">Alto</span>
+          <span class="issue-title">Falta ItemList schema en /rifas — no hay carousel de rich results</span>
+        </div>
+        <div class="issue-body">
+          La página listing /rifas no tiene ningún schema. Un <code>ItemList</code> con las rifas activas habilitaría el carrusel de eventos/productos de Google en resultados de búsqueda.
+        </div>
+        <div class="issue-fix">
+          <strong>Fix en app/rifas/page.tsx:</strong>
+          <pre>const itemListSchema = &#123;
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Rifas Activas — Sorteos Jans",
+  url: `$&#123;BASE_URL&#125;/rifas`,
+  itemListElement: rifas.map((rifa, i) => (&#123;
+    "@type": "ListItem",
+    position: i + 1,
+    url: `$&#123;BASE_URL&#125;/rifas/$&#123;rifa.id&#125;`,
+    name: rifa.nombre,
+  &#125;)),
+&#125;;</pre>
+        </div>
+      </div>
+
+      <div class="issue high">
+        <div class="issue-header">
+          <span class="badge badge-high">Alto</span>
+          <span class="issue-title">/rifas-previas/[id] sin generateMetadata — título es template literal</span>
+        </div>
+        <div class="issue-body">
+          <code>app/rifas-previas/[id]/page.tsx</code> no exporta <code>generateMetadata</code>. Los títulos en resultados de búsqueda muestran el string del template <code>"%s | Sorteos Jans"</code> sin substitución.
+        </div>
+        <div class="issue-fix"><strong>Fix:</strong> Agregar <code>generateMetadata</code> con fetch desde Firestore, siguiendo el mismo patrón de <code>app/rifas/[id]/page.tsx</code>.</div>
+      </div>
+
+      <div class="issue high">
+        <div class="issue-header">
+          <span class="badge badge-high">Alto</span>
+          <span class="issue-title">IndexNow no implementado — nuevas rifas tardan días en indexarse en Bing</span>
+        </div>
+        <div class="issue-body">
+          Bing, Yandex y otros motores compatibles con IndexNow no reciben notificación cuando se activa una rifa nueva. Para un negocio donde los boletos tienen fecha límite, el retraso de indexación tiene impacto comercial directo.
+        </div>
+        <div class="issue-fix">
+          <strong>Fix:</strong> (1) Generar un UUID como key. (2) Hospedar en <code>/public/&#123;key&#125;.txt</code>. (3) Declarar en <code>app/robots.ts</code>. (4) Hacer POST a <code>api.indexnow.org/indexnow</code> desde el admin panel al activar una rifa.
+          <pre>POST https://api.indexnow.org/indexnow
+&#123;
+  "host": "www.sorteosjans.com.mx",
+  "key": "&#123;tu-key&#125;",
+  "urlList": ["https://www.sorteosjans.com.mx/rifas/&#123;id&#125;"]
+&#125;</pre>
+        </div>
+      </div>
+
+      <div class="issue high">
+        <div class="issue-header">
+          <span class="badge badge-high">Alto</span>
+          <span class="issue-title">Contenido delgado en / y /sobre-nosotros — sin identidad del operador</span>
+        </div>
+        <div class="issue-body">
+          Homepage: ~280 palabras (floor recomendado: 500). /sobre-nosotros: ~220 palabras, sin nombre del operador, sin año de fundación, sin conteo de rifas completadas, sin estado/ciudad. Para un sitio de transacciones financieras, la ausencia de identidad verificable es crítica para E-E-A-T.
+        </div>
+        <div class="issue-fix"><strong>Fix:</strong> Agregar en /sobre-nosotros: estado de operación, año del primer sorteo, total de rifas completadas (consultable desde Firestore), y nombre o inicial del operador. Agregar sección "Ganadores Recientes" en homepage (datos ya existen en Firestore).</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Medium -->
+  <section>
+    <h2 class="section-title"><span class="icon">🔵</span> Prioridad Media — Corregir este mes</h2>
+    <div class="issues">
+
+      <div class="issue medium">
+        <div class="issue-header">
+          <span class="badge badge-medium">Medio</span>
+          <span class="issue-title">No existe /llms.txt — GEO score: 38/100</span>
+        </div>
+        <div class="issue-body">La URL retorna 404. Es la señal primaria de cooperación con crawlers de IA (Perplexity, ChatGPT, Claude). Su ausencia no bloquea el crawling pero sí reduce la citabilidad en AI Overviews.</div>
+        <div class="issue-fix">
+          <strong>Crear /public/llms.txt:</strong>
+          <pre># Sorteos Jans
+> Plataforma de rifas en línea en México. Compra boletos, elige números,
+  paga por transferencia bancaria, confirma por WhatsApp.
+
+## Páginas principales
+- Rifas activas: https://www.sorteosjans.com.mx/rifas
+- Consultar boleto: https://www.sorteosjans.com.mx/consulta
+- Preguntas frecuentes: https://www.sorteosjans.com.mx/faq
+- Sobre nosotros: https://www.sorteosjans.com.mx/sobre-nosotros
+- Métodos de pago: https://www.sorteosjans.com.mx/tarjetas</pre>
+        </div>
+      </div>
+
+      <div class="issue medium">
+        <div class="issue-header">
+          <span class="badge badge-medium">Medio</span>
+          <span class="issue-title">Respuestas del FAQ demasiado cortas para citación de IA</span>
+        </div>
+        <div class="issue-body">
+          Las 8 respuestas del FAQ miden entre 14 y 30 palabras. El rango óptimo para citación en AI Overviews es 134–167 palabras por respuesta. Respuestas tan breves no se citan como fragmentos autosuficientes.
+        </div>
+        <div class="issue-fix"><strong>Fix:</strong> Expandir cada respuesta del FAQ en el CMS (Firestore) a ~150 palabras, con detalle de procedimiento y contexto específico (ej: formato de folio JNS-XXXXXX, ventana de pago de 24 horas, confirmación por WhatsApp).</div>
+      </div>
+
+      <div class="issue medium">
+        <div class="issue-header">
+          <span class="badge badge-medium">Medio</span>
+          <span class="issue-title">/rifas-previas/[id] es "use client" — Google ve un shell vacío</span>
+        </div>
+        <div class="issue-body">
+          La página fetcha datos en <code>useEffect</code>. El primer wave de crawl de Google ve contenido vacío, no puede inyectar schema, y no genera título dinámico.
+        </div>
+        <div class="issue-fix"><strong>Fix:</strong> Convertir a Server Component usando el mismo patrón de <code>app/rifas/[id]/page.tsx</code>. Usar <code>generateStaticParams</code> + <code>generateMetadata</code> con fetch desde Firebase Admin SDK.</div>
+      </div>
+
+      <div class="issue medium">
+        <div class="issue-header">
+          <span class="badge badge-medium">Medio</span>
+          <span class="issue-title">sitemap.ts usa new Date() — lastmod idéntico en todas las páginas</span>
+        </div>
+        <div class="issue-body">
+          10 de 12 URLs en el sitemap muestran el mismo timestamp <code>2026-03-13T23:24:30.011Z</code>. Google interpreta esto como fechas fabricadas e ignora el campo completamente, perdiendo la señal de frescura.
+        </div>
+        <div class="issue-fix"><strong>Fix en app/sitemap.ts:</strong> Reemplazar <code>new Date()</code> con fechas reales por ruta estática. El documento <code>site_content/texts</code> en Firestore ya tiene <code>updatedAt</code> — usarlo para las páginas de contenido CMS.</div>
+      </div>
+
+      <div class="issue medium">
+        <div class="issue-header">
+          <span class="badge badge-medium">Medio</span>
+          <span class="issue-title">Sin preconnect hints para Vercel Blob, Fonts y Clarity</span>
+        </div>
+        <div class="issue-body">
+          Las imágenes de rifas se cargan desde Vercel Blob sin preconnect previo. El browser hace DNS + TCP + TLS antes del primer byte de imagen — ~100-200ms adicionales en LCP de /rifas.
+        </div>
+        <div class="issue-fix">
+          <strong>Fix en app/layout.tsx:</strong>
+          <pre>&lt;link rel="preconnect" href="https://u0qlqi6owu46oklm.public.blob.vercel-storage.com" /&gt;
+&lt;link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" /&gt;
+&lt;link rel="preconnect" href="https://www.clarity.ms" /&gt;</pre>
+        </div>
+      </div>
+
+      <div class="issue medium">
+        <div class="issue-header">
+          <span class="badge badge-medium">Medio</span>
+          <span class="issue-title">Sin apple-touch-icon, theme-color ni Web App Manifest</span>
+        </div>
+        <div class="issue-body">
+          Usuarios de iOS que agregan el sitio al home screen ven un screenshot en vez del ícono de marca. Chrome en Android no colorea la barra de direcciones con el rojo de marca. El sitio no es instalable como PWA — relevante para clientes recurrentes.
+        </div>
+        <div class="issue-fix"><strong>Fix:</strong> Agregar en el metadata de <code>app/layout.tsx</code>: <code>icons: &#123; apple: "/apple-touch-icon.png" &#125;</code>, <code>themeColor: "#e02020"</code>, y crear <code>/public/manifest.json</code> mínimo.</div>
+      </div>
+
+      <div class="issue medium">
+        <div class="issue-header">
+          <span class="badge badge-medium">Medio</span>
+          <span class="issue-title">HSTS en apex sin includeSubDomains ni preload</span>
+        </div>
+        <div class="issue-body">
+          El subdominio <code>www</code> tiene HSTS completo (<code>max-age=63072000; includeSubDomains; preload</code>). El dominio apex (<code>sorteosjans.com.mx</code>) solo tiene <code>max-age</code>, sin los flags de subdominio ni preload. Bloquea el envío al HSTS Preload List.
+        </div>
+        <div class="issue-fix"><strong>Fix:</strong> Configurar headers en Vercel para que el apex también envíe <code>Strict-Transport-Security: max-age=63072000; includeSubDomains; preload</code>. Luego enviar en <a href="https://hstspreload.org" target="_blank">hstspreload.org</a>.</div>
+      </div>
+
+      <div class="issue medium">
+        <div class="issue-header">
+          <span class="badge badge-medium">Medio</span>
+          <span class="issue-title">URLs de rifas exponen IDs de Firestore sin valor de keyword</span>
+        </div>
+        <div class="issue-body">
+          Ejemplo: <code>/rifas/bWLnZc44JHTgK96c84mi</code>. La URL no aporta señal de keyword. Comparar con <code>/rifas/iphone-15-pro-marzo-2026</code> que sí lo haría.
+        </div>
+        <div class="issue-fix"><strong>Fix (largo plazo):</strong> Agregar campo <code>slug</code> a los documentos de rifa en Firestore y usar en las rutas. Mantener compatibilidad por ID para rifas existentes con redirect.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Low / Quick wins -->
+  <section>
+    <h2 class="section-title"><span class="icon">🟢</span> Prioridad Baja — Quick wins</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Issue</th><th>Fix</th><th>Archivo</th></tr></thead>
+        <tbody>
+          <tr><td>18</td><td>font-display: swap causa FOUT/CLS</td><td>Cambiar a <code>display: "optional"</code> en next/font config</td><td>app/layout.tsx</td></tr>
+          <tr><td>19</td><td>H1 homepage solo dice "Sorteos Jans"</td><td>Cambiar a "Rifas en Línea en México — Sorteos Jans"</td><td>CMS</td></tr>
+          <tr><td>20</td><td>Tildes faltantes: "mas", "Navegacion", "Metodos"</td><td>Corregir en Navbar y Footer</td><td>components/Navbar.tsx, Footer.tsx</td></tr>
+          <tr><td>21</td><td>X-Powered-By: Next.js expuesto</td><td><code>poweredByHeader: false</code></td><td>next.config.mjs</td></tr>
+          <tr><td>22</td><td>Sin BreadcrumbList en páginas de rifa</td><td>Componente <code>BreadcrumbSchema</code> reutilizable</td><td>Nuevo componente</td></tr>
+          <tr><td>23</td><td>Sin &lt;noscript&gt; fallback</td><td>Mensaje + link a WhatsApp</td><td>app/layout.tsx</td></tr>
+          <tr><td>24</td><td>Sin image sitemap para imágenes de rifas</td><td>Agregar <code>&lt;image:image&gt;</code> en sitemap.ts</td><td>app/sitemap.ts</td></tr>
+          <tr><td>25</td><td>Falta página /como-funciona</td><td>Crear con contenido paso a paso — query AI de mayor volumen</td><td>Nueva ruta</td></tr>
+          <tr><td>26</td><td>Chunk vendor fd9d1056 de 172KB (Firebase?)</td><td>Dynamic import si solo se usa en /rifas/[id]</td><td>app/rifas/[id]/page.tsx</td></tr>
+          <tr><td>27</td><td>Sin AboutPage schema en /sobre-nosotros</td><td>Agregar JSON-LD que enlace al @graph del layout</td><td>app/sobre-nosotros/page.tsx</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- What's working well -->
+  <section>
+    <h2 class="section-title"><span class="icon">✅</span> Lo que funciona bien</h2>
+    <div class="good-list">
+      <span class="good-chip">✓ HTTPS + HSTS preload (www)</span>
+      <span class="good-chip">✓ CSP con nonce en cada request</span>
+      <span class="good-chip">✓ X-Frame-Options DENY</span>
+      <span class="good-chip">✓ Canonical tags correctas por página</span>
+      <span class="good-chip">✓ lang="es" en html</span>
+      <span class="good-chip">✓ Viewport meta tag</span>
+      <span class="good-chip">✓ OG image 1200×630 correcto</span>
+      <span class="good-chip">✓ Títulos y meta desc únicos por página</span>
+      <span class="good-chip">✓ robots.txt correcto (/admin, /api bloqueados)</span>
+      <span class="good-chip">✓ Sitemap declarado en robots.txt</span>
+      <span class="good-chip">✓ Sin noindex en páginas públicas</span>
+      <span class="good-chip">✓ Organization + WebSite schema con @graph</span>
+      <span class="good-chip">✓ Event + Product schema en /rifas/[id]</span>
+      <span class="good-chip">✓ FAQPage schema server-rendered</span>
+      <span class="good-chip">✓ next/image con WebP/AVIF automático</span>
+      <span class="good-chip">✓ Fonts precargadas vía HTTP Link header</span>
+      <span class="good-chip">✓ Clarity con strategy="lazyOnload"</span>
+      <span class="good-chip">✓ RBAC implementado (admin/staff)</span>
+      <span class="good-chip">✓ Rate limiting en endpoints sensibles</span>
+      <span class="good-chip">✓ Magic byte verification en uploads</span>
+      <span class="good-chip">✓ Mobile-first layout responsive</span>
+      <span class="good-chip">✓ Todos los AI crawlers permitidos</span>
+    </div>
+  </section>
+
+  <!-- Schema audit detail -->
+  <section>
+    <h2 class="section-title"><span class="icon">🏷️</span> Schema — Estado actual por página</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Página</th><th>Schema presente</th><th>Estado</th><th>Nota</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>/</code> (layout global)</td>
+            <td>Organization + WebSite + SearchAction</td>
+            <td><span class="badge badge-pass">Pass</span></td>
+            <td>Falta sameAs. Logo apunta a /images/3.jpeg</td>
+          </tr>
+          <tr>
+            <td><code>/rifas/[id]</code></td>
+            <td>Event + Product</td>
+            <td><span class="badge badge-critical">Crítico</span></td>
+            <td>Falta endDate, price es string, falta seller en Event offers</td>
+          </tr>
+          <tr>
+            <td><code>/faq</code></td>
+            <td>FAQPage</td>
+            <td><span class="badge badge-medium">Medio</span></td>
+            <td>Válido. Sin Google rich results (restricción Aug 2023 para comerciales), mantiene valor para IA</td>
+          </tr>
+          <tr>
+            <td><code>/rifas</code></td>
+            <td>— ninguno —</td>
+            <td><span class="badge badge-high">Alto</span></td>
+            <td>Agregar ItemList con rifas activas</td>
+          </tr>
+          <tr>
+            <td><code>/rifas-previas/[id]</code></td>
+            <td>— ninguno —</td>
+            <td><span class="badge badge-high">Alto</span></td>
+            <td>Página es "use client", ningún schema puede inyectarse</td>
+          </tr>
+          <tr>
+            <td><code>/sobre-nosotros</code></td>
+            <td>— ninguno —</td>
+            <td><span class="badge badge-medium">Medio</span></td>
+            <td>Agregar AboutPage enlazando al @graph del layout</td>
+          </tr>
+          <tr>
+            <td><code>/consulta</code></td>
+            <td>— ninguno —</td>
+            <td><span class="badge badge-low">Bajo</span></td>
+            <td>Página de herramienta — schema opcional</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Performance detail -->
+  <section>
+    <h2 class="section-title"><span class="icon">⚡</span> Performance — Core Web Vitals</h2>
+    <div class="summary-grid">
+      <div class="summary-box">
+        <div class="box-title">LCP</div>
+        <div class="box-val" style="color:var(--orange)">⚠ Riesgo</div>
+        <div class="box-desc">loading="lazy" en imagen LCP de /rifas. sizes="100vw" en grid. ISR roto eleva TTFB.</div>
+      </div>
+      <div class="summary-box">
+        <div class="box-title">CLS</div>
+        <div class="box-val" style="color:var(--yellow)">⚠ Medio</div>
+        <div class="box-desc">font-display: swap causa FOUT. Texto decorativo desbordado en mobile. BankCards placeholder text-a-grid.</div>
+      </div>
+      <div class="summary-box">
+        <div class="box-title">INP</div>
+        <div class="box-val" style="color:var(--green)">✓ Bueno</div>
+        <div class="box-desc">297KB vendor JS puede impactar hidratación en Android mid-range. Firestore onSnapshot puede causar re-renders frecuentes.</div>
+      </div>
+      <div class="summary-box">
+        <div class="box-title">FCP</div>
+        <div class="box-val" style="color:var(--green)">✓ Bueno</div>
+        <div class="box-desc">Todos los scripts son async. Clarity es lazyOnload. Fonts preloaded vía HTTP Link headers.</div>
+      </div>
+      <div class="summary-box">
+        <div class="box-title">TTFB</div>
+        <div class="box-val" style="color:var(--orange)">~560ms</div>
+        <div class="box-desc">Debería ser ~50ms con ISR. headers() en layout.tsx fuerza dynamic rendering en todas las rutas.</div>
+      </div>
+      <div class="summary-box">
+        <div class="box-title">Redirect overhead</div>
+        <div class="box-val" style="color:var(--yellow)">2 hops</div>
+        <div class="box-desc">http://sorteosjans.com.mx → 308 HTTPS apex → 307 www. Dos RTTs antes de primer byte de HTML.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GEO detail -->
+  <section>
+    <h2 class="section-title"><span class="icon">🤖</span> GEO — AI Search Readiness</h2>
+    <div class="summary-grid" style="margin-bottom:16px;">
+      <div class="summary-box">
+        <div class="box-title">Google AI Overviews</div>
+        <div class="box-val" style="color:var(--orange)">25/100</div>
+        <div class="box-desc">FAQ answers muy cortas. Sin E-E-A-T signals. Sin operador nombrado.</div>
+      </div>
+      <div class="summary-box">
+        <div class="box-title">ChatGPT web search</div>
+        <div class="box-val" style="color:var(--orange)">30/100</div>
+        <div class="box-desc">SSR ayuda. FAQPage schema presente. Marca no corroborada externamente.</div>
+      </div>
+      <div class="summary-box">
+        <div class="box-title">Perplexity</div>
+        <div class="box-val" style="color:var(--yellow)">35/100</div>
+        <div class="box-desc">robots.txt permite crawl. Schema presente. Falta profundidad de citabilidad.</div>
+      </div>
+      <div class="summary-box">
+        <div class="box-title">Bing Copilot</div>
+        <div class="box-val" style="color:var(--orange)">28/100</div>
+        <div class="box-desc">Sin Wikipedia/LinkedIn entity. Sin NAP. FAQ passages muy cortas.</div>
+      </div>
+    </div>
+    <div class="callout warn">
+      <span class="icon">⚠️</span>
+      <div><strong>Problema de rendering:</strong> Next.js App Router serializa el árbol de componentes en bloques <code>self.__next_f.push()</code> con nonce. Crawlers que parsean solo HTML semántico (&lt;p&gt;, &lt;h1&gt;, &lt;article&gt;) y no ejecutan JS verán un body prácticamente vacío. El contenido real del body existe en los script payloads del React Flight, no en tags HTML estáticos.</div>
+    </div>
+    <div class="table-wrap" style="margin-top:12px;">
+      <table>
+        <thead><tr><th>Crawler</th><th>Estado</th><th>Regla en robots.txt</th></tr></thead>
+        <tbody>
+          <tr><td>GPTBot (OpenAI)</td><td><span class="badge badge-pass">Permitido</span></td><td>Wildcard <code>Allow: /</code></td></tr>
+          <tr><td>ClaudeBot (Anthropic)</td><td><span class="badge badge-pass">Permitido</span></td><td>Wildcard <code>Allow: /</code></td></tr>
+          <tr><td>PerplexityBot</td><td><span class="badge badge-pass">Permitido</span></td><td>Wildcard <code>Allow: /</code></td></tr>
+          <tr><td>CCBot (Common Crawl)</td><td><span class="badge badge-pass">Permitido</span></td><td>Wildcard <code>Allow: /</code></td></tr>
+          <tr><td>llms.txt</td><td><span class="badge badge-critical">404</span></td><td>No existe</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Full priority table -->
+  <section>
+    <h2 class="section-title"><span class="icon">📋</span> Plan de Acción Completo</h2>
+    <div class="table-wrap">
+      <table class="priority-table">
+        <thead><tr><th>Prioridad</th><th>Issue</th><th>Archivo</th><th>Esfuerzo</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-critical">Crítico</span></td><td>Eliminar datos de rifa "1" y "123" de producción</td><td>Firestore admin</td><td>5 min</td></tr>
+          <tr><td><span class="badge badge-critical">Crítico</span></td><td>Fix ISR: mover headers() fuera de layout.tsx</td><td>app/layout.tsx, middleware.ts</td><td>Medio</td></tr>
+          <tr><td><span class="badge badge-critical">Crítico</span></td><td>Event schema: endDate + price number + seller</td><td>app/rifas/[id]/page.tsx</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-critical">Crítico</span></td><td>Fix 307 → 301 redirect en dominio apex</td><td>Vercel Dashboard</td><td>5 min</td></tr>
+          <tr><td><span class="badge badge-high">Alto</span></td><td>Fix og:url en todas las sub-páginas</td><td>Cada page metadata</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-high">Alto</span></td><td>priority en primera imagen de /rifas</td><td>app/rifas/page.tsx</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-high">Alto</span></td><td>Fix sizes="100vw" en grid de rifas</td><td>app/rifas/page.tsx</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-high">Alto</span></td><td>Agregar sameAs a Organization schema</td><td>app/layout.tsx</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-high">Alto</span></td><td>Agregar ItemList schema en /rifas</td><td>app/rifas/page.tsx</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-high">Alto</span></td><td>Agregar generateMetadata a /rifas-previas/[id]</td><td>app/rifas-previas/[id]/page.tsx</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-high">Alto</span></td><td>Implementar IndexNow</td><td>app/robots.ts + admin panel</td><td>Medio</td></tr>
+          <tr><td><span class="badge badge-high">Alto</span></td><td>Agregar identidad operador + contenido /sobre-nosotros</td><td>CMS (Firestore)</td><td>Medio</td></tr>
+          <tr><td><span class="badge badge-medium">Medio</span></td><td>Crear /public/llms.txt</td><td>—</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-medium">Medio</span></td><td>Expandir respuestas FAQ a 134–167 palabras</td><td>CMS (Firestore)</td><td>Medio</td></tr>
+          <tr><td><span class="badge badge-medium">Medio</span></td><td>Convertir /rifas-previas/[id] a Server Component</td><td>app/rifas-previas/[id]/page.tsx</td><td>Medio</td></tr>
+          <tr><td><span class="badge badge-medium">Medio</span></td><td>Fix sitemap lastmod — fechas reales</td><td>app/sitemap.ts</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-medium">Medio</span></td><td>Agregar preconnect hints</td><td>app/layout.tsx</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-medium">Medio</span></td><td>Agregar apple-touch-icon, theme-color, manifest</td><td>app/layout.tsx</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-medium">Medio</span></td><td>Fix HSTS apex (includeSubDomains + preload)</td><td>Vercel headers config</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-low">Bajo</span></td><td>font-display: optional</td><td>app/layout.tsx</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-low">Bajo</span></td><td>H1 keyword-enriched en homepage</td><td>CMS</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-low">Bajo</span></td><td>Corregir tildes en Navbar/Footer</td><td>components/</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-low">Bajo</span></td><td>poweredByHeader: false</td><td>next.config.mjs</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-low">Bajo</span></td><td>BreadcrumbList en páginas de rifa</td><td>Nuevo componente</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-low">Bajo</span></td><td>noscript fallback</td><td>app/layout.tsx</td><td>Bajo</td></tr>
+          <tr><td><span class="badge badge-low">Bajo</span></td><td>Página /como-funciona — mayor volumen de query IA</td><td>Nueva ruta</td><td>Alto</td></tr>
+          <tr><td><span class="badge badge-low">Bajo</span></td><td>Slugs legibles en URLs de rifas</td><td>Firestore + routing</td><td>Alto</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout info" style="margin-top:16px;">
+      <span class="icon">ℹ️</span>
+      <div>
+        <strong>Proyección de score:</strong>
+        Corregir los 4 críticos → <strong>~62/100</strong> &nbsp;·&nbsp;
+        Críticos + Altos → <strong>~70/100</strong> &nbsp;·&nbsp;
+        Todo implementado → <strong>~78/100</strong>
+      </div>
+    </div>
+  </section>
+
+  <footer style="border-top:1px solid var(--border);padding-top:24px;color:var(--muted);font-size:11px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <span>Generado por Claude Code · 7 agentes SEO especializados · 2026-03-13</span>
+    <span>sorteosjans.com.mx · Next.js 14 · Vercel · Firebase Firestore</span>
+  </footer>
+
+</div>
+</body>
+</html>

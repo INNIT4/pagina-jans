@@ -10,7 +10,7 @@ export default function Footer() {
           <div>
             <Image src="/images/4.jpeg" alt="Sorteos Jans" width={180} height={56} className="h-14 w-auto mb-3 rounded-sm object-contain" />
             <p className="text-sm leading-relaxed">
-              Plataforma de rifas en linea. Participa de forma segura, sencilla y transparente.
+              Plataforma de rifas en línea. Participa de forma segura, sencilla y transparente.
             </p>
             <div className="flex gap-3 mt-4">
               <a href="https://www.facebook.com/sorteosjansn" target="_blank" rel="noopener noreferrer" aria-label="Facebook de Sorteos Jans" className="text-gray-400 hover:text-brand-red transition-colors">
@@ -22,16 +22,16 @@ export default function Footer() {
             </div>
           </div>
           <div>
-            <p className="text-red-500 font-bold mb-3 text-sm uppercase tracking-wider">Navegacion</p>
+            <p className="text-red-500 font-bold mb-3 text-sm uppercase tracking-wider">Navegación</p>
             <ul className="space-y-2 text-sm">
               <li><Link href="/rifas" className="hover:text-brand-red transition-colors">Rifas activas</Link></li>
               <li><Link href="/rifas-previas" className="hover:text-brand-red transition-colors">Rifas previas</Link></li>
               <li><Link href="/consulta" className="hover:text-brand-red transition-colors">Consultar boleto</Link></li>
-              <li><Link href="/tarjetas" className="hover:text-brand-red transition-colors">Metodos de pago</Link></li>
+              <li><Link href="/tarjetas" className="hover:text-brand-red transition-colors">Métodos de pago</Link></li>
             </ul>
           </div>
           <div>
-            <p className="text-red-500 font-bold mb-3 text-sm uppercase tracking-wider">Informacion</p>
+            <p className="text-red-500 font-bold mb-3 text-sm uppercase tracking-wider">Información</p>
             <ul className="space-y-2 text-sm">
               <li><Link href="/faq" className="hover:text-brand-red transition-colors">Preguntas frecuentes</Link></li>
               <li><Link href="/sobre-nosotros" className="hover:text-brand-red transition-colors">Sobre nosotros</Link></li>

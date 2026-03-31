@@ -1,0 +1,8 @@
+# Sorteos Jans
+> Plataforma de rifas en línea en México. Compra boletos, elige números, paga por transferencia bancaria, confirma por WhatsApp.
+
+## Páginas principales
+- Rifas activas: https://www.sorteosjans.com.mx/rifas
+- Consultar boleto: https://www.sorteosjans.com.mx/consulta
+- Preguntas frecuentes: https://www.sorteosjans.com.mx/faq
+- Sobre nosotros: https://www.sorteosjans.com.mx/sobre-nosotros

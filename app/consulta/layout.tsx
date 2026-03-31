@@ -5,6 +5,12 @@ export const metadata: Metadata = {
   description:
     "Consulta el estado de tu boleto de sorteo. Busca por folio, número de teléfono o número de boleto en Sorteos Jans.",
   alternates: { canonical: "https://www.sorteosjans.com.mx/consulta" },
+  openGraph: {
+    title: "Consultar Boleto | Sorteos Jans",
+    description: "Consulta el estado de tu boleto de sorteo. Busca por folio, número de teléfono o número de boleto en Sorteos Jans.",
+    url: "https://www.sorteosjans.com.mx/consulta",
+    type: "website",
+  },
 };
 
 export default function ConsultaLayout({ children }: { children: React.ReactNode }) {

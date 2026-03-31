@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Rifa } from "@/lib/firestore";
+import { Rifa, calcularSubtotal } from "@/lib/firestore";
 
 const ESTADOS_MX = [
   "Aguascalientes","Baja California","Baja California Sur","Campeche","Chiapas","Chihuahua",
@@ -29,7 +29,7 @@ export default function ApartadoForm({ rifa, numeros, onClose }: ApartadoFormPro
   const [loading, setLoading] = useState(false);
   const [validatingCode, setValidatingCode] = useState(false);
 
-  const subtotal = numeros.length * rifa.precio_boleto;
+  const subtotal = calcularSubtotal(numeros.length, rifa.precio_boleto, rifa.ofertas);
   const descuentoAmt = descuento ? subtotal * (descuento.porcentaje / 100) : 0;
   const total = subtotal - descuentoAmt;
 

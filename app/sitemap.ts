@@ -6,19 +6,23 @@ const BASE_URL = "https://www.sorteosjans.com.mx";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const staticPages: MetadataRoute.Sitemap = [
-    { url: `${BASE_URL}/`, lastModified: now },
-    { url: `${BASE_URL}/rifas`, lastModified: now },
-    { url: `${BASE_URL}/rifas-previas`, lastModified: now },
-    { url: `${BASE_URL}/consulta`, lastModified: now },
-    { url: `${BASE_URL}/tarjetas`, lastModified: now },
-    { url: `${BASE_URL}/faq`, lastModified: now },
-    { url: `${BASE_URL}/sobre-nosotros`, lastModified: now },
-    { url: `${BASE_URL}/aviso-privacidad`, lastModified: new Date("2026-03-01") },
-  ];
-
   try {
     const db = adminDb();
+    
+    // Get CMS updated date
+    const siteContent = await db.collection("site_content").doc("texts").get();
+    const cmsDate = siteContent.data()?.updatedAt?.toDate?.() ?? now;
+
+    const staticPages: MetadataRoute.Sitemap = [
+      { url: `${BASE_URL}/`, lastModified: cmsDate },
+      { url: `${BASE_URL}/rifas`, lastModified: cmsDate },
+      { url: `${BASE_URL}/rifas-previas`, lastModified: cmsDate },
+      { url: `${BASE_URL}/consulta`, lastModified: cmsDate },
+      { url: `${BASE_URL}/tarjetas`, lastModified: cmsDate },
+      { url: `${BASE_URL}/faq`, lastModified: cmsDate },
+      { url: `${BASE_URL}/sobre-nosotros`, lastModified: cmsDate },
+      { url: `${BASE_URL}/aviso-privacidad`, lastModified: new Date("2026-03-01") },
+    ];
 
     // Rifas activas
     const activas = await db
@@ -46,6 +50,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return [...staticPages, ...rifasActivas, ...rifasFinalizadas];
   } catch {
+    const staticPages: MetadataRoute.Sitemap = [
+      { url: `${BASE_URL}/`, lastModified: now },
+      { url: `${BASE_URL}/rifas`, lastModified: now },
+      { url: `${BASE_URL}/rifas-previas`, lastModified: now },
+      { url: `${BASE_URL}/consulta`, lastModified: now },
+      { url: `${BASE_URL}/tarjetas`, lastModified: now },
+      { url: `${BASE_URL}/faq`, lastModified: now },
+      { url: `${BASE_URL}/sobre-nosotros`, lastModified: now },
+      { url: `${BASE_URL}/aviso-privacidad`, lastModified: new Date("2026-03-01") },
+    ];
     return staticPages;
   }
 }

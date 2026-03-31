@@ -9,7 +9,7 @@ const navLinks = [
   { href: "/", label: "Inicio" },
   { href: "/rifas-previas", label: "Rifas Previas" },
   { href: "/consulta", label: "Consultar Boleto" },
-  { href: "/tarjetas", label: "Metodos de pago" },
+  { href: "/tarjetas", label: "Métodos de pago" },
   { href: "/faq", label: "FAQ" },
 ];
 

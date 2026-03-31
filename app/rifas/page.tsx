@@ -11,6 +11,12 @@ export const metadata: Metadata = {
   description:
     "Explora todas las rifas en línea activas de Sorteos Jans. Elige tus números y gana increíbles premios en México.",
   alternates: { canonical: "https://www.sorteosjans.com.mx/rifas" },
+  openGraph: {
+    title: "Rifas Activas | Sorteos Jans",
+    description: "Explora todas las rifas en línea activas de Sorteos Jans.",
+    url: "https://www.sorteosjans.com.mx/rifas",
+    type: "website",
+  },
 };
 
 export default async function RifasPage() {
@@ -24,6 +30,23 @@ export default async function RifasPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            name: "Rifas Activas — Sorteos Jans",
+            url: "https://www.sorteosjans.com.mx/rifas",
+            itemListElement: rifas.map((rifa, i) => ({
+              "@type": "ListItem",
+              position: i + 1,
+              url: `https://www.sorteosjans.com.mx/rifas/${rifa.id}`,
+              name: rifa.nombre,
+            })),
+          }),
+        }}
+      />
       <h1 className="text-4xl font-bold uppercase tracking-widest mb-2">Rifas Disponibles</h1>
       <span className="accent-bar" />
       <p className="text-gray-400 mb-8 mt-4">Selecciona una rifa para ver los detalles y apartar tus boletos.</p>
@@ -36,7 +59,7 @@ export default async function RifasPage() {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {rifas.map((rifa) => {
+          {rifas.map((rifa, index) => {
             return (
               <Link
                 key={rifa.id}
@@ -45,7 +68,7 @@ export default async function RifasPage() {
               >
                 {rifa.imagen_url ? (
                   <div className="relative w-full h-52">
-                    <Image src={rifa.imagen_url} alt={rifa.nombre} fill className="object-cover" />
+                    <Image src={rifa.imagen_url} alt={rifa.nombre} fill sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw" priority={index === 0} className="object-cover" />
                   </div>
                 ) : (
                   <div className="w-full h-52 bg-gradient-to-br from-brand-red/30 to-brand-black flex items-center justify-center">

@@ -94,7 +94,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `El número ${outOfRange} no pertenece a esta rifa.` }, { status: 400 });
 
   // ── Calcular precio en el servidor ────────────────────────────────────────
-  const subtotal: number = nums.length * rifa.precio_boleto;
+  let subtotal = 0;
+  if (!rifa.ofertas || rifa.ofertas.length === 0) {
+    subtotal = nums.length * rifa.precio_boleto;
+  } else {
+    const sortedOfertas = [...rifa.ofertas].sort((a: any, b: any) => b.cantidad - a.cantidad);
+    let restante = nums.length;
+    for (const oferta of sortedOfertas) {
+      if (oferta.cantidad <= 0) continue;
+      const packs = Math.floor(restante / oferta.cantidad);
+      subtotal += packs * oferta.precio;
+      restante %= oferta.cantidad;
+    }
+    subtotal += restante * rifa.precio_boleto;
+  }
+  
   let descuentoPct = 0;
   let codigoId: string | null = null;
   const codigoStr = typeof codigo_descuento === "string" ? codigo_descuento.trim().toUpperCase() : "";

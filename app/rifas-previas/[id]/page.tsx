@@ -1,35 +1,36 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { getRifa, Rifa } from "@/lib/firestore";
+import { getRifa } from "@/lib/firestore";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import ImageCarousel from "@/components/ImageCarousel";
 import Link from "next/link";
 
-export default function RifaPreviaDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const [rifa, setRifa] = useState<Rifa | null>(null);
-  const [loading, setLoading] = useState(true);
+export const revalidate = 60;
 
-  useEffect(() => {
-    getRifa(id)
-      .then((r) => {
-        if (!r) { router.push("/rifas-previas"); return; }
-        setRifa(r);
-      })
-      .finally(() => setLoading(false));
-  }, [id, router]);
+const SITE_URL = "https://www.sorteosjans.com.mx";
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin w-10 h-10 border-4 border-brand-red border-t-transparent rounded-full" />
-      </div>
-    );
-  }
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const rifa = await getRifa(resolvedParams.id).catch(() => null);
+  if (!rifa) return {};
+  return {
+    title: `${rifa.nombre} (Finalizada)`,
+    description: rifa.descripcion,
+    alternates: { canonical: `${SITE_URL}/rifas-previas/${resolvedParams.id}` },
+    openGraph: {
+      title: `${rifa.nombre} (Finalizada)`,
+      description: rifa.descripcion,
+      url: `${SITE_URL}/rifas-previas/${resolvedParams.id}`,
+      images: rifa.imagen_url ? [rifa.imagen_url] : undefined,
+      type: "website",
+    },
+  };
+}
 
-  if (!rifa) return null;
+export default async function RifaPreviaDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const rifa = await getRifa(resolvedParams.id).catch(() => null);
+  
+  if (!rifa) notFound();
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">

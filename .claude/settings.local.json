@@ -6,7 +6,14 @@
       "Bash(npx tsc:*)",
       "Bash(rm:*)",
       "Bash(curl:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(cd \"C:\\\\Users\\\\josei\\\\pagina-jans\" && npm install html-to-image --save 2>&1 | tail -5)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(python -c \":*)",
+      "WebFetch(domain:sorteosjans.com.mx)",
+      "WebFetch(domain:www.sorteosjans.com.mx)"
     ]
   }
 }

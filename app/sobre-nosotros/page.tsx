@@ -10,6 +10,12 @@ export const metadata: Metadata = {
   description:
     "Conoce a Sorteos Jans: plataforma de rifas en línea en México con transparencia, seguridad y soporte personalizado.",
   alternates: { canonical: "https://www.sorteosjans.com.mx/sobre-nosotros" },
+  openGraph: {
+    title: "Sobre Nosotros | Sorteos Jans",
+    description: "Conoce a Sorteos Jans: plataforma de rifas en línea en México con transparencia, seguridad y soporte personalizado.",
+    url: "https://www.sorteosjans.com.mx/sobre-nosotros",
+    type: "website",
+  },
 };
 
 export default async function SobreNosotrosPage() {
@@ -17,6 +23,22 @@ export default async function SobreNosotrosPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "AboutPage",
+            mainEntityOfPage: {
+              "@type": "WebPage",
+              "@id": "https://www.sorteosjans.com.mx/sobre-nosotros",
+            },
+            name: "Sobre Nosotros — Sorteos Jans",
+            description: "Conoce a Sorteos Jans: plataforma de rifas en línea en México con transparencia, seguridad y soporte personalizado.",
+            url: "https://www.sorteosjans.com.mx/sobre-nosotros",
+          }),
+        }}
+      />
       <h1 className="text-4xl font-bold uppercase tracking-widest mb-2">Sobre Nosotros</h1>
       <span className="accent-bar" />
       <p className="text-gray-400 mb-10 mt-4">Conoce mas sobre Sorteos Jans.</p>

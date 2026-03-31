@@ -20,6 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     openGraph: {
       title: rifa.nombre,
       description: rifa.descripcion,
+      url: `${SITE_URL}/rifas/${resolvedParams.id}`,
       images: rifa.imagen_url ? [rifa.imagen_url] : undefined,
       type: "website",
     },
@@ -46,6 +47,7 @@ export default async function RifaDetailPage({ params }: { params: Promise<{ id:
         name: rifa.nombre,
         description: rifa.descripcion,
         startDate: rifa.fecha_sorteo,
+        endDate: rifa.fecha_sorteo,
         eventStatus: rifa.ganador
           ? "https://schema.org/EventCompleted"
           : "https://schema.org/EventScheduled",
@@ -62,12 +64,13 @@ export default async function RifaDetailPage({ params }: { params: Promise<{ id:
         offers: {
           "@type": "Offer",
           name: "Boleto de rifa",
-          price: String(rifa.precio_boleto),
+          price: rifa.precio_boleto,
           priceCurrency: "MXN",
           availability: rifa.ganador
             ? "https://schema.org/SoldOut"
             : "https://schema.org/InStock",
           url: rifaUrl,
+          seller: { "@id": `${SITE_URL}/#organization` },
         },
       },
       {
@@ -80,7 +83,7 @@ export default async function RifaDetailPage({ params }: { params: Promise<{ id:
         brand: { "@id": `${SITE_URL}/#organization` },
         offers: {
           "@type": "Offer",
-          price: String(rifa.precio_boleto),
+          price: rifa.precio_boleto,
           priceCurrency: "MXN",
           availability: rifa.ganador
             ? "https://schema.org/SoldOut"

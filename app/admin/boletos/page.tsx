@@ -112,8 +112,28 @@ export default function AdminBoletosPage() {
 
   async function handleMarkPagado(boleto: Boleto) {
     if (!confirm(`¿Marcar boleto ${boleto.folio} como pagado?`)) return;
+    
+    let notifyWhatsApp = false;
+    let waWindow: Window | null = null;
+    if (confirm(`¿Deseas enviar un mensaje de confirmación por WhatsApp al numero ${boleto.celular}?`)) {
+      notifyWhatsApp = true;
+      waWindow = window.open("", "_blank");
+    }
+
     setMarking(boleto.id!);
-    await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+    try {
+      await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+      if (notifyWhatsApp && waWindow) {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+        const msg = `El pago de tu folio ${boleto.folio} ha sido confirmado exitosamente.\nVerifica el estado de tu boleto: ${baseUrl}/consulta?f=${boleto.folio}`;
+        waWindow.location.href = `https://wa.me/52${boleto.celular.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
+      } else if (waWindow) {
+        waWindow.close();
+      }
+    } catch (e) {
+      if (waWindow) waWindow.close();
+      alert("Error al marcar como pagado.");
+    }
     setMarking(null);
     await reloadCurrentPage();
   }

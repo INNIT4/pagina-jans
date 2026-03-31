@@ -337,10 +337,23 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
       const fecha = boleto.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? new Date().toLocaleString("es-MX");
       const rifaNombre = rifa?.nombre ?? "Sorteos Jans";
-      const numsList = (boleto.numeros_completos ?? boleto.numeros);
+      
+      let textNumeros = (boleto.numeros_completos ?? boleto.numeros).join(", ");
+      if (rifa && rifa.oportunidades && rifa.oportunidades > 1 && boleto.numeros) {
+         const rango = (rifa.num_fin - rifa.num_inicio) + 1;
+         textNumeros = boleto.numeros.map(n => {
+            const extras = [];
+            for (let i = 1; i < rifa.oportunidades!; i++) {
+               extras.push(n + (i * rango));
+            }
+            return extras.length > 0 ? `${n} (${extras.join(", ")})` : `${n}`;
+         }).join(", ");
+      }
+      
+      const numsLength = (boleto.numeros_completos ?? boleto.numeros).length;
       const message =
-        `👋 Hola, soy ${boleto.nombre} ${boleto.apellidos}\nSeleccione: ${numsList.length} numeros\n──────────────\n` +
-        `🎫 Numeros: ${numsList.join(", ")}\n🎯 Sorteo: ${rifaNombre}\n🏷️ Folio: ${boleto.folio}\n` +
+        `👋 Hola, soy ${boleto.nombre} ${boleto.apellidos}\nSeleccione: ${numsLength} numeros\n──────────────\n` +
+        `🎫 Numeros: ${textNumeros}\n🎯 Sorteo: ${rifaNombre}\n🏷️ Folio: ${boleto.folio}\n` +
         `📅 Fecha: ${fecha}\n💰 Total: $${boleto.precio_total.toLocaleString("es-MX")}\n──────────────\n` +
         `💳 Metodos de pago: ${siteUrl}/tarjetas\n🏷️ Consulta: ${siteUrl}/consulta?f=${boleto.folio}&act=1`;
       

@@ -21,7 +21,9 @@ import {
   Wrench,
   LogOut,
   ChevronRight,
-  Trophy
+  Trophy,
+  Menu,
+  X
 } from "lucide-react";
 
 const NAV_GROUPS: { 
@@ -67,11 +69,20 @@ const NAV_GROUPS: {
   },
 ];
 
+// Quick items shown in the mobile bottom bar
+const MOBILE_QUICK: { href: string; label: string; exact?: boolean; icon: React.ElementType }[] = [
+  { href: "/admin", label: "Dashboard", exact: true, icon: LayoutDashboard },
+  { href: "/admin/boletos", label: "Boletos", icon: CheckSquare },
+  { href: "/admin/comprobantes", label: "Comprobantes", icon: FileText },
+  { href: "/admin/servicios", label: "Servicios", icon: Wrench },
+];
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [role, setRole] = useState("admin");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (pathname === "/admin/login") {
@@ -89,6 +100,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     });
     return unsub;
   }, [pathname, router]);
+
+  // Close sidebar on navigation
+  useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
   if (pathname === "/admin/login") return <>{children}</>;
   if (!ready) {
@@ -111,14 +125,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     items: group.items.filter(item => role === "admin" || STAFF_PATHS.includes(item.href))
   })).filter(group => group.items.length > 0);
 
-  return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100">
-      {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col sticky top-0 h-screen">
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-center">
-          <Logo size="sm" showText={true} />
-        </div>
-        
+  const visibleMobileQuick = MOBILE_QUICK.filter(item => role === "admin" || STAFF_PATHS.includes(item.href));
+
+  function NavLinks() {
+    return (
+      <>
         <nav className="flex-1 p-4 space-y-6 overflow-y-auto scrollbar-hide">
           {visibleNavGroups.map((group, gi) => (
             <div key={gi}>
@@ -135,7 +146,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`group flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      className={`group flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                         active
                           ? "bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 shadow-sm shadow-red-100 dark:shadow-none"
                           : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200"
@@ -163,14 +174,91 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span>Cerrar sesión</span>
           </button>
         </div>
+      </>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100">
+
+      {/* ── Desktop Sidebar ── */}
+      <aside className="hidden md:flex w-64 flex-shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col sticky top-0 h-screen">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-center">
+          <Logo size="sm" showText={true} />
+        </div>
+        <NavLinks />
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-8 max-w-6xl mx-auto">
-          {children}
+      {/* ── Mobile Sidebar overlay ── */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/50"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <aside className={`md:hidden fixed top-0 left-0 z-50 h-full w-72 bg-white dark:bg-slate-900 flex flex-col shadow-2xl transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <Logo size="sm" showText={true} />
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"
+          >
+            <X size={18} />
+          </button>
         </div>
-      </main>
+        <NavLinks />
+      </aside>
+
+      {/* ── Main ── */}
+      <div className="flex-1 flex flex-col min-w-0">
+
+        {/* Mobile top bar */}
+        <header className="md:hidden sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 h-14 flex items-center gap-3">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
+          >
+            <Menu size={22} />
+          </button>
+          <Logo size="sm" showText={true} />
+        </header>
+
+        <main className="flex-1 overflow-auto">
+          {/* pb-24 on mobile to avoid bottom nav overlap */}
+          <div className="p-4 md:p-8 max-w-6xl mx-auto pb-24 md:pb-8">
+            {children}
+          </div>
+        </main>
+
+        {/* ── Mobile Bottom Nav ── */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex safe-area-pb">
+          {visibleMobileQuick.map((item) => {
+            const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-1 text-[10px] font-semibold transition-colors ${
+                  active ? "text-red-600 dark:text-red-400" : "text-slate-400 dark:text-slate-500"
+                }`}
+              >
+                <Icon size={20} />
+                <span className="leading-tight truncate max-w-[60px] text-center">{item.label}</span>
+              </Link>
+            );
+          })}
+          {/* More → opens full sidebar */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="flex-1 flex flex-col items-center justify-center py-2.5 gap-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500"
+          >
+            <Menu size={20} />
+            <span>Más</span>
+          </button>
+        </nav>
+
+      </div>
     </div>
   );
 }

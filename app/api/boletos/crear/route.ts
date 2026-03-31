@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
   if (!rifa.ofertas || rifa.ofertas.length === 0) {
     subtotal = nums.length * rifa.precio_boleto;
   } else {
-    const sortedOfertas = [...rifa.ofertas].sort((a: any, b: any) => b.cantidad - a.cantidad);
+    const sortedOfertas = [...rifa.ofertas].sort((a: { cantidad: number; precio: number }, b: { cantidad: number; precio: number }) => b.cantidad - a.cantidad);
     let restante = nums.length;
     for (const oferta of sortedOfertas) {
       if (oferta.cantidad <= 0) continue;

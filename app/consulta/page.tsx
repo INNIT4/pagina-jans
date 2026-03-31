@@ -323,10 +323,17 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
   }
 
   async function handleWhatsApp() {
+    // Abrir ventana en blanco sincronamente para evitar el bloqueo en iOS/Safari
+    const newWindow = window.open("", "_blank");
     setWaLoading(true);
     try {
       const numero = await getRotatedWhatsApp();
-      if (!numero) { alert("No hay numero de WhatsApp configurado."); return; }
+      if (!numero) { 
+        if (newWindow) newWindow.close();
+        alert("No hay numero de WhatsApp configurado."); 
+        setWaLoading(false);
+        return; 
+      }
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
       const fecha = boleto.created_at?.toDate?.()?.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) ?? new Date().toLocaleString("es-MX");
       const rifaNombre = rifa?.nombre ?? "Sorteos Jans";
@@ -336,8 +343,15 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
         `🎫 Numeros: ${numsList.join(", ")}\n🎯 Sorteo: ${rifaNombre}\n🏷️ Folio: ${boleto.folio}\n` +
         `📅 Fecha: ${fecha}\n💰 Total: $${boleto.precio_total.toLocaleString("es-MX")}\n──────────────\n` +
         `💳 Metodos de pago: ${siteUrl}/tarjetas\n🏷️ Consulta: ${siteUrl}/consulta?f=${boleto.folio}&act=1`;
-      window.open(buildWhatsAppUrl(numero, message), "_blank");
+      
+      const targetUrl = buildWhatsAppUrl(numero, message);
+      if (newWindow) {
+        newWindow.location.href = targetUrl;
+      } else {
+        window.location.href = targetUrl;
+      }
     } catch {
+      if (newWindow) newWindow.close();
       alert("Error al abrir WhatsApp. Intenta de nuevo.");
     }
     setWaLoading(false);

@@ -8,7 +8,7 @@ interface RandomPickerProps {
 }
 
 export default function RandomPicker({ disponibles, onPick }: RandomPickerProps) {
-  const [cantidad, setCantidad] = useState(1);
+  const [cantidad, setCantidad] = useState<number | string>(1);
   const [running, setRunning] = useState(false);
   const [display, setDisplay] = useState<number[]>([]);
   const [done, setDone] = useState(false);
@@ -29,7 +29,8 @@ export default function RandomPicker({ disponibles, onPick }: RandomPickerProps)
 
   function start() {
     if (disponibles.length === 0) return;
-    const n = Math.min(cantidad, disponibles.length);
+    const numCantidad = Number(cantidad) || 1;
+    const n = Math.min(numCantidad, disponibles.length);
     setDone(false);
     setRunning(true);
 
@@ -96,7 +97,19 @@ export default function RandomPicker({ disponibles, onPick }: RandomPickerProps)
               min={1}
               max={max}
               value={cantidad}
-              onChange={(e) => setCantidad(Math.min(max, Math.max(1, Number(e.target.value))))}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "") {
+                  setCantidad("");
+                } else {
+                  setCantidad(Math.min(max, Number(val)));
+                }
+              }}
+              onBlur={() => {
+                if (cantidad === "" || Number(cantidad) < 1) {
+                  setCantidad(1);
+                }
+              }}
               className="w-14 bg-transparent text-white font-black text-lg text-center focus:outline-none"
             />
             <span className="text-white/70 text-sm">boletos</span>

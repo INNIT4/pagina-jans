@@ -74,7 +74,7 @@ export default function NumberSearch({ numInicio, numFin, onResult }: NumberSear
           value={val}
           onChange={(e) => setVal(e.target.value)}
           placeholder={mode === "rango" ? "Desde" : "Número..."}
-          className="w-28 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm"
+          className="w-28 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white"
         />
         {mode === "rango" && (
           <input
@@ -82,7 +82,7 @@ export default function NumberSearch({ numInicio, numFin, onResult }: NumberSear
             value={rangeEnd}
             onChange={(e) => setRangeEnd(e.target.value)}
             placeholder="Hasta"
-            className="w-28 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm"
+            className="w-28 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white"
           />
         )}
         <button

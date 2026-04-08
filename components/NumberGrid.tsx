@@ -41,12 +41,12 @@ export default function NumberGrid({
   const seleccionadosSet = useMemo(() => new Set(seleccionados), [seleccionados]);
 
   const numbers = useMemo(() => {
-    const all = [];
+    const all: number[] = [];
     for (let i = numInicio; i <= numFin; i++) {
-      if (!vendidosSet.has(i) && !apartadosSet.has(i)) all.push(i);
+      if (!vendidosSet.has(i)) all.push(i); // vendidos: nunca mostrar; apartados: incluir siempre (el status los diferencia)
     }
     return all;
-  }, [numInicio, numFin, vendidosSet, apartadosSet]);
+  }, [numInicio, numFin, vendidosSet]);
 
   // When searching (visibles != null) show all results; otherwise paginate
   const toShow = visibles ?? numbers;
@@ -87,6 +87,11 @@ export default function NumberGrid({
         <span className="flex items-center gap-1.5">
           <span className="w-4 h-4 rounded bg-blue-500 inline-block" /> Seleccionado
         </span>
+        {mostrarApartados && (
+          <span className="flex items-center gap-1.5">
+            <span className="w-4 h-4 rounded bg-amber-100 dark:bg-amber-900/50 inline-block" /> Apartado
+          </span>
+        )}
       </div>
 
       {/* Grid */}

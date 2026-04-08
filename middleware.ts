@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data: blob: https://firebasestorage.googleapis.com https://*.googleusercontent.com https://*.public.blob.vercel-storage.com https://*.clarity.ms https://*.bing.com;
     connect-src 'self' ${firebaseHosts} https://www.clarity.ms https://*.clarity.ms;
-    frame-src 'self' https://firebasestorage.googleapis.com https://*.public.blob.vercel-storage.com;
+    frame-src 'self' blob: https://firebasestorage.googleapis.com https://*.public.blob.vercel-storage.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';

@@ -43,10 +43,12 @@ export default function NumberGrid({
   const numbers = useMemo(() => {
     const all: number[] = [];
     for (let i = numInicio; i <= numFin; i++) {
-      if (!vendidosSet.has(i)) all.push(i); // vendidos: nunca mostrar; apartados: incluir siempre (el status los diferencia)
+      if (vendidosSet.has(i)) continue;
+      if (!mostrarApartados && apartadosSet.has(i)) continue; // ocultar apartados cuando el toggle está apagado
+      all.push(i);
     }
     return all;
-  }, [numInicio, numFin, vendidosSet]);
+  }, [numInicio, numFin, vendidosSet, apartadosSet, mostrarApartados]);
 
   // When searching (visibles != null) show all results; otherwise paginate
   const toShow = visibles ?? numbers;

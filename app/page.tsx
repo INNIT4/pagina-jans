@@ -140,7 +140,7 @@ export default async function HomePage() {
               {rifasActivas.map((rifa) => (
                 <Link
                   key={rifa.id}
-                  href={`/rifas/${rifa.id}`}
+                  href={`/rifas/${rifa.slug ?? rifa.id}`}
                   className="group bg-brand-dark/80 border border-gray-800 rounded-sm overflow-hidden border-t-2 border-t-brand-red hover:border-brand-red hover:glow-red transition-all"
                 >
                   {rifa.imagen_url ? (

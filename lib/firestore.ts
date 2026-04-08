@@ -47,6 +47,7 @@ export interface Oferta {
 
 export interface Rifa {
   id?: string;
+  slug?: string;
   nombre: string;
   descripcion: string;
   precio_boleto: number;
@@ -64,6 +65,18 @@ export interface Rifa {
   premios?: Premio[];
   ofertas?: Oferta[];
   ganador?: Ganador;
+}
+
+/** Convierte un nombre en un slug URL-friendly. Ej: "Camioneta RAM 2025" → "camioneta-ram-2025" */
+export function generateSlug(nombre: string): string {
+  return nombre
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
 }
 
 export function calcularSubtotal(cantidad: number, precioBoleto: number, ofertas?: Oferta[]): number {
@@ -139,6 +152,21 @@ export async function getRifas(): Promise<Rifa[]> {
 export async function getRifa(id: string): Promise<Rifa | null> {
   const snap = await getDoc(doc(db, "rifas", id));
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as Rifa) : null;
+}
+
+/**
+ * Busca una rifa por slug primero; si no existe, intenta por Firestore ID.
+ * Permite backward compat con rifas anteriores que no tienen slug.
+ */
+export async function getRifaBySlugOrId(param: string): Promise<Rifa | null> {
+  const bySlug = await getDocs(
+    query(collection(db, "rifas"), where("slug", "==", param), limit(1))
+  );
+  if (!bySlug.empty) {
+    const d = bySlug.docs[0];
+    return { id: d.id, ...d.data() } as Rifa;
+  }
+  return getRifa(param);
 }
 
 export async function createRifa(data: Omit<Rifa, "id">): Promise<string> {

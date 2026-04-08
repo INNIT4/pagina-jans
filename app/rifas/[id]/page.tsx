@@ -1,4 +1,4 @@
-import { getRifa, getNumerosOcupados, getAppSettings } from "@/lib/firestore";
+import { getRifaBySlugOrId, getNumerosOcupados, getAppSettings } from "@/lib/firestore";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -11,7 +11,7 @@ const SITE_URL = "https://www.sorteosjans.com.mx";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
-  const rifa = await getRifa(resolvedParams.id).catch(() => null);
+  const rifa = await getRifaBySlugOrId(resolvedParams.id).catch(() => null);
   if (!rifa) return {};
   return {
     title: rifa.nombre,
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function RifaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  const rifa = await getRifa(resolvedParams.id).catch(() => null);
+  const rifa = await getRifaBySlugOrId(resolvedParams.id).catch(() => null);
   if (!rifa) notFound();
 
   // Rifa inactiva sin ganador → 404

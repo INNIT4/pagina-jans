@@ -31,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .get();
 
     const rifasActivas: MetadataRoute.Sitemap = activas.docs.map((doc) => ({
-      url: `${BASE_URL}/rifas/${doc.id}`,
+      url: `${BASE_URL}/rifas/${doc.data().slug ?? doc.id}`,
       lastModified: doc.data().updatedAt?.toDate?.() ?? now,
     }));
 

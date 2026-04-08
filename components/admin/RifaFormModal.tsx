@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { createRifa, updateRifa, Rifa } from "@/lib/firestore";
+import { createRifa, updateRifa, generateSlug, Rifa } from "@/lib/firestore";
 import ImageUploader from "./ImageUploader";
 
 type RifaForm = Omit<Rifa, "id" | "num_vendidos" | "num_apartados">;
 
 const EMPTY_FORM: RifaForm = {
+  slug: "",
   nombre: "",
   descripcion: "",
   precio_boleto: 50,
@@ -32,6 +33,7 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
   const [form, setForm] = useState<RifaForm>(
     editRifa
       ? {
+          slug: editRifa.slug ?? generateSlug(editRifa.nombre),
           nombre: editRifa.nombre,
           descripcion: editRifa.descripcion,
           precio_boleto: editRifa.precio_boleto,
@@ -48,6 +50,7 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
         }
       : EMPTY_FORM
   );
+  const [slugEdited, setSlugEdited] = useState(!!editRifa?.slug);
   const [saving, setSaving] = useState(false);
 
   async function handleSave(e: React.FormEvent) {
@@ -81,8 +84,34 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
           <form onSubmit={handleSave} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Nombre</label>
-              <input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm" />
+              <input
+                value={form.nombre}
+                onChange={(e) => {
+                  const nombre = e.target.value;
+                  setForm((f) => ({
+                    ...f,
+                    nombre,
+                    slug: slugEdited ? f.slug : generateSlug(nombre),
+                  }));
+                }}
+                required
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                URL de la rifa
+                <span className="text-xs text-slate-400 ml-2">sorteosjans.com.mx/rifas/<strong>{form.slug || "..."}</strong></span>
+              </label>
+              <input
+                value={form.slug ?? ""}
+                onChange={(e) => {
+                  setSlugEdited(true);
+                  setForm((f) => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-") }));
+                }}
+                placeholder="camioneta-ram-2025"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm font-mono"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Descripción</label>

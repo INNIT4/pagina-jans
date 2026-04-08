@@ -41,7 +41,7 @@ export default async function RifasPage() {
             itemListElement: rifas.map((rifa, i) => ({
               "@type": "ListItem",
               position: i + 1,
-              url: `https://www.sorteosjans.com.mx/rifas/${rifa.id}`,
+              url: `https://www.sorteosjans.com.mx/rifas/${rifa.slug ?? rifa.id}`,
               name: rifa.nombre,
             })),
           }),
@@ -63,7 +63,7 @@ export default async function RifasPage() {
             return (
               <Link
                 key={rifa.id}
-                href={`/rifas/${rifa.id}`}
+                href={`/rifas/${rifa.slug ?? rifa.id}`}
                 className="group bg-brand-dark/80 border border-gray-800 rounded-sm overflow-hidden border-t-2 border-t-brand-red hover:border-brand-red hover:glow-red transition-all"
               >
                 {rifa.imagen_url ? (

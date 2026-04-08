@@ -4,22 +4,14 @@ import { useEffect, useState } from "react";
 import { onSnapshot, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Link from "next/link";
-import { setAppSettings, AppSettings, DEFAULT_SETTINGS } from "@/lib/firestore";
-import { 
-  Rocket, 
-  Settings2, 
-  Clock, 
-  Eye, 
-  EyeOff, 
-  Zap, 
-  Ticket, 
-  Users, 
-  Tag, 
-  MessageSquare, 
-  CreditCard,
-  ChevronRight,
-  TrendingUp,
-  Box
+import {
+  setAppSettings, AppSettings, DEFAULT_SETTINGS,
+  getDashboardStats, DashboardStats,
+} from "@/lib/firestore";
+import {
+  Rocket, Settings2, Clock, Eye, EyeOff, Zap,
+  Ticket, Users, Tag, MessageSquare, CreditCard,
+  ChevronRight, TrendingUp, Box, AlertCircle,
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -29,9 +21,15 @@ export default function AdminDashboard() {
     cancelacion_horas: 24,
   });
   const [togglingApartados, setTogglingApartados] = useState(false);
+  const [togglingCancelacion, setTogglingCancelacion] = useState(false);
   const [savingCancelacion, setSavingCancelacion] = useState(false);
   const [horasInput, setHorasInput] = useState("24");
+  const [error, setError] = useState<string | null>(null);
 
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // Escucha en tiempo real los settings
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "settings", "config"), (snap) => {
       const s = snap.exists()
@@ -39,40 +37,89 @@ export default function AdminDashboard() {
         : DEFAULT_SETTINGS;
       setSettings(s);
       setHorasInput(String(s.cancelacion_horas));
+    }, (err) => {
+      setError("Error al leer configuración: " + err.message);
     });
     return () => unsub();
   }, []);
 
+  // Carga métricas al montar
+  useEffect(() => {
+    getDashboardStats()
+      .then(setStats)
+      .catch((err) => setError("Error al cargar métricas: " + err.message))
+      .finally(() => setLoadingStats(false));
+  }, []);
+
   async function toggleApartados() {
     setTogglingApartados(true);
-    const next = !settings.mostrar_apartados;
-    await setAppSettings({ mostrar_apartados: next });
-    setSettings((s) => ({ ...s, mostrar_apartados: next }));
+    setError(null);
+    try {
+      await setAppSettings({ mostrar_apartados: !settings.mostrar_apartados });
+    } catch (err: unknown) {
+      setError("No se pudo guardar. Verifica permisos de Firestore. " + (err instanceof Error ? err.message : ""));
+    }
     setTogglingApartados(false);
+  }
+
+  async function toggleCancelacion() {
+    setTogglingCancelacion(true);
+    setError(null);
+    try {
+      await setAppSettings({ cancelacion_activa: !settings.cancelacion_activa });
+    } catch (err: unknown) {
+      setError("No se pudo guardar. Verifica permisos de Firestore. " + (err instanceof Error ? err.message : ""));
+    }
+    setTogglingCancelacion(false);
   }
 
   async function saveCancelacion() {
     const horas = parseInt(horasInput);
     if (isNaN(horas) || horas < 1) return;
     setSavingCancelacion(true);
-    await setAppSettings({ cancelacion_activa: settings.cancelacion_activa, cancelacion_horas: horas });
-    setSettings((s) => ({ ...s, cancelacion_horas: horas }));
+    setError(null);
+    try {
+      await setAppSettings({ cancelacion_activa: settings.cancelacion_activa, cancelacion_horas: horas });
+    } catch (err: unknown) {
+      setError("No se pudo guardar. Verifica permisos de Firestore. " + (err instanceof Error ? err.message : ""));
+    }
     setSavingCancelacion(false);
   }
 
-  async function toggleCancelacion() {
-    const next = !settings.cancelacion_activa;
-    await setAppSettings({ cancelacion_activa: next });
-    setSettings((s) => ({ ...s, cancelacion_activa: next }));
-  }
-
   const quickLinks = [
-    { href: "/admin/rifas", title: "Gestionar Rifas", desc: "Crear, editar y desactivar rifas.", icon: Ticket, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
-    { href: "/admin/boletos", title: "Gestionar Boletos", desc: "Verificar pagos y marcar boletos.", icon: Box, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-    { href: "/admin/clientes", title: "Base de Clientes", desc: "Ver y exportar datos de clientes.", icon: Users, color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-900/20" },
-    { href: "/admin/codigos", title: "Códigos de Descuento", desc: "CRUD de códigos y sus usos.", icon: Tag, color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-900/20" },
-    { href: "/admin/whatsapp", title: "Rotación WhatsApp", desc: "Configurar números y rotación.", icon: MessageSquare, color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20" },
-    { href: "/admin/tarjetas", title: "Datos Bancarios", desc: "Editar cuentas bancarias.", icon: CreditCard, color: "text-indigo-600", bg: "bg-indigo-50 dark:bg-indigo-900/20" },
+    { href: "/admin/rifas",      title: "Gestionar Rifas",        desc: "Crear, editar y desactivar rifas.",      icon: Ticket,       color: "text-blue-600",   bg: "bg-blue-50 dark:bg-blue-900/20" },
+    { href: "/admin/boletos",    title: "Gestionar Boletos",      desc: "Verificar pagos y marcar boletos.",      icon: Box,          color: "text-emerald-600",bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+    { href: "/admin/clientes",   title: "Base de Clientes",       desc: "Ver y exportar datos de clientes.",      icon: Users,        color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-900/20" },
+    { href: "/admin/codigos",    title: "Códigos de Descuento",   desc: "CRUD de códigos y sus usos.",            icon: Tag,          color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-900/20" },
+    { href: "/admin/whatsapp",   title: "Rotación WhatsApp",      desc: "Configurar números y rotación.",         icon: MessageSquare,color: "text-green-600",  bg: "bg-green-50 dark:bg-green-900/20" },
+    { href: "/admin/tarjetas",   title: "Datos Bancarios",        desc: "Editar cuentas bancarias.",              icon: CreditCard,   color: "text-indigo-600", bg: "bg-indigo-50 dark:bg-indigo-900/20" },
+  ];
+
+  const statCards = [
+    {
+      label: "Rifas Activas",
+      value: loadingStats ? "..." : String(stats?.rifasActivas ?? 0),
+      icon: Rocket,
+      color: "text-red-600",
+    },
+    {
+      label: "Pendientes de pago",
+      value: loadingStats ? "..." : String(stats?.boletos.pendiente ?? 0),
+      icon: Clock,
+      color: "text-yellow-600",
+    },
+    {
+      label: "Boletos pagados",
+      value: loadingStats ? "..." : String(stats?.boletos.pagado ?? 0),
+      icon: TrendingUp,
+      color: "text-blue-600",
+    },
+    {
+      label: "Total recaudado",
+      value: loadingStats ? "..." : `$${(stats?.recaudado ?? 0).toLocaleString("es-MX")}`,
+      icon: Zap,
+      color: "text-green-600",
+    },
   ];
 
   return (
@@ -80,7 +127,7 @@ export default function AdminDashboard() {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Dashboard</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Bienvenido al panel de control de Pagina Jans.</p>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Panel de control de Jans Rifas.</p>
         </div>
         <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -88,26 +135,27 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      {/* Stats Overview (Static placeholders for now) */}
+      {/* Error banner */}
+      {error && (
+        <div className="flex items-start gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl px-4 py-3 text-sm text-red-700 dark:text-red-400">
+          <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+          <span className="flex-1">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">✕</button>
+        </div>
+      )}
+
+      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: "Ventas Hoy", value: "---", icon: TrendingUp, delta: "+0%", color: "text-blue-600" },
-          { label: "Rifas Activas", value: "---", icon: Rocket, delta: "Live", color: "text-red-600" },
-          { label: "Clientes", value: "---", icon: Users, delta: "Total", color: "text-indigo-600" },
-          { label: "Conversión", value: "0%", icon: Zap, delta: "Avg", color: "text-yellow-600" },
-        ].map((stat, i) => (
+        {statCards.map((stat, i) => (
           <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className={`p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 ${stat.color}`}>
-                <stat.icon size={20} />
-              </div>
-              <span className="text-[10px] font-bold px-2 py-1 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-500">
-                {stat.delta}
-              </span>
+            <div className={`p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 w-fit ${stat.color}`}>
+              <stat.icon size={20} />
             </div>
             <div>
               <p className="text-sm font-medium text-slate-500">{stat.label}</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
+              <p className={`text-2xl font-bold text-slate-900 dark:text-white ${loadingStats ? "animate-pulse" : ""}`}>
+                {stat.value}
+              </p>
             </div>
           </div>
         ))}
@@ -120,7 +168,7 @@ export default function AdminDashboard() {
             <div className="absolute top-0 right-0 p-8 opacity-5">
               <Settings2 size={120} />
             </div>
-            
+
             <div className="flex items-center gap-3 mb-8">
               <div className="p-2 bg-red-50 dark:bg-red-950/30 rounded-lg text-red-600 dark:text-red-400">
                 <Settings2 size={20} />
@@ -132,7 +180,7 @@ export default function AdminDashboard() {
               {/* Apartados toggle */}
               <div className="flex items-center justify-between group">
                 <div className="flex gap-4">
-                  <div className={`p-3 rounded-2xl h-fit transition-colors ${settings.mostrar_apartados ? 'bg-green-50 dark:bg-green-950/30 text-green-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400'}`}>
+                  <div className={`p-3 rounded-2xl h-fit transition-colors ${settings.mostrar_apartados ? "bg-green-50 dark:bg-green-950/30 text-green-600" : "bg-slate-50 dark:bg-slate-800 text-slate-400"}`}>
                     {settings.mostrar_apartados ? <Eye size={24} /> : <EyeOff size={24} />}
                   </div>
                   <div>
@@ -151,11 +199,7 @@ export default function AdminDashboard() {
                     settings.mostrar_apartados ? "bg-green-500" : "bg-slate-200 dark:bg-slate-700"
                   }`}
                 >
-                  <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                      settings.mostrar_apartados ? "translate-x-6" : "translate-x-0"
-                    }`}
-                  />
+                  <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${settings.mostrar_apartados ? "translate-x-6" : "translate-x-0"}`} />
                 </button>
               </div>
 
@@ -165,7 +209,7 @@ export default function AdminDashboard() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between group">
                   <div className="flex gap-4">
-                    <div className={`p-3 rounded-2xl h-fit transition-colors ${settings.cancelacion_activa ? 'bg-red-50 dark:bg-red-950/30 text-red-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400'}`}>
+                    <div className={`p-3 rounded-2xl h-fit transition-colors ${settings.cancelacion_activa ? "bg-red-50 dark:bg-red-950/30 text-red-600" : "bg-slate-50 dark:bg-slate-800 text-slate-400"}`}>
                       <Clock size={24} />
                     </div>
                     <div>
@@ -177,15 +221,12 @@ export default function AdminDashboard() {
                   </div>
                   <button
                     onClick={toggleCancelacion}
-                    className={`relative inline-flex h-8 w-14 flex-shrink-0 rounded-full border-4 border-transparent transition-colors duration-200 focus:outline-none ${
+                    disabled={togglingCancelacion}
+                    className={`relative inline-flex h-8 w-14 flex-shrink-0 rounded-full border-4 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
                       settings.cancelacion_activa ? "bg-red-500" : "bg-slate-200 dark:bg-slate-700"
                     }`}
                   >
-                    <span
-                      className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                        settings.cancelacion_activa ? "translate-x-6" : "translate-x-0"
-                      }`}
-                    />
+                    <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${settings.cancelacion_activa ? "translate-x-6" : "translate-x-0"}`} />
                   </button>
                 </div>
 
@@ -205,7 +246,7 @@ export default function AdminDashboard() {
                     <button
                       onClick={saveCancelacion}
                       disabled={savingCancelacion}
-                      className="ml-auto px-8 py-3 bg-slate-900 dark:bg-red-600 hover:bg-slate-800 dark:hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-2xl transition-all shadow-lg shadow-slate-200 dark:shadow-none"
+                      className="ml-auto px-8 py-3 bg-slate-900 dark:bg-red-600 hover:bg-slate-800 dark:hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-2xl transition-all"
                     >
                       {savingCancelacion ? "Guardando..." : "Guardar"}
                     </button>
@@ -224,7 +265,7 @@ export default function AdminDashboard() {
             </div>
             <h2 className="text-xl font-bold">Accesos Rápidos</h2>
           </div>
-          
+
           <div className="grid grid-cols-1 gap-4">
             {quickLinks.map((item) => (
               <Link

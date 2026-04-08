@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Rifa, calcularSubtotal } from "@/lib/firestore";
+import { useEffect, useState } from "react";
+import { onSnapshot, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { Rifa, calcularSubtotal, DEFAULT_SETTINGS } from "@/lib/firestore";
 import NumberGrid from "@/components/NumberGrid";
 import NumberSearch from "@/components/NumberSearch";
 import ApartadoForm from "@/components/ApartadoForm";
@@ -15,8 +17,20 @@ interface RifaInteractiveProps {
   mostrarApartados: boolean;
 }
 
-export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApartados }: RifaInteractiveProps) {
+export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApartados: initialMostrarApartados }: RifaInteractiveProps) {
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
+  const [mostrarApartados, setMostrarApartados] = useState(initialMostrarApartados);
+
+  // Sincroniza en tiempo real con el setting de Firestore
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "settings", "config"), (snap) => {
+      const val = snap.exists()
+        ? (snap.data().mostrar_apartados ?? DEFAULT_SETTINGS.mostrar_apartados)
+        : DEFAULT_SETTINGS.mostrar_apartados;
+      setMostrarApartados(val);
+    });
+    return () => unsub();
+  }, []);
   const [visibles, setVisibles] = useState<number[] | null>(null);
   const [showForm, setShowForm] = useState(false);
 

@@ -19,8 +19,6 @@ import {
   DocumentSnapshot,
   QueryConstraint,
   getCountFromServer,
-  getAggregateFromServer,
-  sum,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -490,24 +488,26 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const boletosRef = collection(db, "boletos");
   const rifasRef   = collection(db, "rifas");
 
-  const [rifasSnap, pendienteSnap, pagadoSnap, canceladoSnap, recaudadoSnap] = await Promise.all([
+  const [rifasSnap, pendienteSnap, pagadoSnap, canceladoSnap] = await Promise.all([
     getCountFromServer(query(rifasRef, where("activa", "==", true))),
     getCountFromServer(query(boletosRef, where("status", "==", "pendiente"))),
-    getCountFromServer(query(boletosRef, where("status", "==", "pagado"))),
+    getDocs(query(boletosRef, where("status", "==", "pagado"))),
     getCountFromServer(query(boletosRef, where("status", "==", "cancelado"))),
-    getAggregateFromServer(query(boletosRef, where("status", "==", "pagado")), {
-      total: sum("precio_total"),
-    }),
   ]);
+
+  const recaudado = pagadoSnap.docs.reduce(
+    (acc, d) => acc + ((d.data().precio_total as number) ?? 0),
+    0
+  );
 
   return {
     rifasActivas: rifasSnap.data().count,
     boletos: {
       pendiente: pendienteSnap.data().count,
-      pagado:    pagadoSnap.data().count,
+      pagado:    pagadoSnap.size,
       cancelado: canceladoSnap.data().count,
     },
-    recaudado: recaudadoSnap.data().total ?? 0,
+    recaudado,
   };
 }
 

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   getComprobantesPaginados, updateComprobanteStatus, updateComprobanteComentario,
-  getBoletoByFolio, markBoletoPagadoConNumeros, Comprobante,
+  getBoletoByFolio, markBoletoPagadoConNumeros, Comprobante, Boleto,
 } from "@/lib/firestore";
 import { DocumentSnapshot } from "firebase/firestore";
 
@@ -17,6 +17,8 @@ export default function AdminComprobantesPage() {
   const [marking, setMarking] = useState<string | null>(null);
   const [viewing, setViewing] = useState<Comprobante | null>(null);
   const [commenting, setCommenting] = useState<Comprobante | null>(null);
+  // folio → boleto (para mostrar estado del boleto en la tabla)
+  const [boletoMap, setBoletoMap] = useState<Map<string, Boleto>>(new Map());
 
   const cursorStack = useRef<(DocumentSnapshot | null)[]>([null]);
   const [pageIdx, setPageIdx] = useState(0);
@@ -38,6 +40,12 @@ export default function AdminComprobantesPage() {
       if (more && lastDoc && stack.length <= idx + 1) {
         stack.push(lastDoc);
       }
+      // Enriquecer con estado del boleto para cada folio
+      const folios = [...new Set(cs.flatMap((c) => c.folios))];
+      const boletos = await Promise.all(folios.map((f) => getBoletoByFolio(f).catch(() => null)));
+      const map = new Map<string, Boleto>();
+      folios.forEach((f, i) => { if (boletos[i]) map.set(f, boletos[i]!); });
+      setBoletoMap(map);
     } catch (e) {
       console.error("Error cargando comprobantes:", e);
     } finally {
@@ -181,6 +189,16 @@ export default function AdminComprobantesPage() {
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-red-600 dark:text-red-400">
                     {c.folios.join(", ")}
+                    {c.folios.some((f) => boletoMap.get(f)?.status === "pagado") && (
+                      <span className="block mt-1 font-sans font-bold text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 w-fit">
+                        boleto pagado
+                      </span>
+                    )}
+                    {c.folios.some((f) => boletoMap.get(f)?.status === "cancelado") && (
+                      <span className="block mt-1 font-sans font-bold text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400 w-fit">
+                        boleto cancelado
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 font-semibold">${c.monto_total.toLocaleString("es-MX")}</td>
                   <td className="px-4 py-3 text-xs text-slate-500">

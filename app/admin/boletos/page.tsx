@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   getBoletosPaginados, markBoletoPagadoConNumeros, getRifas,
   cancelApartado, cancelPagado, cancelarBoletosExpirados,
-  revertPagadoToApartado, getAppSettings, Boleto, Rifa,
+  revertPagadoToApartado, getAppSettings, sincronizarComprobanteConBoleto,
+  Boleto, Rifa,
 } from "@/lib/firestore";
 import { DocumentSnapshot } from "firebase/firestore";
 
@@ -123,6 +124,7 @@ export default function AdminBoletosPage() {
     setMarking(boleto.id!);
     try {
       await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+      await sincronizarComprobanteConBoleto(boleto.folio);
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       const rifaNombre = rifas.get(boleto.rifa_id)?.nombre ?? "la rifa";
       const msg =

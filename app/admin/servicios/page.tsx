@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import {
   getBoletosPaginados, getRifas, Boleto, Rifa,
   cancelApartado, revertPagadoToApartado, cancelPagado, markBoletoPagadoConNumeros,
+  sincronizarComprobanteConBoleto,
 } from "@/lib/firestore";
 
 type ServiceType = "apartado-pagado" | "apartado-disponible" | "pagado-apartado" | "pagado-disponible";
@@ -135,6 +136,7 @@ export default function ServiciosPage() {
     try {
       if (activeTab === "apartado-pagado") {
         await markBoletoPagadoConNumeros({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+        await sincronizarComprobanteConBoleto(boleto.folio);
         if (notifyWhatsApp && waWindow) {
           const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
           const msg = `El pago de tu folio ${boleto.folio} ha sido confirmado exitosamente.\nVerifica el estado de tu boleto: ${baseUrl}/consulta?f=${boleto.folio}&act=1`;

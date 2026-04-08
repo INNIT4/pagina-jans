@@ -804,3 +804,19 @@ export async function getComprobanteByFolio(folio: string): Promise<Comprobante 
   const d = snap.docs[0];
   return { id: d.id, ...d.data() } as Comprobante;
 }
+
+/**
+ * Cuando un boleto se marca como pagado desde boletos/servicios,
+ * busca el comprobante asociado y lo marca como "revisado" automáticamente.
+ * Silencioso si no hay comprobante (no lanza error).
+ */
+export async function sincronizarComprobanteConBoleto(folio: string): Promise<void> {
+  try {
+    const comprobante = await getComprobanteByFolio(folio);
+    if (comprobante?.id && comprobante.status === "pendiente") {
+      await updateComprobanteStatus(comprobante.id, "revisado");
+    }
+  } catch {
+    // Silencioso — no bloquear el flujo de pago si falla
+  }
+}

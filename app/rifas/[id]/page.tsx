@@ -160,7 +160,7 @@ export default async function RifaDetailPage({ params }: { params: Promise<{ id:
   }
 
   const [{ vendidos, apartados }, settings] = await Promise.all([
-    getNumerosOcupados(resolvedParams.id).catch(() => ({ vendidos: [], apartados: [] })),
+    getNumerosOcupados(rifa.id ?? resolvedParams.id).catch(() => ({ vendidos: [], apartados: [] })),
     getAppSettings().catch(() => ({ mostrar_apartados: true })),
   ]);
 

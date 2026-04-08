@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { getRifa, getComprobanteByFolio, Boleto, Rifa, Comprobante, getBankAccounts, BankAccount } from "@/lib/firestore";
-import { downloadComprobante } from "@/lib/pdf";
+import { downloadComprobante, getComprobanteUrl } from "@/lib/pdf";
 import { getRotatedWhatsApp, buildWhatsAppUrl } from "@/lib/whatsapp";
 import BankCards from "@/components/BankCards";
 
@@ -310,11 +310,17 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
   const [downloading, setDownloading] = useState(false);
   const [waLoading, setWaLoading] = useState(false);
   const [comprobante, setComprobante] = useState<Comprobante | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (boleto.status === "cancelado") return;
     getComprobanteByFolio(boleto.folio).then(setComprobante).catch(() => {});
   }, [boleto.folio, boleto.status]);
+
+  useEffect(() => {
+    if (boleto.status === "cancelado") return;
+    getComprobanteUrl(boleto, rifa?.nombre ?? "Sorteos Jans").then(setPdfUrl).catch(() => {});
+  }, [boleto, rifa]);
 
   async function handleDownload() {
     setDownloading(true);
@@ -574,22 +580,14 @@ function BoletoCard({ boleto, rifa, showCelular }: { boleto: Boleto; rifa: Rifa 
           </div>
         )}
 
-        {/* Imagen del comprobante subido */}
-        {comprobante && (
-          comprobante.archivo_tipo === "imagen" ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={comprobante.archivo_url}
-              alt="Comprobante de pago"
-              className="w-full rounded-sm border border-gray-700 object-contain bg-gray-900"
-            />
-          ) : (
-            <iframe
-              src={comprobante.archivo_url}
-              title="Comprobante de pago"
-              className="w-full h-96 rounded-sm border border-gray-700 bg-gray-900"
-            />
-          )
+        {/* Vista previa del comprobante PDF */}
+        {pdfUrl && (
+          <iframe
+            src={pdfUrl}
+            title="Vista previa del comprobante"
+            className="w-full rounded-sm border border-gray-700 bg-gray-900"
+            style={{ height: "500px" }}
+          />
         )}
       </div>
     </div>

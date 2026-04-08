@@ -22,7 +22,7 @@ const DARK: RGB       = [15,  23,  42];
 const WHITE: RGB      = [255, 255, 255];
 
 
-export async function downloadComprobante(boleto: Boleto, rifaNombre: string): Promise<void> {
+async function buildComprobanteDoc(boleto: Boleto, rifaNombre: string) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
 
@@ -231,5 +231,15 @@ export async function downloadComprobante(boleto: Boleto, rifaNombre: string): P
   doc.setFont("helvetica", "normal");
   doc.text("Sorteos Jans  —  Todos los derechos reservados", 105, 284, { align: "center" });
 
+  return doc;
+}
+
+export async function downloadComprobante(boleto: Boleto, rifaNombre: string): Promise<void> {
+  const doc = await buildComprobanteDoc(boleto, rifaNombre);
   doc.save(`comprobante-${boleto.folio}.pdf`);
+}
+
+export async function getComprobanteUrl(boleto: Boleto, rifaNombre: string): Promise<string> {
+  const doc = await buildComprobanteDoc(boleto, rifaNombre);
+  return doc.output("bloburl") as unknown as string;
 }

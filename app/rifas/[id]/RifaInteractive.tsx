@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { onSnapshot, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Rifa, calcularSubtotal, DEFAULT_SETTINGS } from "@/lib/firestore";
+import { Rifa, calcularSubtotal, DEFAULT_SETTINGS, getNumerosOcupados } from "@/lib/firestore";
 import NumberGrid from "@/components/NumberGrid";
 import NumberSearch from "@/components/NumberSearch";
 import ApartadoForm from "@/components/ApartadoForm";
@@ -17,9 +17,12 @@ interface RifaInteractiveProps {
   mostrarApartados: boolean;
 }
 
-export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApartados: initialMostrarApartados }: RifaInteractiveProps) {
+export default function RifaInteractive({ rifa, vendidos: initialVendidos, apartados: initialApartados, mostrarApartados: initialMostrarApartados }: RifaInteractiveProps) {
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
   const [mostrarApartados, setMostrarApartados] = useState(initialMostrarApartados);
+  const [vendidos, setVendidos] = useState<number[]>(initialVendidos);
+  const [apartados, setApartados] = useState<number[]>(initialApartados);
+  const prevCounters = useRef({ vendidos: -1, apartados: -1 });
 
   // Sincroniza en tiempo real con el setting de Firestore
   useEffect(() => {
@@ -31,6 +34,25 @@ export default function RifaInteractive({ rifa, vendidos, apartados, mostrarApar
     });
     return () => unsub();
   }, []);
+
+  // Sincroniza vendidos/apartados en tiempo real: cuando cambien los contadores en el doc de la rifa, re-fetch los números
+  useEffect(() => {
+    const rifaId = rifa.id!;
+    const unsub = onSnapshot(doc(db, "rifas", rifaId), (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      const newVendidos = data.num_vendidos ?? 0;
+      const newApartados = data.num_apartados ?? 0;
+      const prev = prevCounters.current;
+      if (prev.vendidos === newVendidos && prev.apartados === newApartados) return;
+      prevCounters.current = { vendidos: newVendidos, apartados: newApartados };
+      getNumerosOcupados(rifaId).then(({ vendidos: v, apartados: a }) => {
+        setVendidos(v);
+        setApartados(a);
+      });
+    });
+    return () => unsub();
+  }, [rifa.id]);
   const [visibles, setVisibles] = useState<number[] | null>(null);
   const [showForm, setShowForm] = useState(false);
 

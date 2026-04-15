@@ -3,30 +3,20 @@ import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getRatelimit } from "@/lib/ratelimit";
 import { generateFolio } from "@/lib/folio";
+import { ESTADOS_MX_SET } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
-const ESTADOS_MX = new Set([
-  "Aguascalientes","Baja California","Baja California Sur","Campeche","Chiapas","Chihuahua",
-  "Ciudad de México","Coahuila","Colima","Durango","Estado de México","Guanajuato","Guerrero",
-  "Hidalgo","Jalisco","Michoacán","Morelos","Nayarit","Nuevo León","Oaxaca","Puebla","Querétaro",
-  "Quintana Roo","San Luis Potosí","Sinaloa","Sonora","Tabasco","Tamaulipas","Tlaxcala",
-  "Veracruz","Yucatán","Zacatecas",
-]);
-
 export async function POST(req: NextRequest) {
-  // Rate limiting — si falla Upstash, simplemente se omite
-  const rl = getRatelimit();
-  if (rl) {
-    try {
-      const ip = req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
-      const { success } = await rl.limit(`crear_boleto:${ip}`);
-      if (!success) {
-        return NextResponse.json({ error: "Demasiadas solicitudes. Espera un momento." }, { status: 429 });
-      }
-    } catch (err) {
-      console.error("[crear boleto] Rate limit check failed (continuando sin límite):", err);
+  // Rate limiting — usa Upstash Redis o fallback in-memory
+  try {
+    const ip = req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
+    const { success } = await getRatelimit().limit(`crear_boleto:${ip}`);
+    if (!success) {
+      return NextResponse.json({ error: "Demasiadas solicitudes. Espera un momento." }, { status: 429 });
     }
+  } catch (err) {
+    console.error("[crear boleto] Rate limit check failed:", err);
   }
 
   let body: Record<string, unknown>;
@@ -48,6 +38,12 @@ export async function POST(req: NextRequest) {
   if (!numeros.every((n) => typeof n === "number" && Number.isInteger(n) && n >= 0))
     return NextResponse.json({ error: "Números inválidos." }, { status: 400 });
 
+  if (new Set(numeros).size !== numeros.length)
+    return NextResponse.json({ error: "No se permiten números duplicados." }, { status: 400 });
+
+  if (numeros.length > 100)
+    return NextResponse.json({ error: "Máximo 100 números por reserva." }, { status: 400 });
+
   if (typeof nombre !== "string" || !nombre.trim())
     return NextResponse.json({ error: "Nombre requerido." }, { status: 400 });
 
@@ -57,7 +53,7 @@ export async function POST(req: NextRequest) {
   if (typeof celular !== "string" || !/^\d{10}$/.test(celular))
     return NextResponse.json({ error: "Celular inválido (10 dígitos)." }, { status: 400 });
 
-  if (typeof estado !== "string" || !ESTADOS_MX.has(estado))
+  if (typeof estado !== "string" || !ESTADOS_MX_SET.has(estado as never))
     return NextResponse.json({ error: "Estado inválido." }, { status: 400 });
 
   // ── Inicializar Firebase Admin ─────────────────────────────────────────────
@@ -66,8 +62,7 @@ export async function POST(req: NextRequest) {
     db = adminDb();
   } catch (err) {
     console.error("[crear boleto] Firebase Admin init error:", err);
-    const msg = err instanceof Error ? err.message : "Error de configuración del servidor.";
-    return NextResponse.json({ error: `Error de configuración: ${msg}` }, { status: 500 });
+    return NextResponse.json({ error: "Error interno del servidor. Intenta más tarde." }, { status: 500 });
   }
 
   // ── Obtener precio de la rifa en el servidor (no confiar en el cliente) ────
@@ -76,8 +71,7 @@ export async function POST(req: NextRequest) {
     rifaSnap = await db.collection("rifas").doc(rifa_id.trim()).get();
   } catch (err) {
     console.error("[crear boleto] Error leyendo rifa:", err);
-    const msg = err instanceof Error ? err.message : "Error de base de datos.";
-    return NextResponse.json({ error: `Error al leer la rifa: ${msg}` }, { status: 500 });
+    return NextResponse.json({ error: "Error interno del servidor." }, { status: 500 });
   }
 
   if (!rifaSnap.exists)
@@ -123,7 +117,11 @@ export async function POST(req: NextRequest) {
 
     if (!codesSnap.empty) {
       const code = codesSnap.docs[0].data();
-      if (code.usos < code.max_usos) {
+      const rifaIds: string[] = code.rifa_ids ?? [];
+      if (
+        code.usos < code.max_usos &&
+        (rifaIds.length === 0 || rifaIds.includes(rifa_id.trim()))
+      ) {
         descuentoPct = code.porcentaje;
         codigoId = codesSnap.docs[0].id;
       }

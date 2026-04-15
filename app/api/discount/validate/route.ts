@@ -6,37 +6,39 @@ export const dynamic = "force-dynamic";
 
 // POST /api/discount/validate — valida un código de descuento sin exponer la colección completa
 export async function POST(req: NextRequest) {
-  const rl = getRatelimit();
-  if (rl) {
+  try {
     const ip = req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
-    const { success } = await rl.limit(`discount_validate:${ip}`);
+    const { success } = await getRatelimit().limit(`discount_validate:${ip}`);
     if (!success)
       return NextResponse.json({ error: "Demasiados intentos." }, { status: 429 });
+
+    const { codigo, rifa_id } = await req.json().catch(() => ({}));
+    if (typeof codigo !== "string" || !codigo.trim())
+      return NextResponse.json({ error: "Código requerido." }, { status: 400 });
+
+    const snap = await adminDb()
+      .collection("discount_codes")
+      .where("codigo", "==", codigo.trim().toUpperCase())
+      .where("activo", "==", true)
+      .limit(1)
+      .get();
+
+    if (snap.empty)
+      return NextResponse.json({ error: "Código inválido o expirado." }, { status: 404 });
+
+    const data = snap.docs[0].data();
+    if (data.usos >= data.max_usos)
+      return NextResponse.json({ error: "Código inválido o expirado." }, { status: 404 });
+
+    // Verificar restricción por rifa
+    const rifaIds: string[] = data.rifa_ids ?? [];
+    if (rifaIds.length > 0 && (!rifa_id || !rifaIds.includes(rifa_id)))
+      return NextResponse.json({ error: "Este código no aplica para esta rifa." }, { status: 404 });
+
+    // Solo devuelve el porcentaje — nunca el id interno ni otros campos
+    return NextResponse.json({ porcentaje: data.porcentaje as number });
+  } catch (err) {
+    console.error("[discount/validate]", err);
+    return NextResponse.json({ error: "Error interno del servidor." }, { status: 500 });
   }
-
-  const { codigo, rifa_id } = await req.json().catch(() => ({}));
-  if (typeof codigo !== "string" || !codigo.trim())
-    return NextResponse.json({ error: "Código requerido." }, { status: 400 });
-
-  const snap = await adminDb()
-    .collection("discount_codes")
-    .where("codigo", "==", codigo.trim().toUpperCase())
-    .where("activo", "==", true)
-    .limit(1)
-    .get();
-
-  if (snap.empty)
-    return NextResponse.json({ error: "Código inválido o expirado." }, { status: 404 });
-
-  const data = snap.docs[0].data();
-  if (data.usos >= data.max_usos)
-    return NextResponse.json({ error: "Código inválido o expirado." }, { status: 404 });
-
-  // Verificar restricción por rifa
-  const rifaIds: string[] = data.rifa_ids ?? [];
-  if (rifaIds.length > 0 && (!rifa_id || !rifaIds.includes(rifa_id)))
-    return NextResponse.json({ error: "Este código no aplica para esta rifa." }, { status: 404 });
-
-  // Solo devuelve el porcentaje — nunca el id interno ni otros campos
-  return NextResponse.json({ porcentaje: data.porcentaje as number });
 }

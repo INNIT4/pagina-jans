@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getRifas, updateRifa, deleteRifa, anunciarGanador, Rifa, Ganador } from "@/lib/firestore";
 import RifaFormModal from "@/components/admin/RifaFormModal";
 import RifaToggleGrid from "@/components/admin/RifaToggleGrid";
+import { notifyIndexNow } from "@/lib/indexnow";
 
 function GanadorModal({ rifa, onClose, onDone }: { rifa: Rifa; onClose: () => void; onDone: () => void }) {
   const [numero, setNumero] = useState("");
@@ -96,13 +97,24 @@ export default function AdminRifasPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("¿Eliminar esta rifa?")) return;
-    await deleteRifa(id);
-    await load();
+    try {
+      await deleteRifa(id);
+      await load();
+    } catch (e) {
+      console.error(e);
+      alert("Error al eliminar la rifa.");
+    }
   }
 
   async function toggleActiva(r: Rifa) {
     await updateRifa(r.id!, { activa: !r.activa });
     await load();
+    // Notificar a Bing/Yandex via IndexNow para indexación inmediata
+    const slug = r.slug ?? r.id!;
+    notifyIndexNow([
+      `https://www.sorteosjans.com.mx/rifas/${slug}`,
+      `https://www.sorteosjans.com.mx/rifas`,
+    ]);
   }
 
   return (

@@ -81,8 +81,12 @@ export async function middleware(request: NextRequest) {
   // 5. Append CSP headers to normal response
   response.headers.set('Content-Security-Policy', cspHeader);
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
-  // Optional: Also add Next.js dev x-nonce if needed
   response.headers.set('x-nonce', nonce);
+
+  // 6. Panel admin: no indexar ni seguir links (segunda línea de defensa tras robots.txt)
+  if (pathname.startsWith("/admin")) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  }
 
   return response;
 }

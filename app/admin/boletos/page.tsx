@@ -149,21 +149,33 @@ export default function AdminBoletosPage() {
   async function handleCancel(boleto: Boleto) {
     if (!confirm(`¿Cancelar boleto ${boleto.folio}?`)) return;
     setMarking(boleto.id!);
-    if (boleto.status === "pendiente") {
-      await cancelApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
-    } else {
-      await cancelPagado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+    try {
+      if (boleto.status === "pendiente") {
+        await cancelApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+      } else {
+        await cancelPagado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error al cancelar el boleto.");
+    } finally {
+      setMarking(null);
+      await reloadCurrentPage();
     }
-    setMarking(null);
-    await reloadCurrentPage();
   }
 
   async function handleRevertir(boleto: Boleto) {
     if (!confirm(`¿Revertir boleto ${boleto.folio} a "pendiente"? Los números volverán a estado apartado.`)) return;
     setMarking(boleto.id!);
-    await revertPagadoToApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
-    setMarking(null);
-    await reloadCurrentPage();
+    try {
+      await revertPagadoToApartado({ id: boleto.id!, rifa_id: boleto.rifa_id, numeros: boleto.numeros });
+    } catch (e) {
+      console.error(e);
+      alert("Error al revertir el boleto.");
+    } finally {
+      setMarking(null);
+      await reloadCurrentPage();
+    }
   }
 
   // Filtro de texto client-side sobre los boletos cargados

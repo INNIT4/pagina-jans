@@ -25,7 +25,8 @@ export default function AdminClientesPage() {
       const map = new Map<string, Cliente>();
       let cursor: DocumentSnapshot | null = null;
       let total = 0;
-      while (true) {
+      const MAX_BOLETOS = 2000; // Límite para evitar descarga masiva
+      while (total < MAX_BOLETOS) {
         const { boletos, hasMore, lastDoc } = await getBoletosPaginados({ pageSize: 500, cursor });
         boletos.forEach((b) => {
           const key = b.celular;

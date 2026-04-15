@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { onSnapshot, doc } from "firebase/firestore";
+import { useEffect, useState, useMemo } from "react";
+import { onSnapshot, doc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Rifa, calcularSubtotal, DEFAULT_SETTINGS, getNumerosOcupados } from "@/lib/firestore";
+import { Rifa, calcularSubtotal, DEFAULT_SETTINGS } from "@/lib/firestore";
 import NumberGrid from "@/components/NumberGrid";
 import NumberSearch from "@/components/NumberSearch";
 import ApartadoForm from "@/components/ApartadoForm";
@@ -22,7 +22,8 @@ export default function RifaInteractive({ rifa, vendidos: initialVendidos, apart
   const [mostrarApartados, setMostrarApartados] = useState(initialMostrarApartados);
   const [vendidos, setVendidos] = useState<number[]>(initialVendidos);
   const [apartados, setApartados] = useState<number[]>(initialApartados);
-  const prevCounters = useRef({ vendidos: -1, apartados: -1 });
+  const [visibles, setVisibles] = useState<number[] | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   // Sincroniza en tiempo real con el setting de Firestore
   useEffect(() => {
@@ -35,26 +36,30 @@ export default function RifaInteractive({ rifa, vendidos: initialVendidos, apart
     return () => unsub();
   }, []);
 
-  // Sincroniza vendidos/apartados en tiempo real: cuando cambien los contadores en el doc de la rifa, re-fetch los números
+  // Sincroniza vendidos/apartados en tiempo real via onSnapshot directo en subcollección numeros.
+  // Firestore solo transmite deltas (documentos que cambiaron), no la colección completa.
   useEffect(() => {
     const rifaId = rifa.id!;
-    const unsub = onSnapshot(doc(db, "rifas", rifaId), (snap) => {
-      if (!snap.exists()) return;
-      const data = snap.data();
-      const newVendidos = data.num_vendidos ?? 0;
-      const newApartados = data.num_apartados ?? 0;
-      const prev = prevCounters.current;
-      if (prev.vendidos === newVendidos && prev.apartados === newApartados) return;
-      prevCounters.current = { vendidos: newVendidos, apartados: newApartados };
-      getNumerosOcupados(rifaId).then(({ vendidos: v, apartados: a }) => {
-        setVendidos(v);
-        setApartados(a);
+    const unsub = onSnapshot(collection(db, "rifas", rifaId, "numeros"), (snap) => {
+      const v: number[] = [];
+      const a: number[] = [];
+      snap.docs.forEach((d) => {
+        const n = parseInt(d.id);
+        if (isNaN(n)) return;
+        const status = d.data().status as string;
+        if (status === "vendido") v.push(n);
+        else if (status === "apartado") a.push(n);
+      });
+      setVendidos(v);
+      setApartados(a);
+      // Deseleccionar números que ya fueron tomados por otro usuario
+      setSeleccionados((prev) => {
+        const ocupados = new Set([...v, ...a]);
+        return prev.filter((n) => !ocupados.has(n));
       });
     });
     return () => unsub();
   }, [rifa.id]);
-  const [visibles, setVisibles] = useState<number[] | null>(null);
-  const [showForm, setShowForm] = useState(false);
 
   function toggleNumber(n: number) {
     setSeleccionados((prev) =>
@@ -62,13 +67,16 @@ export default function RifaInteractive({ rifa, vendidos: initialVendidos, apart
     );
   }
 
-  const vendidosSet = new Set(vendidos);
-  const apartadosSet = new Set(apartados);
-  const selSet = new Set(seleccionados);
-  const numerosDisponibles: number[] = [];
-  for (let i = rifa.num_inicio; i <= rifa.num_fin; i++) {
-    if (!vendidosSet.has(i) && !apartadosSet.has(i) && !selSet.has(i)) numerosDisponibles.push(i);
-  }
+  const vendidosSet = useMemo(() => new Set(vendidos), [vendidos]);
+  const apartadosSet = useMemo(() => new Set(apartados), [apartados]);
+  const selSet = useMemo(() => new Set(seleccionados), [seleccionados]);
+  const numerosDisponibles = useMemo(() => {
+    const result: number[] = [];
+    for (let i = rifa.num_inicio; i <= rifa.num_fin; i++) {
+      if (!vendidosSet.has(i) && !apartadosSet.has(i) && !selSet.has(i)) result.push(i);
+    }
+    return result;
+  }, [rifa.num_inicio, rifa.num_fin, vendidosSet, apartadosSet, selSet]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">

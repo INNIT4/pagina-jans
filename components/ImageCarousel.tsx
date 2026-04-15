@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 
 interface ImageCarouselProps {
   images: string[];
@@ -33,18 +34,20 @@ export default function ImageCarousel({ images, alt }: ImageCarouselProps) {
 
   return (
     <div className="relative w-full rounded-2xl overflow-hidden select-none">
-      {/* Main image */}
+      {/* Main image — candidato LCP: primera imagen con priority=true */}
       <div className="relative w-full h-72 md:h-[420px] bg-black">
         {images.map((src, i) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             key={i}
             src={src}
             alt={`${alt} ${i + 1}`}
-            className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${
+            fill
+            className={`object-contain transition-opacity duration-500 ${
               i === current ? "opacity-100" : "opacity-0"
             }`}
-            onError={(e) => (e.currentTarget.style.display = "none")}
+            priority={i === 0}
+            sizes="(min-width: 768px) 80vw, 100vw"
+            onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
           />
         ))}
         {/* Gradient overlay at bottom */}
@@ -91,23 +94,28 @@ export default function ImageCarousel({ images, alt }: ImageCarouselProps) {
         </>
       )}
 
-      {/* Thumbnail strip */}
+      {/* Thumbnail strip — width/height explícitos para prevenir CLS */}
       {images.length > 1 && (
         <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
           {images.map((src, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <div
               key={i}
-              src={src}
-              alt={`${alt} ${i + 1}`}
-              onClick={() => setCurrent(i)}
-              className={`h-14 w-20 object-contain bg-black rounded-lg cursor-pointer flex-shrink-0 transition-all ${
+              className={`relative h-14 w-20 flex-shrink-0 bg-black rounded-lg overflow-hidden cursor-pointer transition-all ${
                 i === current
                   ? "ring-2 ring-red-500 opacity-100"
                   : "opacity-50 hover:opacity-80"
               }`}
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
+              onClick={() => setCurrent(i)}
+            >
+              <Image
+                src={src}
+                alt={`${alt} ${i + 1}`}
+                fill
+                className="object-contain"
+                sizes="80px"
+                onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+              />
+            </div>
           ))}
         </div>
       )}

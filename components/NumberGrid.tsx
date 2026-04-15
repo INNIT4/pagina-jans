@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, memo } from "react";
 
 type NumberStatus = "disponible" | "vendido" | "apartado" | "seleccionado";
 
@@ -23,6 +23,29 @@ const STATUS_CLASSES: Record<NumberStatus, string> = {
   apartado:    "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 cursor-not-allowed opacity-70",
   seleccionado:"bg-blue-500 text-white dark:bg-blue-600 cursor-pointer ring-2 ring-blue-400",
 };
+
+// Memoizado para evitar re-renders de todos los botones cuando cambia un solo número
+const NumberButton = memo(function NumberButton({
+  n,
+  status,
+  onToggle,
+}: {
+  n: number;
+  status: NumberStatus;
+  onToggle: (n: number) => void;
+}) {
+  return (
+    <button
+      onClick={() => {
+        if (status !== "vendido" && status !== "apartado") onToggle(n);
+      }}
+      className={`rounded text-xs font-bold py-2 px-1 transition-all ${STATUS_CLASSES[status]}`}
+      title={`Número ${n} — ${status}`}
+    >
+      {n}
+    </button>
+  );
+});
 
 export default function NumberGrid({
   numInicio,
@@ -98,21 +121,9 @@ export default function NumberGrid({
 
       {/* Grid */}
       <div className="number-grid">
-        {pageNumbers.map((n) => {
-          const status = getStatus(n);
-          return (
-            <button
-              key={n}
-              onClick={() => {
-                if (status !== "vendido" && status !== "apartado") onToggle(n);
-              }}
-              className={`rounded text-xs font-bold py-2 px-1 transition-all ${STATUS_CLASSES[status]}`}
-              title={`Número ${n} — ${status}`}
-            >
-              {n}
-            </button>
-          );
-        })}
+        {pageNumbers.map((n) => (
+          <NumberButton key={n} n={n} status={getStatus(n)} onToggle={onToggle} />
+        ))}
       </div>
 
       {/* Pagination controls */}

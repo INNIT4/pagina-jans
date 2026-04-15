@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
+import { safeJsonLd } from "@/lib/safe-json-ld";
 
 const rajdhani = Rajdhani({
   subsets: ["latin"],
@@ -113,10 +114,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Footer />
           <FloatingWhatsApp />
         </ThemeProvider>
-        <Script
-          id="schema-org"
+        <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationSchema) }}
         />
         <Script
           id="microsoft-clarity"

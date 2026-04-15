@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getSiteTexts } from "@/lib/firestore";
 import FaqAccordion from "./FaqAccordion";
+import { safeJsonLd } from "@/lib/safe-json-ld";
 
 export const revalidate = 300;
 
@@ -37,7 +38,7 @@ export default async function FAQPage() {
     <div className="max-w-3xl mx-auto px-4 py-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(faqSchema) }}
       />
       <h1 className="text-4xl font-bold uppercase tracking-widest mb-2">{texts.faq_title}</h1>
       <span className="accent-bar" />

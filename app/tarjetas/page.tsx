@@ -3,6 +3,8 @@ import BankCards from "@/components/BankCards";
 import TarjetasActions from "@/components/TarjetasActions";
 import { getBankAccounts } from "@/lib/firestore";
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: "Métodos de Pago",
   description:
@@ -13,9 +15,9 @@ export const metadata: Metadata = {
 export default async function TarjetasPage({
   searchParams,
 }: {
-  searchParams: { folio?: string };
+  searchParams: Promise<{ folio?: string }>;
 }) {
-  const folio = searchParams.folio;
+  const folio = (await searchParams).folio;
   const accounts = (await getBankAccounts()).filter((a) => a.activo);
 
   return (

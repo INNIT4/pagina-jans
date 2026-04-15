@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Aviso de Privacidad",
   description: "Aviso de privacidad de Sorteos Jans conforme a la LFPDPPP.",
+  alternates: { canonical: "https://www.sorteosjans.com.mx/aviso-privacidad" },
 };
 
 export default function AvisoPrivacidadPage() {

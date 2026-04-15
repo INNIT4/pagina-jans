@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { onSnapshot, collection } from "firebase/firestore";
+import { onSnapshot, collection, query, where, orderBy, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Boleto, Rifa, DiscountCode } from "@/lib/firestore";
 
@@ -97,7 +97,15 @@ export default function MetricasPage() {
     let loadedB = false, loadedR = false, loadedC = false;
     const check = () => { if (loadedB && loadedR && loadedC) setLoading(false); };
 
-    const unsubB = onSnapshot(collection(db, "boletos"), (snap) => {
+    // Solo boletos de los últimos 90 días — cubre todos los períodos del selector (7/14/30 días)
+    const cutoff = Timestamp.fromDate(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000));
+    const boletosQuery = query(
+      collection(db, "boletos"),
+      where("created_at", ">=", cutoff),
+      orderBy("created_at", "desc")
+    );
+
+    const unsubB = onSnapshot(boletosQuery, (snap) => {
       setBoletos(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Boleto)));
       loadedB = true; check();
     });

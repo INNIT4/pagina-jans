@@ -9,6 +9,12 @@ export const metadata: Metadata = {
   description:
     "Historial de rifas realizadas por Sorteos Jans. Conoce los ganadores y los premios entregados.",
   alternates: { canonical: "https://www.sorteosjans.com.mx/rifas-previas" },
+  openGraph: {
+    title: "Rifas Previas | Sorteos Jans",
+    description: "Historial de rifas realizadas por Sorteos Jans. Conoce los ganadores y los premios entregados.",
+    url: "https://www.sorteosjans.com.mx/rifas-previas",
+    type: "website",
+  },
 };
 
 export default async function RifasPreviasPage() {

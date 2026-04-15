@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import ImageCarousel from "@/components/ImageCarousel";
 import Link from "next/link";
+import { safeJsonLd } from "@/lib/safe-json-ld";
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 const SITE_URL = "https://www.sorteosjans.com.mx";
 
@@ -12,14 +13,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const resolvedParams = await params;
   const rifa = await getRifa(resolvedParams.id).catch(() => null);
   if (!rifa) return {};
+  const slug = rifa.slug ?? resolvedParams.id;
   return {
     title: `${rifa.nombre} (Finalizada)`,
     description: rifa.descripcion,
-    alternates: { canonical: `${SITE_URL}/rifas-previas/${resolvedParams.id}` },
+    alternates: { canonical: `${SITE_URL}/rifas-previas/${slug}` },
     openGraph: {
       title: `${rifa.nombre} (Finalizada)`,
       description: rifa.descripcion,
-      url: `${SITE_URL}/rifas-previas/${resolvedParams.id}`,
+      url: `${SITE_URL}/rifas-previas/${slug}`,
       images: rifa.imagen_url ? [rifa.imagen_url] : undefined,
       type: "website",
     },
@@ -29,11 +31,43 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function RifaPreviaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const rifa = await getRifa(resolvedParams.id).catch(() => null);
-  
+
   if (!rifa) notFound();
+
+  const slug = rifa.slug ?? resolvedParams.id;
+  const rifaUrl = `${SITE_URL}/rifas-previas/${slug}`;
+  const eventSchema = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: rifa.nombre,
+    description: rifa.descripcion,
+    url: rifaUrl,
+    eventStatus: "https://schema.org/EventCompleted",
+    eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
+    startDate: rifa.fecha_sorteo,
+    endDate: rifa.fecha_sorteo,
+    organizer: {
+      "@type": "Organization",
+      name: "Sorteos Jans",
+      url: SITE_URL,
+    },
+    ...(rifa.imagen_url ? { image: rifa.imagen_url } : {}),
+    ...(rifa.ganador
+      ? {
+          winner: {
+            "@type": "Person",
+            name: `${rifa.ganador.nombre} ${rifa.ganador.apellidos}`,
+          },
+        }
+      : {}),
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(eventSchema) }}
+      />
       {/* Back link */}
       <Link
         href="/rifas-previas"

@@ -4,8 +4,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import RifaInteractive from "./RifaInteractive";
 import ImageCarousel from "@/components/ImageCarousel";
+import { safeJsonLd } from "@/lib/safe-json-ld";
 
-export const revalidate = 30;
+export const revalidate = 300;
 
 const SITE_URL = "https://www.sorteosjans.com.mx";
 
@@ -13,16 +14,23 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const resolvedParams = await params;
   const rifa = await getRifaBySlugOrId(resolvedParams.id).catch(() => null);
   if (!rifa) return {};
+  const slug = rifa.slug ?? resolvedParams.id;
   return {
     title: rifa.nombre,
     description: rifa.descripcion,
-    alternates: { canonical: `${SITE_URL}/rifas/${resolvedParams.id}` },
+    alternates: { canonical: `${SITE_URL}/rifas/${slug}` },
     openGraph: {
       title: rifa.nombre,
       description: rifa.descripcion,
-      url: `${SITE_URL}/rifas/${resolvedParams.id}`,
+      url: `${SITE_URL}/rifas/${slug}`,
       images: rifa.imagen_url ? [rifa.imagen_url] : undefined,
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: rifa.nombre,
+      description: rifa.descripcion ?? undefined,
+      images: rifa.imagen_url ? [rifa.imagen_url] : undefined,
     },
   };
 }
@@ -35,8 +43,18 @@ export default async function RifaDetailPage({ params }: { params: Promise<{ id:
   // Rifa inactiva sin ganador → 404
   if (!rifa.activa && !rifa.ganador) notFound();
 
-  const rifaUrl = `${SITE_URL}/rifas/${resolvedParams.id}`;
+  const rifaUrl = `${SITE_URL}/rifas/${rifa.slug ?? resolvedParams.id}`;
   const premioPrincipal = rifa.premios?.find((p) => p.es_principal);
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Inicio", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Rifas", item: `${SITE_URL}/rifas` },
+      { "@type": "ListItem", position: 3, name: rifa.nombre, item: rifaUrl },
+    ],
+  };
 
   const eventSchema = {
     "@context": "https://schema.org",
@@ -101,7 +119,11 @@ export default async function RifaDetailPage({ params }: { params: Promise<{ id:
       <div className="max-w-3xl mx-auto px-4 py-8">
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(eventSchema) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(eventSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbSchema) }}
         />
         <Link
           href="/rifas"
@@ -168,7 +190,11 @@ export default async function RifaDetailPage({ params }: { params: Promise<{ id:
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(eventSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbSchema) }}
       />
       <RifaInteractive rifa={rifa} vendidos={vendidos} apartados={apartados} mostrarApartados={settings.mostrar_apartados} />
     </>

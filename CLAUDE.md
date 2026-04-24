@@ -11,7 +11,7 @@ Web app for managing and selling raffle tickets online. Users browse active raff
 - **Storage**: Vercel Blob (image/file uploads with magic byte verification)
 - **Rate Limiting**: Upstash Redis (optional, sliding window)
 - **Theme**: `next-themes` (persisted dark mode toggle)
-- **PDF**: `jspdf` + `jspdf-autotable` (client-side comprobante generation)
+- **PDF**: `jspdf` (client-side comprobante generation, dynamic import to avoid SSR)
 - **Icons**: `lucide-react`
 
 ## Key Directories
@@ -26,6 +26,9 @@ Web app for managing and selling raffle tickets online. Users browse active raff
 | `lib/whatsapp.ts` | WhatsApp rotation logic (client-side helper, calls API routes) |
 | `lib/pdf.ts` | `downloadComprobante()` — generates PDF with jspdf |
 | `lib/folio.ts` | `generateFolio()` — produces `JNS-XXXXXX` format |
+| `lib/constants.ts` | `ESTADOS_MX` array + `ESTADOS_MX_SET` — single source of truth for Mexican states |
+| `lib/safe-json-ld.ts` | `safeJsonLd()` — escapes `<>& ` in JSON-LD strings to prevent XSS via `dangerouslySetInnerHTML` |
+| `lib/indexnow.ts` | `notifyIndexNow(urls)` — pings Bing/Yandex IndexNow API when raffle status changes |
 | `middleware.ts` | CSP headers + admin auth guard with RBAC (admin vs staff roles) |
 | `components/` | Shared UI: Navbar, Footer, NumberGrid, NumberSearch, ApartadoForm, BankCards, FloatingWhatsApp, CountdownTimer, ImageCarousel, RandomPicker |
 | `components/admin/` | Admin-specific: RifaFormModal, RifaToggleGrid, ImageUploader |
@@ -44,7 +47,7 @@ Web app for managing and selling raffle tickets online. Users browse active raff
 | `/rifas-previas` | Past/historical raffles |
 | `/rifas-previas/[id]` | Past raffle details |
 | `/consulta` | Ticket lookup by folio/celular/numero + PDF download |
-| `/cuentas` | Bank account information |
+| `/cuentas` | 308 permanent redirect → `/tarjetas` |
 | `/faq` | FAQ section |
 | `/sobre-nosotros` | About page |
 | `/aviso-privacidad` | Privacy policy |
@@ -60,7 +63,7 @@ Web app for managing and selling raffle tickets online. Users browse active raff
 | `/api/upload` | POST | Upload images to Vercel Blob | Session or Token |
 | `/api/whatsapp/active` | GET | Check WhatsApp config status | None |
 | `/api/whatsapp/rotate` | POST | Get current WhatsApp number + atomic rotation | Rate limited |
-| `/api/whatsapp/support` | GET | Get help WhatsApp number | None |
+| `/api/whatsapp/support` | GET | Get help WhatsApp number | Rate limited |
 | `/api/comprobantes/upload` | POST | Upload payment proof (image/PDF) | Rate limited (5/hr) |
 
 ## Admin Panel (13 sections)
@@ -87,7 +90,7 @@ All protected by middleware. **staff** role restricted to: boletos, comprobantes
 - **RBAC**: admin vs staff roles enforced in middleware
 - **CSP**: Content Security Policy headers with nonce generation
 - **Security headers**: X-Frame-Options, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
-- **Rate limiting**: Upstash Redis on sensitive endpoints (login, ticket creation, discount validation, comprobantes)
+- **Rate limiting**: Upstash Redis on all sensitive endpoints. Falls back to in-memory sliding window if Redis is unconfigured — never fails open
 - **Server-side price**: Price calculated on server, never trusted from client
 - **File validation**: Magic byte verification on uploads (not just MIME type)
 - **Upload storage**: Vercel Blob (not public filesystem)

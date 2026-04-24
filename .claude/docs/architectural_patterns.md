@@ -68,16 +68,22 @@ Primary implementation in API routes:
 ```ts
 const { jsPDF } = await import("jspdf");
 ```
-File is marked `"use client"` and only called from the `consulta` page on button click. Uses `jspdf-autotable` for table formatting.
+File is marked `"use client"` and only called from the `consulta` page on button click. `jspdf-autotable` was removed — table layout is handled manually via jspdf primitives.
 
 ## 8. Rate Limiting Pattern
 
-`lib/ratelimit.ts` wraps Upstash Redis sliding window. Gracefully degrades if `UPSTASH_REDIS_REST_URL` is not configured (allows all requests).
+`lib/ratelimit.ts` exports `getRatelimit()` which always returns a live limiter — never `null`. If `UPSTASH_REDIS_REST_URL` is not configured, it returns a fallback in-memory sliding window (20 req/min). Never fails open.
 
-Applied in API routes via:
+Applied in API routes via try/catch so a Redis error never blocks the request:
 ```ts
-const { success } = await ratelimit.limit(identifier);
-if (!success) return NextResponse.json({ error: "..." }, { status: 429 });
+try {
+  const ip = req.headers.get("x-real-ip") ?? "anon";
+  const { success } = await getRatelimit().limit(`key:${ip}`);
+  if (!success) return NextResponse.json({ error: "Demasiadas solicitudes." }, { status: 429 });
+} catch (err) {
+  console.error("[route] Rate limit check failed:", err);
+  // continues — rate limit errors don't block legitimate traffic
+}
 ```
 
 ## 9. File Upload Pattern
@@ -91,6 +97,18 @@ Uses Vercel Blob for storage (`@vercel/blob`). Validation pipeline:
 
 Used in: admin image uploads (`/api/upload`), payment proof submissions (`/api/comprobantes/upload`).
 
+## 11. JSON-LD Safety + IndexNow
+
+**`safeJsonLd(obj)`** (`lib/safe-json-ld.ts`): use instead of `JSON.stringify()` whenever injecting structured data via `dangerouslySetInnerHTML`. Escapes `<`, `>`, `&` to prevent XSS if raffle names contain those characters.
+```tsx
+<script type="application/ld+json"
+  dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />
+```
+
+**`notifyIndexNow(urls)`** (`lib/indexnow.ts`): call after toggling a raffle active/inactive to trigger immediate Bing/Yandex re-crawl. Fire-and-forget (errors are swallowed). Key file at `public/05a66042befee4c4405acc4ee210ebb3.txt`.
+
+**`ESTADOS_MX` / `ESTADOS_MX_SET`** (`lib/constants.ts`): single source for the 32 Mexican states. `ApartadoForm` uses the array for `<select>`; `/api/boletos/crear` uses the Set for server-side validation. Never duplicate this list.
+
 ## 10. Security Headers — Middleware
 
 `middleware.ts` generates a CSP nonce per request and injects security headers:
@@ -102,3 +120,5 @@ Used in: admin image uploads (`/api/upload`), payment proof submissions (`/api/c
 - Permissions-Policy (restrictive)
 
 `next.config.mjs` also adds security headers as a fallback for routes not matched by middleware.
+
+**Gotcha:** `frame-src` debe incluir `blob:` — la vista previa del PDF en `/consulta` renderiza una URL `blob:` dentro de un `<iframe>`. Sin ello el iframe falla silenciosamente.

@@ -11,7 +11,7 @@ import {
 import {
   Rocket, Settings2, Clock, Eye, EyeOff, Zap,
   Ticket, Users, Tag, MessageSquare, CreditCard,
-  ChevronRight, TrendingUp, Box, AlertCircle,
+  ChevronRight, TrendingUp, Box, AlertCircle, Trophy,
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -143,6 +143,21 @@ export default function AdminDashboard() {
           <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">✕</button>
         </div>
       )}
+
+      {/* Ganador CTA */}
+      <Link
+        href="/admin/ganador"
+        className="group flex items-center gap-5 bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-300 hover:to-amber-300 text-black rounded-3xl p-6 shadow-md transition-all duration-300"
+      >
+        <div className="p-3 bg-black/10 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+          <Trophy size={28} />
+        </div>
+        <div className="flex-1">
+          <h2 className="text-lg font-extrabold tracking-tight">Anunciar Ganador</h2>
+          <p className="text-sm font-medium opacity-70">Busca el boleto ganador y descarga la imagen del sorteo.</p>
+        </div>
+        <ChevronRight size={22} className="opacity-50 group-hover:translate-x-1 transition-transform" />
+      </Link>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

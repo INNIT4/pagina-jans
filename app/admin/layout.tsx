@@ -40,7 +40,6 @@ const NAV_GROUPS: {
       { href: "/admin/rifas", label: "Rifas", icon: Ticket },
       { href: "/admin/boletos", label: "Boletos", icon: CheckSquare },
       { href: "/admin/comprobantes", label: "Comprobantes", icon: FileText },
-      { href: "/admin/ganador", label: "Ganador", icon: Trophy },
       { href: "/admin/servicios", label: "Servicios", icon: Wrench },
     ],
   },
@@ -105,6 +104,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
   if (pathname === "/admin/login") return <>{children}</>;
+  if (pathname === "/admin/ganador") return <>{children}</>;
   if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">

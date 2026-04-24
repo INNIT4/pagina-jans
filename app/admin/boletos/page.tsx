@@ -16,7 +16,6 @@ export default function AdminBoletosPage() {
   const [filterStatus, setFilterStatus] = useState<"todos" | "pendiente" | "pagado" | "cancelado">("todos");
   const [filterRifa, setFilterRifa] = useState("");
   const [search, setSearch] = useState("");
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [marking, setMarking] = useState<string | null>(null);
   const [canceladosMsg, setCanceladosMsg] = useState<string | null>(null);
@@ -47,7 +46,6 @@ export default function AdminBoletosPage() {
         loadAll: true,
       });
       setBoletos(bs);
-      setTotal(bs.length);
     } catch (e) {
       console.error("Error cargando boletos:", e);
     } finally {

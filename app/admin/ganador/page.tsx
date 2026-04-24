@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getBoletoByFolio, getBoletosByNumero, getRifas, Boleto, Rifa, Premio } from "@/lib/firestore";
+import { getBoletoByFolio, getBoletosByNumero, getRifas, Boleto, Rifa } from "@/lib/firestore";
 import { toPng } from "html-to-image";
 import { Search, Download, Trophy, ChevronDown, ArrowLeft } from "lucide-react";
 import Link from "next/link";

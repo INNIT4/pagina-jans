@@ -126,10 +126,10 @@ function WinnerCard({
           </div>
         </div>
 
-        {/* Data rows */}
-        <div style={{ padding: "14px 20px 4px", borderBottom: "2px dashed #e5e7eb" }}>
-          {boleto ? (
-            [
+        {/* Data rows — solo para pagado/pendiente */}
+        {(cardStatus === "pagado" || cardStatus === "pendiente") && boleto && (
+          <div style={{ padding: "14px 20px 4px", borderBottom: "2px dashed #e5e7eb" }}>
+            {[
               { label: "SORTEO:",   value: sorteoNombre },
               { label: "NOMBRE:",   value: boleto.nombre.toUpperCase() },
               { label: "APELLIDO:", value: boleto.apellidos.toUpperCase() },
@@ -140,19 +140,9 @@ function WinnerCard({
                 <span style={{ fontSize: "11px", fontWeight: 900, color: "#111827", letterSpacing: "0.06em", minWidth: "76px", flexShrink: 0 }}>{label}</span>
                 <span style={{ fontSize: "11px", fontWeight: 800, color: "#dc2626", letterSpacing: "0.04em" }}>{value}</span>
               </div>
-            ))
-          ) : (
-            <div style={{ padding: "8px 0 4px" }}>
-              <div style={{ display: "flex", gap: "10px", marginBottom: "10px", alignItems: "baseline" }}>
-                <span style={{ fontSize: "11px", fontWeight: 900, color: "#111827", letterSpacing: "0.06em", minWidth: "76px" }}>SORTEO:</span>
-                <span style={{ fontSize: "11px", fontWeight: 800, color: "#dc2626" }}>{sorteoNombre}</span>
-              </div>
-              <p style={{ fontSize: "12px", color: "#9ca3af", fontStyle: "italic", marginBottom: "10px" }}>
-                Este número no fue seleccionado por ningún participante.
-              </p>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Prize image */}
         {prizeImg ? (

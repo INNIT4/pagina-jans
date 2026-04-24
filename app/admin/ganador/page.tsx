@@ -187,12 +187,13 @@ function WinnerCard({
 export default function GanadorPage() {
   const [rifas, setRifas] = useState<Rifa[]>([]);
   const [selectedRifa, setSelectedRifa] = useState<Rifa | null>(null);
+  const [selectedPremioKey, setSelectedPremioKey] = useState<string>("");
   const [logoB64, setLogoB64] = useState<string>("");
   const [rifaFallbackImg, setRifaFallbackImg] = useState<string>("");
+  const [prizeImgCache, setPrizeImgCache] = useState<Record<string, string>>({});
 
-  // State per premio (keyed by premio.id) or "single" for rifas without premios
-  const [states, setStates] = useState<Record<string, PremioState>>({});
-  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [st, setSt] = useState<PremioState>(emptyState());
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     getRifas().then((all) => setRifas(all.sort((a, b) => a.nombre.localeCompare(b.nombre))));
@@ -202,11 +203,12 @@ export default function GanadorPage() {
   async function selectRifa(rifaId: string) {
     const rifa = rifas.find((r) => r.id === rifaId) ?? null;
     setSelectedRifa(rifa);
-    cardRefs.current = {};
+    setSelectedPremioKey("");
+    setSt(emptyState());
+    setPrizeImgCache({});
 
-    if (!rifa) { setStates({}); setRifaFallbackImg(""); return; }
+    if (!rifa) { setRifaFallbackImg(""); return; }
 
-    // Load rifa fallback image
     const imgUrl = rifa.imagenes_url?.[0] ?? rifa.imagen_url ?? "";
     let fallback = "";
     if (imgUrl) {
@@ -214,77 +216,77 @@ export default function GanadorPage() {
     }
     setRifaFallbackImg(fallback);
 
-    const premios = rifa.premios ?? [];
-    if (premios.length > 0) {
-      const initial: Record<string, PremioState> = {};
-      for (const p of premios) {
-        const s = emptyState();
-        if (p.imagen_url) {
-          try { s.prizeImg = await toBase64(p.imagen_url); } catch { s.prizeImg = p.imagen_url; }
-        } else {
-          s.prizeImg = fallback;
-        }
-        initial[p.id] = s;
-      }
-      setStates(initial);
-    } else {
-      setStates({ single: { ...emptyState(), prizeImg: fallback } });
+    // If no premios, auto-select "single"
+    if (!rifa.premios?.length) {
+      setSelectedPremioKey("single");
+      setSt({ ...emptyState(), prizeImg: fallback });
     }
   }
 
-  function patchState(key: string, patch: Partial<PremioState>) {
-    setStates((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
+  async function selectPremio(key: string) {
+    setSelectedPremioKey(key);
+    setSt(emptyState());
+    if (!selectedRifa) return;
+
+    let img = prizeImgCache[key];
+    if (!img) {
+      const premio = selectedRifa.premios?.find((p) => p.id === key);
+      const url = premio?.imagen_url ?? "";
+      if (url) {
+        try { img = await toBase64(url); } catch { img = url; }
+      } else {
+        img = rifaFallbackImg;
+      }
+      setPrizeImgCache((prev) => ({ ...prev, [key]: img }));
+    }
+    setSt({ ...emptyState(), prizeImg: img || rifaFallbackImg });
   }
 
-  async function buscar(key: string, rifaId: string) {
-    const q = states[key]?.query.trim();
-    if (!q) return;
-    patchState(key, { loading: true, boleto: null, searchedNum: null, shown: false });
+  async function buscar() {
+    const q = st.query.trim();
+    if (!q || !selectedRifa) return;
+    setSt((prev) => ({ ...prev, loading: true, boleto: null, searchedNum: null, shown: false }));
 
     try {
       let found: Boleto | null = null;
+      let searchedNum: number | null = null;
       if (q.toUpperCase().startsWith("JNS-")) {
         found = await getBoletoByFolio(q.toUpperCase());
-        patchState(key, { searchedNum: null });
       } else {
         const num = parseInt(q);
         if (!isNaN(num)) {
+          searchedNum = num;
           const results = await getBoletosByNumero(num);
-          const rifaResults = results.filter((b) => b.rifa_id === rifaId);
+          const rifaResults = results.filter((b) => b.rifa_id === selectedRifa.id);
           rifaResults.sort((a, b) => (STATUS_PRIORITY[a.status as CardStatus] ?? 9) - (STATUS_PRIORITY[b.status as CardStatus] ?? 9));
           found = rifaResults[0] ?? null;
-          patchState(key, { searchedNum: num });
         }
       }
-      patchState(key, { boleto: found ?? null, shown: true, loading: false });
+      setSt((prev) => ({ ...prev, boleto: found ?? null, searchedNum, shown: true, loading: false }));
     } catch {
-      patchState(key, { loading: false });
+      setSt((prev) => ({ ...prev, loading: false }));
     }
   }
 
-  async function descargar(key: string, rifa: Rifa) {
-    const el = cardRefs.current[key];
-    if (!el) return;
-    patchState(key, { downloading: true });
+  async function descargar() {
+    if (!cardRef.current || !selectedRifa) return;
+    setSt((prev) => ({ ...prev, downloading: true }));
     try {
-      const dataUrl = await toPng(el, { pixelRatio: 3, skipFonts: false });
+      const dataUrl = await toPng(cardRef.current, { pixelRatio: 3, skipFonts: false });
       const a = document.createElement("a");
       a.href = dataUrl;
-      const s = states[key];
-      a.download = `ganador-${s?.boleto?.folio ?? s?.searchedNum ?? rifa.nombre}-${key}.png`;
+      a.download = `ganador-${st.boleto?.folio ?? st.searchedNum ?? selectedRifa.nombre}.png`;
       a.click();
     } finally {
-      patchState(key, { downloading: false });
+      setSt((prev) => ({ ...prev, downloading: false }));
     }
   }
 
-  const premios: (Premio & { key: string })[] = selectedRifa
-    ? (selectedRifa.premios?.length
-        ? selectedRifa.premios.map((p) => ({ ...p, key: p.id }))
-        : [{ id: "single", key: "single", nombre: "", es_principal: true }])
-    : [];
-
+  const hasPremios = (selectedRifa?.premios?.length ?? 0) > 0;
+  const selectedPremio = selectedRifa?.premios?.find((p) => p.id === selectedPremioKey) ?? null;
+  const cardStatus: CardStatus = st.boleto ? (st.boleto.status as CardStatus) : "no_vendido";
   const sorteoNombre = (selectedRifa?.nombre ?? "SORTEO JANS").toUpperCase();
+  const premioNombre = selectedPremio ? selectedPremio.nombre.toUpperCase() : "";
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
@@ -304,117 +306,113 @@ export default function GanadorPage() {
               Anunciar Ganador
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
-              Selecciona el sorteo y busca el ganador de cada premio.
+              Selecciona el sorteo, el premio y busca el boleto ganador.
             </p>
           </div>
         </div>
 
-        {/* Rifa selector */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm">
-          <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
-            Sorteo
-          </label>
-          <div className="relative">
-            <select
-              value={selectedRifa?.id ?? ""}
-              onChange={(e) => selectRifa(e.target.value)}
-              className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 pr-10 text-base font-semibold focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
-            >
-              <option value="">— Selecciona un sorteo —</option>
-              {rifas.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.nombre}{r.activa ? " (activa)" : ""}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        {/* Form card */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm space-y-5">
+
+          {/* Step 1: Sorteo */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
+              1. Sorteo
+            </label>
+            <div className="relative">
+              <select
+                value={selectedRifa?.id ?? ""}
+                onChange={(e) => selectRifa(e.target.value)}
+                className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 pr-10 text-base font-semibold focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
+              >
+                <option value="">— Selecciona un sorteo —</option>
+                {rifas.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.nombre}{r.activa ? " (activa)" : ""}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            </div>
           </div>
-        </div>
 
-        {/* Premio sections */}
-        {selectedRifa && premios.map((premio, idx) => {
-          const st = states[premio.key];
-          if (!st) return null;
-          const cardStatus: CardStatus = st.boleto ? (st.boleto.status as CardStatus) : "no_vendido";
-          const hasPremios = (selectedRifa.premios?.length ?? 0) > 0;
-
-          return (
-            <div key={premio.key} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
-              {/* Premio header */}
-              {hasPremios && (
-                <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-                  <span className="flex items-center justify-center w-7 h-7 rounded-full bg-yellow-400 text-black text-xs font-black">
-                    {idx + 1}
-                  </span>
-                  <div>
-                    <p className="font-bold text-slate-900 dark:text-white">{premio.nombre}</p>
-                    {premio.descripcion && (
-                      <p className="text-xs text-slate-400">{premio.descripcion}</p>
-                    )}
-                  </div>
-                  {premio.es_principal && (
-                    <span className="ml-auto text-[10px] font-bold uppercase tracking-widest px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full">
-                      Principal
-                    </span>
-                  )}
-                </div>
-              )}
-
-              <div className="p-6 space-y-5">
-                {/* Search */}
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
-                    Boleto ganador
-                  </label>
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      value={st.query}
-                      onChange={(e) => patchState(premio.key, { query: e.target.value })}
-                      onKeyDown={(e) => e.key === "Enter" && buscar(premio.key, selectedRifa.id!)}
-                      placeholder="Folio (JNS-XXXXXX) o número"
-                      className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-lg font-mono focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
-                    />
-                    <button
-                      onClick={() => buscar(premio.key, selectedRifa.id!)}
-                      disabled={st.loading || !st.query.trim()}
-                      className="flex items-center gap-2 px-6 py-3 bg-yellow-400 hover:bg-yellow-500 disabled:opacity-50 text-black font-bold rounded-xl transition-all shadow-sm"
-                    >
-                      <Search size={18} />
-                      {st.loading ? "..." : "Buscar"}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Card */}
-                {st.shown && (
-                  <div className="space-y-4">
-                    <div className="overflow-x-auto">
-                      <WinnerCard
-                        cardRef={(el) => { cardRefs.current[premio.key] = el; }}
-                        boleto={st.boleto}
-                        searchedNum={st.searchedNum}
-                        cardStatus={cardStatus}
-                        sorteoNombre={sorteoNombre}
-                        premioNombre={hasPremios ? premio.nombre.toUpperCase() : ""}
-                        logoB64={logoB64}
-                        prizeImg={st.prizeImg || rifaFallbackImg}
-                      />
-                    </div>
-                    <button
-                      onClick={() => descargar(premio.key, selectedRifa)}
-                      disabled={st.downloading}
-                      className="flex items-center gap-2 px-8 py-3 bg-slate-900 dark:bg-yellow-400 hover:bg-slate-800 dark:hover:bg-yellow-500 disabled:opacity-50 text-white dark:text-black font-bold rounded-xl transition-all shadow-sm"
-                    >
-                      <Download size={18} />
-                      {st.downloading ? "Generando imagen..." : "Descargar imagen"}
-                    </button>
-                  </div>
-                )}
+          {/* Step 2: Premio (solo si la rifa tiene premios) */}
+          {selectedRifa && hasPremios && (
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
+                2. Premio
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedPremioKey}
+                  onChange={(e) => selectPremio(e.target.value)}
+                  className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 pr-10 text-base font-semibold focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
+                >
+                  <option value="">— Selecciona un premio —</option>
+                  {selectedRifa.premios!.map((p, i) => (
+                    <option key={p.id} value={p.id}>
+                      {i + 1}. {p.nombre}{p.es_principal ? " ★" : ""}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
-          );
-        })}
+          )}
+
+          {/* Step 3: Boleto */}
+          {selectedRifa && selectedPremioKey && (
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
+                {hasPremios ? "3." : "2."} Boleto ganador
+              </label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={st.query}
+                  onChange={(e) => setSt((prev) => ({ ...prev, query: e.target.value }))}
+                  onKeyDown={(e) => e.key === "Enter" && buscar()}
+                  placeholder="Folio (JNS-XXXXXX) o número"
+                  className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-lg font-mono focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
+                />
+                <button
+                  onClick={buscar}
+                  disabled={st.loading || !st.query.trim()}
+                  className="flex items-center gap-2 px-6 py-3 bg-yellow-400 hover:bg-yellow-500 disabled:opacity-50 text-black font-bold rounded-xl transition-all shadow-sm"
+                >
+                  <Search size={18} />
+                  {st.loading ? "..." : "Buscar"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Winner card */}
+        {st.shown && selectedRifa && (
+          <div className="space-y-4">
+            <div className="overflow-x-auto">
+              <WinnerCard
+                cardRef={(el) => { cardRef.current = el; }}
+                boleto={st.boleto}
+                searchedNum={st.searchedNum}
+                cardStatus={cardStatus}
+                sorteoNombre={sorteoNombre}
+                premioNombre={premioNombre}
+                logoB64={logoB64}
+                prizeImg={st.prizeImg || rifaFallbackImg}
+              />
+            </div>
+            <button
+              onClick={descargar}
+              disabled={st.downloading}
+              className="flex items-center gap-2 px-8 py-3 bg-slate-900 dark:bg-yellow-400 hover:bg-slate-800 dark:hover:bg-yellow-500 disabled:opacity-50 text-white dark:text-black font-bold rounded-xl transition-all shadow-sm"
+            >
+              <Download size={18} />
+              {st.downloading ? "Generando imagen..." : "Descargar imagen"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

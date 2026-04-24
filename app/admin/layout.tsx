@@ -21,7 +21,6 @@ import {
   Wrench,
   LogOut,
   ChevronRight,
-  Trophy,
   Menu,
   X
 } from "lucide-react";

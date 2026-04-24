@@ -11,8 +11,8 @@ type CardStatus = "pagado" | "pendiente" | "cancelado" | "no_vendido";
 const STATUS_CONFIG: Record<CardStatus, { label: string; color: string; bg: string }> = {
   pagado:    { label: "PAGADO",     color: "#16a34a", bg: "#dcfce7" },
   pendiente: { label: "PENDIENTE",  color: "#d97706", bg: "#fef3c7" },
-  cancelado: { label: "CANCELADO",  color: "#6b7280", bg: "#f3f4f6" },
-  no_vendido:{ label: "NO VENDIDO", color: "#6b7280", bg: "#f3f4f6" },
+  cancelado: { label: "DISPONIBLE", color: "#6b7280", bg: "#f3f4f6" },
+  no_vendido:{ label: "DISPONIBLE", color: "#6b7280", bg: "#f3f4f6" },
 };
 
 const STATUS_PRIORITY: Record<CardStatus, number> = { pagado: 0, pendiente: 1, cancelado: 2, no_vendido: 3 };
@@ -158,7 +158,7 @@ function WinnerCard({
         {prizeImg ? (
           <div style={{ width: "100%", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={prizeImg} alt="Premio" style={{ width: "100%", height: "auto", display: "block", opacity: cardStatus === "no_vendido" ? 0.5 : 1 }} />
+            <img src={prizeImg} alt="Premio" style={{ width: "100%", height: "auto", display: "block", opacity: 1 }} />
           </div>
         ) : (
           <div style={{ height: "20px" }} />
@@ -167,7 +167,7 @@ function WinnerCard({
         {/* Footer */}
         <div style={{ background: statusCfg.color, padding: "12px 20px", textAlign: "center" }}>
           <p style={{ margin: 0, color: "#fff", fontSize: "15px", fontWeight: 900, letterSpacing: "0.1em" }}>
-            {cardStatus === "pagado" ? "¡FELICIDADES!" : cardStatus === "pendiente" ? "PAGO PENDIENTE" : cardStatus === "cancelado" ? "BOLETO CANCELADO" : "NO VENDIDO"}
+            {cardStatus === "pagado" ? "¡FELICIDADES!" : cardStatus === "pendiente" ? "PAGO PENDIENTE" : "DISPONIBLE"}
           </p>
         </div>
       </div>

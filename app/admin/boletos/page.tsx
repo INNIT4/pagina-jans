@@ -7,7 +7,6 @@ import {
   revertPagadoToApartado, getAppSettings, sincronizarComprobanteConBoleto,
   Boleto, Rifa,
 } from "@/lib/firestore";
-import { DocumentSnapshot } from "firebase/firestore";
 
 const PAGE_SIZE = 25;
 
@@ -17,7 +16,7 @@ export default function AdminBoletosPage() {
   const [filterStatus, setFilterStatus] = useState<"todos" | "pendiente" | "pagado" | "cancelado">("todos");
   const [filterRifa, setFilterRifa] = useState("");
   const [search, setSearch] = useState("");
-  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [marking, setMarking] = useState<string | null>(null);
   const [canceladosMsg, setCanceladosMsg] = useState<string | null>(null);
@@ -29,32 +28,26 @@ export default function AdminBoletosPage() {
     `👋 Hola {nombre}, te recordamos que tienes el folio {folio} pendiente de pago.\n\nPara no perder tus números, por favor realiza el pago lo antes posible y envía tu comprobante.\n\n💳 Puedes depositar a nuestras cuentas aquí:\n{url}/tarjetas\n\n🔍 Consulta el estado de tu boleto en:\n{url}/consulta?f={folio}&act=1`
   );
 
-  // Cursor stack: index 0 = null (primera página), index N = cursor para llegar a la página N
-  const cursorStack = useRef<(DocumentSnapshot | null)[]>([null]);
   const [pageIdx, setPageIdx] = useState(0);
 
   const isSearching = search.trim().length > 0;
 
   // Ref para poder llamar loadPage con los valores actuales sin dependencias stale
-  const filtersRef = useRef({ filterStatus, filterRifa, isSearching, pageIdx });
-  useEffect(() => { filtersRef.current = { filterStatus, filterRifa, isSearching, pageIdx }; });
+  const filtersRef = useRef({ filterStatus, filterRifa });
+  useEffect(() => { filtersRef.current = { filterStatus, filterRifa }; });
 
-  async function loadPage(idx: number, stack: (DocumentSnapshot | null)[]) {
+  async function loadPage() {
     setLoading(true);
-    const { filterStatus: status, filterRifa: rifaId, isSearching: searching } = filtersRef.current;
+    const { filterStatus: status, filterRifa: rifaId } = filtersRef.current;
     try {
-      const { boletos: bs, hasMore: more, lastDoc } = await getBoletosPaginados({
+      const { boletos: bs } = await getBoletosPaginados({
         status: status !== "todos" ? status : undefined,
         rifaId: rifaId || undefined,
-        pageSize: PAGE_SIZE,
-        cursor: stack[idx] ?? null,
-        loadAll: searching,
+        pageSize: 9999,
+        loadAll: true,
       });
       setBoletos(bs);
-      setHasMore(!searching && more);
-      if (!searching && lastDoc && stack.length <= idx + 1) {
-        stack.push(lastDoc);
-      }
+      setTotal(bs.length);
     } catch (e) {
       console.error("Error cargando boletos:", e);
     } finally {
@@ -79,19 +72,21 @@ export default function AdminBoletosPage() {
           setCanceladosMsg(`${cancelados} boleto${cancelados > 1 ? "s" : ""} cancelado${cancelados > 1 ? "s" : ""} automáticamente.`);
         }
       }
-    }).finally(() => loadPage(0, cursorStack.current));
+    }).finally(() => loadPage());
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Al cambiar filtros o búsqueda: resetear a página 0 (no corre en el primer mount)
+  // Al cambiar filtros de Firestore: recargar y volver a página 0
   const firstRender = useRef(true);
   useEffect(() => {
     if (firstRender.current) { firstRender.current = false; return; }
-    cursorStack.current = [null];
     setPageIdx(0);
-    loadPage(0, cursorStack.current);
+    loadPage();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterStatus, filterRifa, search]);
+  }, [filterStatus, filterRifa]);
+
+  // Al cambiar búsqueda de texto: solo resetear página (los datos ya están cargados)
+  useEffect(() => { setPageIdx(0); }, [search]);
 
   // Actualizar "ahora" cada minuto
   useEffect(() => {
@@ -99,21 +94,9 @@ export default function AdminBoletosPage() {
     return () => clearInterval(id);
   }, []);
 
-  function goNext() {
-    const next = pageIdx + 1;
-    setPageIdx(next);
-    loadPage(next, cursorStack.current);
-  }
-
-  function goPrev() {
-    const prev = pageIdx - 1;
-    setPageIdx(prev);
-    loadPage(prev, cursorStack.current);
-  }
-
-  async function reloadCurrentPage() {
-    await loadPage(pageIdx, cursorStack.current);
-  }
+  function goNext() { setPageIdx((p) => p + 1); }
+  function goPrev() { setPageIdx((p) => p - 1); }
+  async function reloadCurrentPage() { await loadPage(); }
 
   async function handleMarkPagado(boleto: Boleto) {
     if (!confirm(`¿Marcar boleto ${boleto.folio} como pagado?`)) return;
@@ -178,11 +161,10 @@ export default function AdminBoletosPage() {
     }
   }
 
-  // Filtro de texto client-side sobre los boletos cargados
   const q = search.trim().toUpperCase();
   const STATUS_PRIORITY: Record<string, number> = { pendiente: 0, pagado: 1, cancelado: 2 };
 
-  const displayed = (q
+  const sorted = (q
     ? boletos.filter((b) => {
         const nombre = `${b.nombre} ${b.apellidos}`.toUpperCase();
         return b.folio.includes(q) || nombre.includes(q) || b.celular.includes(q);
@@ -194,6 +176,10 @@ export default function AdminBoletosPage() {
     if (pa !== pb) return pa - pb;
     return (b.created_at?.toMillis?.() ?? 0) - (a.created_at?.toMillis?.() ?? 0);
   });
+
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
+  const hasMore = pageIdx < totalPages - 1;
+  const displayed = sorted.slice(pageIdx * PAGE_SIZE, (pageIdx + 1) * PAGE_SIZE);
 
   const rifaOptions = Array.from(rifas.values());
 
@@ -307,7 +293,7 @@ export default function AdminBoletosPage() {
           ))}
         </select>
         <span className="px-3 py-2 text-sm text-slate-500">
-          {loading ? "Cargando..." : `${displayed.length} boletos${isSearching ? " encontrados" : ""}`}
+          {loading ? "Cargando..." : `${sorted.length} boleto${sorted.length !== 1 ? "s" : ""}${isSearching ? " encontrados" : ""}`}
         </span>
       </div>
 
@@ -440,10 +426,9 @@ export default function AdminBoletosPage() {
         )}
       </div>
 
-      {/* Pagination — solo cuando no hay búsqueda activa */}
-      {!isSearching && (pageIdx > 0 || hasMore) && (
+      {(pageIdx > 0 || hasMore) && (
         <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-slate-500">Página {pageIdx + 1}</p>
+          <p className="text-sm text-slate-500">Página {pageIdx + 1} de {totalPages}</p>
           <div className="flex gap-2">
             <button onClick={goPrev} disabled={pageIdx === 0 || loading}
               className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-600 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700">

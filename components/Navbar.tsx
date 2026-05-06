@@ -8,7 +8,6 @@ import Logo from "@/components/Logo";
 const navLinks = [
   { href: "/", label: "Inicio" },
   { href: "/rifas-previas", label: "Rifas Previas" },
-  { href: "/consulta", label: "Consultar Boleto" },
   { href: "/tarjetas", label: "Métodos de pago" },
   { href: "/faq", label: "FAQ" },
 ];

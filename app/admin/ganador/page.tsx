@@ -17,13 +17,6 @@ const STATUS_CONFIG: Record<CardStatus, { label: string; color: string; bg: stri
 
 const STATUS_PRIORITY: Record<CardStatus, number> = { pagado: 0, pendiente: 1, cancelado: 2, no_vendido: 3 };
 
-function fmtDate(ts: import("firebase/firestore").Timestamp | undefined): string {
-  if (!ts) return "—";
-  return ts.toDate()
-    .toLocaleString("es-MX", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })
-    .toUpperCase();
-}
-
 async function toBase64(url: string): Promise<string> {
   const res = await fetch(url);
   const blob = await res.blob();
@@ -134,7 +127,6 @@ function WinnerCard({
               { label: "NOMBRE:",   value: boleto.nombre.toUpperCase() },
               { label: "APELLIDO:", value: boleto.apellidos.toUpperCase() },
               { label: "PAGADO:",   value: STATUS_CONFIG[boleto.status as CardStatus]?.label ?? boleto.status.toUpperCase() },
-              { label: "COMPRA:",   value: fmtDate(boleto.created_at) },
             ].map(({ label, value }) => (
               <div key={label} style={{ display: "flex", gap: "10px", marginBottom: "10px", alignItems: "baseline" }}>
                 <span style={{ fontSize: "11px", fontWeight: 900, color: "#111827", letterSpacing: "0.06em", minWidth: "76px", flexShrink: 0 }}>{label}</span>

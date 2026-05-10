@@ -162,6 +162,14 @@ export default function AdminBoletosPage() {
   const q = search.trim().toUpperCase();
   const STATUS_PRIORITY: Record<string, number> = { pendiente: 0, pagado: 1, cancelado: 2 };
 
+  const getMatchNum = (b: (typeof boletos)[number]): number | null => {
+    const nums = [...(b.numeros || []), ...(b.numeros_completos || [])];
+    for (const n of nums) {
+      if (String(n).includes(q)) return n;
+    }
+    return null;
+  };
+
   const sorted = (q
     ? boletos.filter((b) => {
         const nombre = `${b.nombre} ${b.apellidos}`.toUpperCase();
@@ -171,6 +179,11 @@ export default function AdminBoletosPage() {
       })
     : boletos
   ).slice().sort((a, b) => {
+    if (q) {
+      const na = getMatchNum(a) ?? Infinity;
+      const nb = getMatchNum(b) ?? Infinity;
+      if (na !== nb) return na - nb;
+    }
     const pa = STATUS_PRIORITY[a.status] ?? 3;
     const pb = STATUS_PRIORITY[b.status] ?? 3;
     if (pa !== pb) return pa - pb;

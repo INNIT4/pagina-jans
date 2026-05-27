@@ -68,12 +68,7 @@ export default async function HomePage() {
             >
               <span className="inline-block skew-x-[3deg]">Ver rifas activas</span>
             </Link>
-            <Link
-              href="/consulta"
-              className="px-8 py-4 border-2 border-brand-red hover:bg-brand-red/20 text-white font-bold text-lg transition-colors skew-x-[-3deg]"
-            >
-              <span className="inline-block skew-x-[3deg]">Consultar boleto</span>
-            </Link>
+
           </div>
 
           {/* Tarjeta bancaria — acceso rapido */}

@@ -26,7 +26,6 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li><Link href="/rifas" className="hover:text-brand-red transition-colors">Rifas activas</Link></li>
               <li><Link href="/rifas-previas" className="hover:text-brand-red transition-colors">Rifas previas</Link></li>
-              <li><Link href="/consulta" className="hover:text-brand-red transition-colors">Consultar boleto</Link></li>
               <li><Link href="/tarjetas" className="hover:text-brand-red transition-colors">Métodos de pago</Link></li>
             </ul>
           </div>

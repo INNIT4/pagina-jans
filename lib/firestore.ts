@@ -219,7 +219,11 @@ export async function anunciarGanador(rifaId: string, numero_ganador: number): P
     folio: data.folio,
     anunciado_at: new Date().toISOString(),
   };
-  await updateDoc(doc(db, "rifas", rifaId), { ganador });
+  await updateDoc(doc(db, "rifas", rifaId), { ganador, activa: false });
+  const cancelados = await cancelarPendientesDeRifa(rifaId);
+  if (cancelados > 0) {
+    console.log(`[anunciarGanador] ${cancelados} boletos pendientes cancelados en rifa ${rifaId}`);
+  }
   return ganador;
 }
 
@@ -570,6 +574,57 @@ export async function cancelarBoletosExpirados(horas: number): Promise<number> {
     // Decrementar contador de apartados
     addOp((b) => b.update(doc(db, "rifas", rifaId), { num_apartados: increment(-totalNums) }));
   });
+
+  await Promise.all(batches.map((b) => b.commit()));
+  return snap.size;
+}
+
+/**
+ * Cancela todos los boletos "pendiente" de una rifa específica.
+ * Libera sus números y actualiza el contador de apartados de la rifa.
+ * Devuelve el número de boletos cancelados.
+ */
+export async function cancelarPendientesDeRifa(rifaId: string): Promise<number> {
+  const snap = await getDocs(
+    query(
+      collection(db, "boletos"),
+      where("rifa_id", "==", rifaId),
+      where("status", "==", "pendiente")
+    )
+  );
+
+  if (snap.empty) return 0;
+
+  const boletos = snap.docs.map((d) => ({
+    boletoId: d.id,
+    numeros: (d.data() as Boleto).numeros,
+  }));
+
+  const BATCH_LIMIT = 400;
+  let batch = writeBatch(db);
+  let opCount = 0;
+  const batches: ReturnType<typeof writeBatch>[] = [batch];
+  let totalNums = 0;
+
+  function addOp(fn: (b: ReturnType<typeof writeBatch>) => void) {
+    if (opCount >= BATCH_LIMIT) {
+      batch = writeBatch(db);
+      batches.push(batch);
+      opCount = 0;
+    }
+    fn(batch);
+    opCount++;
+  }
+
+  boletos.forEach(({ boletoId, numeros }) => {
+    addOp((b) => b.update(doc(db, "boletos", boletoId), { status: "cancelado" }));
+    numeros.forEach((n) => {
+      addOp((b) => b.delete(doc(db, "rifas", rifaId, "numeros", String(n))));
+    });
+    totalNums += numeros.length;
+  });
+
+  addOp((b) => b.update(doc(db, "rifas", rifaId), { num_apartados: increment(-totalNums) }));
 
   await Promise.all(batches.map((b) => b.commit()));
   return snap.size;

@@ -162,13 +162,28 @@ export default function AdminBoletosPage() {
   const q = search.trim().toUpperCase();
   const STATUS_PRIORITY: Record<string, number> = { pendiente: 0, pagado: 1, cancelado: 2 };
 
+  const getMatchNum = (b: (typeof boletos)[number]): number | null => {
+    const nums = [...(b.numeros || []), ...(b.numeros_completos || [])];
+    for (const n of nums) {
+      if (String(n).includes(q)) return n;
+    }
+    return null;
+  };
+
   const sorted = (q
     ? boletos.filter((b) => {
         const nombre = `${b.nombre} ${b.apellidos}`.toUpperCase();
-        return b.folio.includes(q) || nombre.includes(q) || b.celular.includes(q);
+        const nums = [...(b.numeros || []), ...(b.numeros_completos || [])];
+        const matchNumero = nums.some((n) => String(n).includes(q));
+        return b.folio.includes(q) || nombre.includes(q) || b.celular.includes(q) || matchNumero;
       })
     : boletos
   ).slice().sort((a, b) => {
+    if (q) {
+      const na = getMatchNum(a) ?? Infinity;
+      const nb = getMatchNum(b) ?? Infinity;
+      if (na !== nb) return na - nb;
+    }
     const pa = STATUS_PRIORITY[a.status] ?? 3;
     const pb = STATUS_PRIORITY[b.status] ?? 3;
     if (pa !== pb) return pa - pb;
@@ -267,7 +282,7 @@ export default function AdminBoletosPage() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar folio, nombre, celular..."
+          placeholder="Buscar folio, nombre, celular, número..."
           className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm w-60"
         />
         <select

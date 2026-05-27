@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getRifas, updateRifa, deleteRifa, anunciarGanador, Rifa, Ganador } from "@/lib/firestore";
+import { getRifas, updateRifa, deleteRifa, anunciarGanador, cancelarPendientesDeRifa, Rifa, Ganador } from "@/lib/firestore";
 import RifaFormModal from "@/components/admin/RifaFormModal";
 import RifaToggleGrid from "@/components/admin/RifaToggleGrid";
 import { notifyIndexNow } from "@/lib/indexnow";
@@ -38,7 +38,7 @@ function GanadorModal({ rifa, onClose, onDone }: { rifa: Rifa; onClose: () => vo
           <div className="text-center">
             <div className="text-5xl mb-3">🏆</div>
             <h2 className="text-xl font-black mb-1">¡Ganador anunciado!</h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">La rifa seguirá activa hasta que decidas marcarla como Inactiva.</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">La rifa ha sido marcada como inactiva y los boletos pendientes fueron cancelados automáticamente.</p>
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4 mb-6 text-left">
               <p className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold mb-1">NÚMERO GANADOR</p>
               <p className="text-3xl font-black text-yellow-600 dark:text-yellow-400 mb-2">{resultado.numero}</p>
@@ -115,6 +115,18 @@ export default function AdminRifasPage() {
       `https://www.sorteosjans.com.mx/rifas/${slug}`,
       `https://www.sorteosjans.com.mx/rifas`,
     ]);
+  }
+
+  async function handleLiberarPendientes(r: Rifa) {
+    if (!confirm(`¿Cancelar todos los boletos pendientes de "${r.nombre}"? Los números quedarán disponibles nuevamente.`)) return;
+    try {
+      const cancelados = await cancelarPendientesDeRifa(r.id!);
+      alert(`Se cancelaron ${cancelados} boletos pendientes.`);
+      await load();
+    } catch (e) {
+      console.error(e);
+      alert("Error al cancelar los boletos pendientes.");
+    }
   }
 
   return (
@@ -200,6 +212,9 @@ export default function AdminRifasPage() {
                       </button>
                     )}
                     <button onClick={() => openEdit(r)} className="text-xs px-2 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-lg hover:bg-blue-200">Editar</button>
+                    {!r.activa && (
+                      <button onClick={() => handleLiberarPendientes(r)} className="text-xs px-2 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 rounded-lg hover:bg-orange-200">Liberar pend.</button>
+                    )}
                     <button onClick={() => handleDelete(r.id!)} className="text-xs px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 rounded-lg hover:bg-red-200">Eliminar</button>
                   </div>
                 </td>

@@ -212,7 +212,9 @@ export default function AdminRifasPage() {
                       </button>
                     )}
                     <button onClick={() => openEdit(r)} className="text-xs px-2 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-lg hover:bg-blue-200">Editar</button>
-                    <button onClick={() => handleLiberarPendientes(r)} className="text-xs px-2 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 rounded-lg hover:bg-orange-200">Liberar pend.</button>
+                    {!r.activa && (
+                      <button onClick={() => handleLiberarPendientes(r)} className="text-xs px-2 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 rounded-lg hover:bg-orange-200">Liberar pend.</button>
+                    )}
                     <button onClick={() => handleDelete(r.id!)} className="text-xs px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 rounded-lg hover:bg-red-200">Eliminar</button>
                   </div>
                 </td>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createRifa, updateRifa, generateSlug, Rifa } from "@/lib/firestore";
 import ImageUploader from "./ImageUploader";
+import GastosEditor from "./GastosEditor";
 
 type RifaForm = Omit<Rifa, "id" | "num_vendidos" | "num_apartados">;
 
@@ -21,6 +22,7 @@ const EMPTY_FORM: RifaForm = {
   oportunidades: 1,
   premios: [],
   ofertas: [],
+  gastos: [],
 };
 
 interface RifaFormModalProps {
@@ -47,6 +49,7 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
           oportunidades: editRifa.oportunidades ?? 1,
           premios: editRifa.premios ?? [],
           ofertas: editRifa.ofertas ?? [],
+          gastos: editRifa.gastos ?? [],
         }
       : EMPTY_FORM
   );
@@ -326,6 +329,12 @@ export default function RifaFormModal({ editRifa, onClose, onSaved }: RifaFormMo
                 )}
               </div>
             </div>
+
+            {/* Gastos Section */}
+            <GastosEditor
+              gastos={form.gastos ?? []}
+              onChange={(gastos) => setForm((f) => ({ ...f, gastos }))}
+            />
 
             <div>
               <label className="block text-sm font-medium mb-1">

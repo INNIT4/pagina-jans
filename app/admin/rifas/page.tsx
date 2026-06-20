@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getRifas, updateRifa, deleteRifa, anunciarGanador, cancelarPendientesDeRifa, Rifa, Ganador } from "@/lib/firestore";
+import { getRifas, getIngresosPorRifa, updateRifa, deleteRifa, anunciarGanador, cancelarPendientesDeRifa, Rifa, Ganador } from "@/lib/firestore";
 import RifaFormModal from "@/components/admin/RifaFormModal";
 import RifaToggleGrid from "@/components/admin/RifaToggleGrid";
 import { notifyIndexNow } from "@/lib/indexnow";
+import { totalGastos, calcularNeto } from "@/lib/gastos";
 
 function GanadorModal({ rifa, onClose, onDone }: { rifa: Rifa; onClose: () => void; onDone: () => void }) {
   const [numero, setNumero] = useState("");
@@ -83,11 +84,16 @@ function GanadorModal({ rifa, onClose, onDone }: { rifa: Rifa; onClose: () => vo
 
 export default function AdminRifasPage() {
   const [rifas, setRifas] = useState<Rifa[]>([]);
+  const [ingresos, setIngresos] = useState<Map<string, number>>(new Map());
   const [editRifa, setEditRifa] = useState<Rifa | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [ganadorRifa, setGanadorRifa] = useState<Rifa | null>(null);
 
-  async function load() { setRifas(await getRifas()); }
+  async function load() {
+    const [rs, ing] = await Promise.all([getRifas(), getIngresosPorRifa()]);
+    setRifas(rs);
+    setIngresos(ing);
+  }
   useEffect(() => { load(); }, []);
 
   function openNew() { setEditRifa(null); setShowForm(true); }
@@ -162,6 +168,8 @@ export default function AdminRifasPage() {
               <th className="text-left px-4 py-3 font-semibold text-slate-500">Precio</th>
               <th className="text-left px-4 py-3 font-semibold text-slate-500">Números</th>
               <th className="text-left px-4 py-3 font-semibold text-slate-500">Sorteo</th>
+              <th className="text-left px-4 py-3 font-semibold text-slate-500">Gastos</th>
+              <th className="text-left px-4 py-3 font-semibold text-slate-500">Neto</th>
               <th className="text-left px-4 py-3 font-semibold text-slate-500">Imgs</th>
               <th className="text-left px-4 py-3 font-semibold text-slate-500">Estado</th>
               <th className="text-left px-4 py-3 font-semibold text-slate-500">Acciones</th>
@@ -197,6 +205,20 @@ export default function AdminRifasPage() {
                 <td className="px-4 py-3">${r.precio_boleto.toLocaleString("es-MX")}</td>
                 <td className="px-4 py-3">{r.num_inicio}–{r.num_fin}</td>
                 <td className="px-4 py-3">{new Date(r.fecha_sorteo).toLocaleDateString("es-MX")}</td>
+                {(() => {
+                  const gastos = totalGastos(r);
+                  const neto = calcularNeto(ingresos.get(r.id!) ?? 0, gastos);
+                  return (
+                    <>
+                      <td className="px-4 py-3 text-slate-500">
+                        {gastos > 0 ? `−$${gastos.toLocaleString("es-MX")}` : "—"}
+                      </td>
+                      <td className={`px-4 py-3 font-semibold ${neto >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                        ${neto.toLocaleString("es-MX")}
+                      </td>
+                    </>
+                  );
+                })()}
                 <td className="px-4 py-3 text-slate-400">{r.imagenes_url?.length ?? 0}</td>
                 <td className="px-4 py-3">
                   <button onClick={() => toggleActiva(r)}

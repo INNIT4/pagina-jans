@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { onSnapshot, collection, query, where, orderBy, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Boleto, Rifa, DiscountCode } from "@/lib/firestore";
+import { totalGastos, calcularNeto, calcularROI } from "@/lib/gastos";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -186,6 +187,14 @@ export default function MetricasPage() {
     pagadosAll.reduce((s, b) => s + b.numeros.length, 0), [pagadosAll]);
   const precioPorNumero   = totalNumerosVendidosPagados > 0 ? ingresoTotal / totalNumerosVendidosPagados : 0;
   const numPromedioCompra = pagadosAll.length > 0 ? totalNumerosVendidosPagados / pagadosAll.length : 0;
+
+  // ── Rentabilidad (gastos / neto / ROI) ───────────────────────────────────────
+  // Global: suma de gastos de todas las rifas. Por rifa: gastos de la seleccionada.
+  const gastoTotal = useMemo(() =>
+    selectedRifa ? totalGastos(selectedRifa) : rifas.reduce((s, r) => s + totalGastos(r), 0),
+  [selectedRifa, rifas]);
+  const gananciaNeta = calcularNeto(ingresoTotal, gastoTotal);
+  const roi = calcularROI(ingresoTotal, gastoTotal);
 
   // ── Calidad de revenue ──────────────────────────────────────────────────────
   const pagadosConDesc   = useMemo(() =>
@@ -596,6 +605,34 @@ export default function MetricasPage() {
         <KpiCard label="Números por compra"    value={numPromedioCompra > 0 ? numPromedioCompra.toFixed(1) : "—"}        color="bg-indigo-500" sub="promedio por boleto pagado" />
       </div>
 
+      {/* ── Rentabilidad ── */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
+        <SectionTitle>Rentabilidad {isGlobal ? "(todas las rifas)" : `— ${selectedRifa?.nombre}`}</SectionTitle>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
+            <p className="text-2xl font-black text-green-600 dark:text-green-400">{currency(ingresoTotal)}</p>
+            <p className="text-xs text-slate-500 mt-1">ingresos confirmados</p>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
+            <p className="text-2xl font-black text-red-600 dark:text-red-400">{gastoTotal > 0 ? `−${currency(gastoTotal)}` : "—"}</p>
+            <p className="text-xs text-slate-500 mt-1">gastos totales</p>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
+            <p className={`text-2xl font-black ${gananciaNeta >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{currency(gananciaNeta)}</p>
+            <p className="text-xs text-slate-500 mt-1">ganancia neta</p>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
+            <p className={`text-2xl font-black ${roi === null ? "text-slate-400" : roi >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+              {roi === null ? "—" : `${roi >= 0 ? "+" : ""}${roi.toFixed(0)}%`}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">ROI sobre gasto</p>
+          </div>
+        </div>
+        {gastoTotal === 0 && (
+          <p className="text-xs text-slate-400 mt-3">Registra gastos (marketing, premio, comisiones) al editar cada rifa para ver la ganancia neta y el ROI.</p>
+        )}
+      </div>
+
       {/* ── Tendencia boletos ── */}
       {period > 0 && trendPagados !== null && (
         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl px-5 py-3 border border-slate-100 dark:border-slate-700 flex flex-wrap gap-6 items-center">
@@ -844,10 +881,10 @@ export default function MetricasPage() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-100 dark:border-slate-700 p-6">
             <SectionTitle>Detalle por rifa</SectionTitle>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[960px]">
+              <table className="w-full text-sm min-w-[1140px]">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-slate-700">
-                    {["Rifa", "Estado", "Total", "Vendidos", "Aptos.", "Dispon.", "Ingresos", "Rev/núm", "Conversión", "Ticket prom.", "Pend. riesgo", "Ocup."].map((h) => (
+                    {["Rifa", "Estado", "Total", "Vendidos", "Aptos.", "Dispon.", "Ingresos", "Gastos", "Neto", "ROI", "Rev/núm", "Conversión", "Ticket prom.", "Pend. riesgo", "Ocup."].map((h) => (
                       <th key={h} className="text-left py-2 px-2 text-xs font-semibold text-slate-400 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -868,6 +905,9 @@ export default function MetricasPage() {
                     const threshold   = new Date(Date.now() - 20 * 60 * 60 * 1000);
                     const pendRiesgo  = rifaPend.filter((b) => { const d = b.created_at?.toDate?.(); return d && d < threshold; }).length;
                     const ocup        = total > 0 ? ((vend + apart) / total) * 100 : 0;
+                    const rifaGastos  = totalGastos(r);
+                    const rifaNeto    = calcularNeto(ing, rifaGastos);
+                    const rifaRoi     = calcularROI(ing, rifaGastos);
                     return (
                       <tr key={r.id}
                         className="hover:bg-slate-50 dark:hover:bg-slate-700/30 cursor-pointer"
@@ -885,6 +925,13 @@ export default function MetricasPage() {
                         <td className="py-2.5 px-2 text-center font-bold text-amber-600 dark:text-amber-400">{apart}</td>
                         <td className="py-2.5 px-2 text-center text-slate-500">{disp}</td>
                         <td className="py-2.5 px-2 font-black text-red-600 dark:text-red-400">{currency(ing)}</td>
+                        <td className="py-2.5 px-2 text-slate-500">{rifaGastos > 0 ? `−${currency(rifaGastos)}` : "—"}</td>
+                        <td className={`py-2.5 px-2 font-bold ${rifaNeto >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{currency(rifaNeto)}</td>
+                        <td className="py-2.5 px-2">
+                          {rifaRoi === null
+                            ? <span className="text-xs text-slate-400">—</span>
+                            : <span className={`text-xs font-bold ${rifaRoi >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{rifaRoi >= 0 ? "+" : ""}{rifaRoi.toFixed(0)}%</span>}
+                        </td>
                         <td className="py-2.5 px-2 text-slate-500">{revNum > 0 ? currency(Math.round(revNum)) : "—"}</td>
                         <td className="py-2.5 px-2">
                           <span className={`text-xs font-bold ${conv >= 50 ? "text-green-600 dark:text-green-400" : conv >= 25 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}`}>

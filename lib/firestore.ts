@@ -46,6 +46,16 @@ export interface Oferta {
   precio: number;
 }
 
+export type GastoCategoria = "marketing" | "premio" | "comision" | "otro";
+
+export interface GastoRifa {
+  id: string;
+  concepto: string;
+  monto: number;
+  categoria: GastoCategoria;
+  fecha: string; // ISO date (YYYY-MM-DD)
+}
+
 export interface Rifa {
   id?: string;
   slug?: string;
@@ -65,6 +75,7 @@ export interface Rifa {
   num_apartados: number;
   premios?: Premio[];
   ofertas?: Oferta[];
+  gastos?: GastoRifa[];
   ganador?: Ganador;
 }
 
@@ -181,6 +192,22 @@ export async function updateRifa(id: string, data: Partial<Rifa>): Promise<void>
 
 export async function deleteRifa(id: string): Promise<void> {
   await deleteDoc(doc(db, "rifas", id));
+}
+
+/**
+ * Suma el ingreso confirmado (boletos pagados) agrupado por rifa.
+ * Devuelve un Map rifa_id → total cobrado. Usado para calcular la ganancia neta.
+ */
+export async function getIngresosPorRifa(): Promise<Map<string, number>> {
+  const snap = await getDocs(
+    query(collection(db, "boletos"), where("status", "==", "pagado"))
+  );
+  const map = new Map<string, number>();
+  snap.docs.forEach((d) => {
+    const b = d.data() as Boleto;
+    map.set(b.rifa_id, (map.get(b.rifa_id) ?? 0) + (b.precio_total ?? 0));
+  });
+  return map;
 }
 
 /**

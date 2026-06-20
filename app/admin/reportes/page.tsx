@@ -4,12 +4,14 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { onSnapshot, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Boleto, Rifa } from "@/lib/firestore";
+import { totalGastos, gastosPorCategoria, calcularNeto, calcularROI } from "@/lib/gastos";
 
 type ReportType =
   | "resumen"
   | "compradores"
   | "mapa"
   | "ingresos"
+  | "rentabilidad"
   | "clientes"
   | "codigos"
   | "ganador"
@@ -24,6 +26,7 @@ const REPORTS: { id: ReportType; label: string; icon: string; needsRifa?: boolea
   { id: "compradores", label: "Compradores",          icon: "👥" },
   { id: "mapa",        label: "Mapa de números",      icon: "🗺️", needsRifa: true },
   { id: "ingresos",    label: "Ingresos",             icon: "💰" },
+  { id: "rentabilidad",label: "Rentabilidad",         icon: "📈" },
   { id: "clientes",    label: "Clientes únicos",      icon: "👤" },
   { id: "codigos",     label: "Códigos usados",       icon: "🏷️" },
   { id: "ganador",     label: "Ganador",              icon: "🏆", needsRifa: true },
@@ -230,6 +233,35 @@ export default function ReportesPage() {
     });
   }, [rifas, boletos, selectedRifaId]);
 
+  // Rentabilidad por rifa: ingresos confirmados − gastos = neto + ROI
+  const rentabilidadData = useMemo(() => {
+    const rifasList = selectedRifaId ? rifas.filter((r) => r.id === selectedRifaId) : rifas;
+    return rifasList.map((r) => {
+      const ingresos = boletos
+        .filter((b) => b.rifa_id === r.id && b.status === "pagado")
+        .reduce((s, b) => s + b.precio_total, 0);
+      const cat = gastosPorCategoria(r);
+      const gastos = totalGastos(r);
+      return {
+        rifa: r,
+        ingresos,
+        marketing: cat.marketing,
+        premio: cat.premio,
+        comision: cat.comision,
+        otro: cat.otro,
+        gastos,
+        neto: calcularNeto(ingresos, gastos),
+        roi: calcularROI(ingresos, gastos),
+      };
+    });
+  }, [rifas, boletos, selectedRifaId]);
+
+  const rentabilidadTotales = useMemo(() => {
+    const ingresos = rentabilidadData.reduce((s, d) => s + d.ingresos, 0);
+    const gastos = rentabilidadData.reduce((s, d) => s + d.gastos, 0);
+    return { ingresos, gastos, neto: calcularNeto(ingresos, gastos), roi: calcularROI(ingresos, gastos) };
+  }, [rentabilidadData]);
+
   function toggleSort(field: SortField) {
     if (sortField === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortField(field); setSortDir("desc"); }
@@ -287,12 +319,22 @@ export default function ReportesPage() {
     ]), headers);
   }
 
+  function exportRentabilidad() {
+    const headers = ["Rifa", "Ingresos (MXN)", "Marketing", "Premio", "Comisión", "Otro", "Gastos totales", "Neto (MXN)", "ROI %"];
+    downloadCSV(`rentabilidad-${rifaLabel}.csv`, rentabilidadData.map((d) => [
+      d.rifa.nombre, String(d.ingresos), String(d.marketing), String(d.premio),
+      String(d.comision), String(d.otro), String(d.gastos), String(d.neto),
+      d.roi === null ? "—" : d.roi.toFixed(1),
+    ]), headers);
+  }
+
   const exportFns: Partial<Record<ReportType, () => void>> = {
     compradores: exportCompradores,
     privado: exportPrivado,
     publico: exportPublico,
     clientes: exportClientes,
     ingresos: exportIngresos,
+    rentabilidad: exportRentabilidad,
     codigos: exportCodigos,
   };
 
@@ -678,6 +720,70 @@ export default function ReportesPage() {
                     </table>
                     {ingresosByDay.length === 0 && <p className="text-center py-10 text-slate-400">Sin datos de ingresos.</p>}
                   </div>
+                </div>
+              )}
+
+              {/* ── Rentabilidad ── */}
+              {activeReport === "rentabilidad" && (
+                <div>
+                  {/* Summary cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                    <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 text-center">
+                      <p className="text-xs text-green-600 dark:text-green-400 font-semibold">Ingresos confirmados</p>
+                      <p className="text-2xl font-black text-green-700 dark:text-green-300 mt-1">${rentabilidadTotales.ingresos.toLocaleString("es-MX")}</p>
+                    </div>
+                    <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 text-center">
+                      <p className="text-xs text-red-600 dark:text-red-400 font-semibold">Gastos totales</p>
+                      <p className="text-2xl font-black text-red-700 dark:text-red-300 mt-1">${rentabilidadTotales.gastos.toLocaleString("es-MX")}</p>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 text-center">
+                      <p className="text-xs text-slate-500 font-semibold">Ganancia neta</p>
+                      <p className={`text-2xl font-black mt-1 ${rentabilidadTotales.neto >= 0 ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"}`}>
+                        ${rentabilidadTotales.neto.toLocaleString("es-MX")}
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center">
+                      <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">ROI sobre gasto</p>
+                      <p className={`text-2xl font-black mt-1 ${rentabilidadTotales.roi === null ? "text-slate-400" : rentabilidadTotales.roi >= 0 ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"}`}>
+                        {rentabilidadTotales.roi === null ? "—" : `${rentabilidadTotales.roi >= 0 ? "+" : ""}${rentabilidadTotales.roi.toFixed(0)}%`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 overflow-x-auto">
+                    <table className="w-full text-sm min-w-[820px]">
+                      <thead className="bg-slate-50 dark:bg-slate-700">
+                        <tr>
+                          {["Rifa", "Ingresos", "Marketing", "Premio", "Comisión", "Otro", "Gastos", "Neto", "ROI"].map((h) => (
+                            <th key={h} className="text-left px-4 py-3 font-semibold text-slate-500 whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                        {rentabilidadData.map((d) => (
+                          <tr key={d.rifa.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                            <td className="px-4 py-3 font-medium">{d.rifa.nombre}</td>
+                            <td className="px-4 py-3 font-semibold text-green-600 dark:text-green-400">${d.ingresos.toLocaleString("es-MX")}</td>
+                            <td className="px-4 py-3 text-slate-500">{d.marketing > 0 ? `$${d.marketing.toLocaleString("es-MX")}` : "—"}</td>
+                            <td className="px-4 py-3 text-slate-500">{d.premio > 0 ? `$${d.premio.toLocaleString("es-MX")}` : "—"}</td>
+                            <td className="px-4 py-3 text-slate-500">{d.comision > 0 ? `$${d.comision.toLocaleString("es-MX")}` : "—"}</td>
+                            <td className="px-4 py-3 text-slate-500">{d.otro > 0 ? `$${d.otro.toLocaleString("es-MX")}` : "—"}</td>
+                            <td className="px-4 py-3 font-semibold text-red-600 dark:text-red-400">{d.gastos > 0 ? `−$${d.gastos.toLocaleString("es-MX")}` : "—"}</td>
+                            <td className={`px-4 py-3 font-bold ${d.neto >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>${d.neto.toLocaleString("es-MX")}</td>
+                            <td className="px-4 py-3">
+                              {d.roi === null
+                                ? <span className="text-slate-400">—</span>
+                                : <span className={`font-bold ${d.roi >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{d.roi >= 0 ? "+" : ""}{d.roi.toFixed(0)}%</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {rentabilidadData.length === 0 && <p className="text-center py-10 text-slate-400">No hay rifas registradas.</p>}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-3">
+                    Neto = ingresos confirmados (boletos pagados) − gastos. ROI = neto ÷ gasto. Registra los gastos al editar cada rifa.
+                  </p>
                 </div>
               )}
 
